@@ -1,14 +1,12 @@
 const NodeCache = require('node-cache');
 const { ethers } = require('ethers');
 
-let blockNumber = 800;
-
 class SheetOperations {
   constructor(sheetsClient) {
     this.client = sheetsClient;
-    this.cache = new NodeCache({ 
+    this.cache = new NodeCache({
       stdTTL: parseInt(process.env.CACHE_TTL || '60'),
-      checkperiod: 120 
+      checkperiod: 120
     });
     this.cacheEnabled = process.env.ENABLE_CACHE === 'true';
   }
@@ -16,7 +14,7 @@ class SheetOperations {
   async getBalance(address) {
     address = address.toLowerCase();
     // const cacheKey = `balance_${address}`;
-    
+
     // if (this.cacheEnabled) {
     //   const cached = this.cache.get(cacheKey);
     //   if (cached !== undefined) return cached;
@@ -26,20 +24,20 @@ class SheetOperations {
 
     const rows = await this.client.readRange('Balances!A:C');
     const addressRow = rows.find(row => row[0] && row[0].toLowerCase() === address);
-    
+
     const balance = addressRow && addressRow[1] ? BigInt(addressRow[1]) : BigInt(0);
-    
+
     // if (this.cacheEnabled) {
     //   this.cache.set(cacheKey, balance);
     // }
-    
+
     return balance;
   }
 
   async getNonce(address) {
     address = address.toLowerCase();
     const cacheKey = `nonce_${address}`;
-    
+
     if (this.cacheEnabled) {
       const cached = this.cache.get(cacheKey);
       if (cached !== undefined) return cached;
@@ -47,22 +45,22 @@ class SheetOperations {
 
     const rows = await this.client.readRange('Balances!A:C');
     const addressRow = rows.find(row => row[0] && row[0].toLowerCase() === address);
-    
+
     const nonce = addressRow && addressRow[2] ? parseInt(addressRow[2]) : 0;
-    
+
     if (this.cacheEnabled) {
       this.cache.set(cacheKey, nonce);
     }
-    
+
     return nonce;
   }
 
   async updateBalance(address, newBalance, newNonce) {
     address = address.toLowerCase();
-    
+
     const rows = await this.client.readRange('Balances!A:C');
     let rowIndex = rows.findIndex(row => row[0] && row[0].toLowerCase() === address);
-    
+
     if (rowIndex === -1) {
       await this.client.appendRow('Balances', [address, newBalance.toString(), newNonce.toString()]);
     } else {
@@ -71,7 +69,7 @@ class SheetOperations {
         [[address, newBalance.toString(), newNonce.toString()]]
       );
     }
-    
+
     if (this.cacheEnabled) {
       this.cache.del(`balance_${address}`);
       this.cache.del(`nonce_${address}`);
@@ -83,21 +81,21 @@ class SheetOperations {
     const to = tx.to ? tx.to.toLowerCase() : null;
     const value = BigInt(tx.value || 0);
     const nonce = parseInt(tx.nonce);
-    
+
     const currentNonce = await this.getNonce(from);
     if (nonce !== currentNonce) {
       throw new Error(`Invalid nonce. Expected ${currentNonce}, got ${nonce}`);
     }
-    
+
     const fromBalance = await this.getBalance(from);
     const gasLimit = BigInt(tx.gasLimit || 21000);
     const gasPrice = BigInt(tx.gasPrice || tx.maxFeePerGas || 1000000000);
     const totalCost = value + (gasLimit * gasPrice);
-    
+
     if (fromBalance < totalCost) {
       throw new Error(`Insufficient balance. Required: ${totalCost}, Available: ${fromBalance}`);
     }
-    
+
     const txHash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify({
       from,
       to,
@@ -105,16 +103,16 @@ class SheetOperations {
       nonce,
       timestamp: Date.now()
     })));
-    
+
     const blockNumber = await this.getLatestBlockNumber() + 1;
-    
+
     if (to) {
       const toBalance = await this.getBalance(to);
       await this.updateBalance(to, toBalance + value, await this.getNonce(to));
     }
-    
+
     await this.updateBalance(from, fromBalance - totalCost, nonce + 1);
-    
+
     await this.client.appendRow('Transactions', [
       new Date().toISOString(),
       txHash,
@@ -126,7 +124,7 @@ class SheetOperations {
       blockNumber.toString(),
       gasLimit.toString()
     ]);
-    
+
     return {
       transactionHash: txHash,
       blockNumber,
@@ -142,9 +140,9 @@ class SheetOperations {
   async getTransaction(txHash) {
     const rows = await this.client.readRange('Transactions!A:I');
     const txRow = rows.find(row => row[1] === txHash);
-    
+
     if (!txRow) return null;
-    
+
     return {
       hash: txRow[1],
       from: txRow[2],
@@ -160,7 +158,7 @@ class SheetOperations {
   async getTransactionReceipt(txHash) {
     const tx = await this.getTransaction(txHash);
     if (!tx) return null;
-    
+
     return {
       transactionHash: tx.hash,
       transactionIndex: '0x0',
@@ -178,27 +176,17 @@ class SheetOperations {
   }
 
   async getLatestBlockNumber() {
-    blockNumber += 1;
-    return blockNumber;
-
-    const rows = await this.client.readRange('Transactions!H:H');
-    if (rows.length <= 1) return blockNumber;
-
-    
-    const blockNumbers = rows.slice(1)
-      .map(row => parseInt(row[0]))
-      .filter(n => !isNaN(n));
-    
-    return blockNumbers.length > 0 ? Math.max(...blockNumbers) : 0;
+      const rows = await this.client.readRange('Transactions!A:C');
+      return rows.length;
   }
 
   async getTransactionsByAddress(address) {
     address = address.toLowerCase();
     const rows = await this.client.readRange('Transactions!A:I');
-    
+
     return rows
-      .filter(row => 
-        (row[2] && row[2].toLowerCase() === address) || 
+      .filter(row =>
+        (row[2] && row[2].toLowerCase() === address) ||
         (row[3] && row[3].toLowerCase() === address)
       )
       .map(row => ({
