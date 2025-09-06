@@ -55,6 +55,10 @@ class GoogleSheetsClient {
       if (!sheetTitles.includes('Transactions')) {
         await this.createSheet('Transactions', ['Timestamp', 'TxHash', 'From', 'To', 'Value', 'Nonce', 'Status', 'BlockNumber', 'GasUsed']);
       }
+      
+      if (!sheetTitles.includes('Claims')) {
+        await this.createSheet('Claims', ['ClaimId', 'Address', 'Amount', 'Timestamp', 'Status', 'TransactionHash', 'BlockNumber']);
+      }
     } catch (error) {
       this.logger.error('Failed to ensure sheet structure:', error);
       throw error;

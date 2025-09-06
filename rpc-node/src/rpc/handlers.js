@@ -73,6 +73,21 @@ class RPCHandlers {
       
       case 'eth_getLogs':
         return [];
+      
+      case 'claim_create':
+        return await this.createClaim(params);
+      
+      case 'claim_process':
+        return await this.processClaim(params);
+      
+      case 'claim_get':
+        return await this.getClaim(params);
+      
+      case 'claim_getByAddress':
+        return await this.getClaimsByAddress(params);
+      
+      case 'claim_getAll':
+        return await this.getAllClaims();
         
       default:
         throw new Error(`Method ${method} not supported`);
@@ -82,8 +97,7 @@ class RPCHandlers {
   async getBalance(params) {
     const [address, blockTag] = params;
     const balance = await this.sheetOps.getBalance(address);
-    const balanceHex = '0x' + balance.toString(16);
-    return balanceHex;
+    return '0x' + balance.toString(16);
   }
 
   async getTransactionCount(params) {
@@ -197,6 +211,60 @@ class RPCHandlers {
       transactions: includeTransactions ? [] : [],
       uncles: []
     };
+  }
+
+  async createClaim(params) {
+    const [address, amount] = params;
+    
+    if (!address) {
+      throw new Error('Address is required');
+    }
+    
+    if (!amount || amount <= 0) {
+      throw new Error('Valid amount is required');
+    }
+    
+    const amountBigInt = typeof amount === 'string' ? BigInt(amount) : BigInt(amount);
+    return await this.sheetOps.createClaim(address, amountBigInt);
+  }
+
+  async processClaim(params) {
+    const [claimId, transactionHash] = params;
+    
+    if (!claimId) {
+      throw new Error('Claim ID is required');
+    }
+    
+    const txHash = transactionHash || ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify({
+      claimId,
+      timestamp: Date.now()
+    })));
+    
+    return await this.sheetOps.processClaim(claimId, txHash);
+  }
+
+  async getClaim(params) {
+    const [claimId] = params;
+    
+    if (!claimId) {
+      throw new Error('Claim ID is required');
+    }
+    
+    return await this.sheetOps.getClaim(claimId);
+  }
+
+  async getClaimsByAddress(params) {
+    const [address] = params;
+    
+    if (!address) {
+      throw new Error('Address is required');
+    }
+    
+    return await this.sheetOps.getClaimsByAddress(address);
+  }
+
+  async getAllClaims() {
+    return await this.sheetOps.getAllClaims();
   }
 }
 
