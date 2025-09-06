@@ -86,7 +86,8 @@ class SheetOperations {
       timestamp: Date.now()
     })));
 
-    const blockNumber = await this.getLatestBlockNumber() + 1;
+    const blockNumber = await this.getLatestBlockNumber() + 3;
+    console.log('blockNumber', blockNumber);
 
     if (to) {
       const toBalance = await this.getBalance(to);
