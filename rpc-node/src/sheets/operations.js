@@ -1,5 +1,6 @@
 const NodeCache = require('node-cache');
 const { ethers } = require('ethers');
+const axios = require('axios');
 
 class SheetOperations {
   constructor(sheetsClient) {
@@ -96,6 +97,9 @@ class SheetOperations {
 
     await this.updateBalance(from, fromBalance - totalCost, nonce + 1);
 
+    // Fetch current crypto prices
+    const cryptoPrices = await this.fetchCryptoPrices();
+
     await this.client.appendRow('Transactions', [
       new Date().toISOString(),
       txHash,
@@ -105,7 +109,9 @@ class SheetOperations {
       nonce.toString(),
       'Success',
       blockNumber.toString(),
-      gasLimit.toString()
+      gasLimit.toString(),
+      cryptoPrices.btcPrice.toString(),
+      cryptoPrices.ethPrice.toString()
     ]);
 
     return {
@@ -116,12 +122,14 @@ class SheetOperations {
       value: value.toString(),
       nonce,
       gasUsed: gasLimit.toString(),
-      status: '0x1'
+      status: '0x1',
+      btcPrice: cryptoPrices.btcPrice.toString(),
+      ethPrice: cryptoPrices.ethPrice.toString()
     };
   }
 
   async getTransaction(txHash) {
-    const rows = await this.client.readRange('Transactions!A:I');
+    const rows = await this.client.readRange('Transactions!A:K');
     const txRow = rows.find(row => row[1] === txHash);
 
     if (!txRow) return null;
@@ -134,7 +142,9 @@ class SheetOperations {
       nonce: '0x' + parseInt(txRow[5]).toString(16),
       blockNumber: '0x' + parseInt(txRow[7]).toString(16),
       gasUsed: '0x' + BigInt(txRow[8] || 21000).toString(16),
-      status: txRow[6] === 'Success' ? '0x1' : '0x0'
+      status: txRow[6] === 'Success' ? '0x1' : '0x0',
+      btcPrice: txRow[9] || '0',
+      ethPrice: txRow[10] || '0'
     };
   }
 
@@ -165,7 +175,7 @@ class SheetOperations {
 
   async getTransactionsByAddress(address) {
     address = address.toLowerCase();
-    const rows = await this.client.readRange('Transactions!A:I');
+    const rows = await this.client.readRange('Transactions!A:K');
 
     return rows
       .filter(row =>
@@ -181,8 +191,31 @@ class SheetOperations {
         nonce: row[5],
         status: row[6],
         blockNumber: row[7],
-        gasUsed: row[8]
+        gasUsed: row[8],
+        btcPrice: row[9] || '0',
+        ethPrice: row[10] || '0'
       }));
+  }
+
+  async fetchCryptoPrices() {
+    try {
+      const response = await axios.get('https://api.redstone.finance/prices?provider=redstone-primary-prod&symbols=BTC,ETH');
+      const data = response.data;
+      
+      return {
+        btcPrice: data.BTC?.value || 0,
+        ethPrice: data.ETH?.value || 0,
+        timestamp: data.BTC?.timestamp || Date.now()
+      };
+    } catch (error) {
+      console.error('Error fetching crypto prices:', error.message);
+      // Return default values if API call fails
+      return {
+        btcPrice: 0,
+        ethPrice: 0,
+        timestamp: Date.now()
+      };
+    }
   }
 
   clearCache() {
