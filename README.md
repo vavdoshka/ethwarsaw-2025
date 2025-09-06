@@ -14,3 +14,7 @@ From there you get:
 - Eco-friendly & Low-Cost – Zero maintenance, zero validators, zero CO₂ impact.
 - Security & Compliance – global infrastructure, inheriting the security of systems trusted by billions, while aligning with regulatory standards.
 - MEV Protection – No front running or hidden costs - fair transactions only.
+
+
+
+ledger - https://docs.google.com/spreadsheets/d/1SgFDDfi4GsWQfjaXUPzdJJnRN7t8TjWpHwRXP-9dMfg/edit?usp=sharing
