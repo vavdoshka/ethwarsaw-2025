@@ -74,20 +74,8 @@ class RPCHandlers {
       case 'eth_getLogs':
         return [];
       
-      case 'claim_create':
-        return await this.createClaim(params);
-      
-      case 'claim_process':
-        return await this.processClaim(params);
-      
-      case 'claim_get':
-        return await this.getClaim(params);
-      
-      case 'claim_getByAddress':
-        return await this.getClaimsByAddress(params);
-      
-      case 'claim_getAll':
-        return await this.getAllClaims();
+    case 'eth_getStorageAt':
+        return '0x'
         
       default:
         throw new Error(`Method ${method} not supported`);

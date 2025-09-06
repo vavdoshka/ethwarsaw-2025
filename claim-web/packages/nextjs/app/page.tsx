@@ -11,6 +11,8 @@ const Home: NextPage = () => {
 
   // Generate random claim amount between 0.001 and 0.1 ETH
   const [claimAmount, setClaimAmount] = useState<string>("0.01");
+  const [hasClaimed, setHasClaimed] = useState<boolean>(false);
+  const [checkingClaim, setCheckingClaim] = useState<boolean>(false);
 
   useEffect(() => {
     const minAmount = 0.001;
@@ -18,6 +20,30 @@ const Home: NextPage = () => {
     const randomAmount = (Math.random() * (maxAmount - minAmount) + minAmount).toFixed(3);
     setClaimAmount(randomAmount);
   }, []);
+
+  // Use smart contract to check if user has already claimed
+  const { 
+    data: hasClaimedData,
+    isLoading: hasClaimedLoading,
+    refetch: refetchHasClaimed
+  } = useScaffoldReadContract({
+    contractName: "EthWarsaw2025Airdrop",
+    functionName: "hasClaimed",
+    args: connectedAddress ? [connectedAddress] : undefined,
+    enabled: !!connectedAddress,
+  });
+
+  // Update hasClaimed state when contract data changes
+  useEffect(() => {
+    if (hasClaimedData !== undefined) {
+      setHasClaimed(hasClaimedData as boolean);
+    }
+  }, [hasClaimedData]);
+
+  // Update checking state based on loading
+  useEffect(() => {
+    setCheckingClaim(hasClaimedLoading);
+  }, [hasClaimedLoading]);
 
   // Read contract data - only totalClaimants
   const {
@@ -37,7 +63,12 @@ const Home: NextPage = () => {
       loading: totalClaimantsLoading,
       error: totalClaimantsError,
     });
-  }, [totalClaimants, totalClaimantsLoading, totalClaimantsError]);
+    console.log("hasClaimed:", {
+      data: hasClaimedData,
+      loading: hasClaimedLoading,
+      address: connectedAddress,
+    });
+  }, [totalClaimants, totalClaimantsLoading, totalClaimantsError, hasClaimedData, hasClaimedLoading, connectedAddress]);
 
   // Write contract function
   const { writeContractAsync: writeEthWarsawAirdropAsync } = useScaffoldWriteContract({
@@ -49,12 +80,35 @@ const Home: NextPage = () => {
     console.log("Function: claimAirdropEthWarsaw2025()");
     console.log("Expected Selector: 0xe21fa87b");
     console.log("Contract: EthWarsaw2025Airdrop");
+    console.log("Connected Address:", connectedAddress);
+
+    // First check if user has already claimed (refresh the status)
+    await refetchHasClaimed();
+    
+    // Check the latest hasClaimed status
+    if (hasClaimedData === true || hasClaimed === true) {
+      alert("❌ You have already claimed your airdrop!");
+      return;
+    }
 
     try {
-      await writeEthWarsawAirdropAsync({
+      const txResult = await writeEthWarsawAirdropAsync({
         functionName: "claimAirdropEthWarsaw2025",
       });
       console.log("✅ DEBUG: Claim transaction submitted successfully");
+      console.log("Transaction Result:", txResult);
+      
+      // Mark user as having claimed
+      setHasClaimed(true);
+      alert("✅ Airdrop claimed successfully!");
+      
+      // The transaction should now be automatically stored in the spreadsheet by the RPC node
+      // Generate new claim amount for next potential claim
+      const minAmount = 0.001;
+      const maxAmount = 0.1;
+      const newRandomAmount = (Math.random() * (maxAmount - minAmount) + minAmount).toFixed(3);
+      setClaimAmount(newRandomAmount);
+      
     } catch (error: any) {
       console.error("❌ DEBUG: Error claiming airdrop:", error);
       console.error("Error details:", {
@@ -63,9 +117,20 @@ const Home: NextPage = () => {
         data: error?.data,
         cause: error?.cause,
       });
-      // The error message will be displayed by the wallet/UI
-      if (error?.message?.includes("Airdrop finished")) {
-        // This will be handled by the UI state check
+      
+      // Check if the error is because user already claimed
+      if (error?.message?.includes("already claimed")) {
+        alert("❌ You have already claimed your airdrop!");
+        // Refresh the hasClaimed status
+        await refetchHasClaimed();
+        setHasClaimed(true);
+      } else if (error?.message?.includes("Airdrop finished")) {
+        alert("❌ Airdrop has finished! All 1000 claims have been used.");
+      } else if (error?.message?.includes("User rejected")) {
+        console.log("User cancelled the transaction");
+      } else {
+        alert("❌ Error claiming airdrop. Please try again.");
+        console.error("Unexpected error during claim:", error);
       }
     }
   };
@@ -97,15 +162,29 @@ const Home: NextPage = () => {
                     <p>Remaining: {totalClaimants ? `${1000 - Number(totalClaimants)}` : "Loading..."}</p>
                   </div>
 
-                  {totalClaimants && totalClaimants >= 1000 ? (
+                  {checkingClaim ? (
+                    <div className="text-info">
+                      <p className="text-lg">Checking claim status...</p>
+                    </div>
+                  ) : totalClaimants && totalClaimants >= 1000 ? (
                     <div className="text-error">
                       <p className="text-xl font-bold">❌ Airdrop Finished</p>
                       <p>All 1000 claims have been used up.</p>
                     </div>
                   ) : (
-                    <button className="btn btn-primary btn-lg" onClick={handleClaim}>
-                      CLAIM
-                    </button>
+                    <>
+                      {hasClaimed && (
+                        <div className="text-warning mb-2">
+                          <p className="text-sm">You have already claimed your airdrop</p>
+                        </div>
+                      )}
+                      <button 
+                        className={`btn btn-lg ${hasClaimed ? 'btn-disabled' : 'btn-primary'}`}
+                        onClick={handleClaim}
+                        disabled={hasClaimed}>
+                        CLAIM
+                      </button>
+                    </>
                   )}
                 </div>
               ) : (
