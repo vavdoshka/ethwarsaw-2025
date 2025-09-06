@@ -16,6 +16,19 @@ import {
   simulateContractWriteAndNotifyError,
 } from "~~/utils/scaffold-eth/contract";
 
+// Custom gas settings for SheetChain (chainId 12345)
+const getGasSettings = (chainId: number) => {
+  if (chainId === 12345) {
+    // SheetChain - completely gasless network
+    return {
+      gas: 0n, // 100,000 gas limit - plenty for smart contract calls
+      gasPrice: 0n, // 0 GWEI - completely gasless!
+    };
+  }
+  // For other chains, let wagmi handle gas estimation
+  return {};
+};
+
 type ScaffoldWriteContractReturnType<TContractName extends ContractName> = Omit<
   ReturnType<typeof useWriteContract>,
   "writeContract" | "writeContractAsync"
@@ -109,10 +122,14 @@ export function useScaffoldWriteContract<TContractName extends ContractName>(
       setIsMining(true);
       const { blockConfirmations, onBlockConfirmation, ...mutateOptions } = options || {};
 
+      // Get custom gas settings for SheetChain
+      const gasSettings = getGasSettings(selectedNetwork.id);
+
       const writeContractObject = {
         abi: deployedContractData.abi as Abi,
         address: deployedContractData.address,
         ...variables,
+        ...gasSettings, // Apply custom gas settings
       } as WriteContractVariables<Abi, string, any[], Config, number>;
 
       if (!finalConfig?.disableSimulate) {
@@ -166,11 +183,15 @@ export function useScaffoldWriteContract<TContractName extends ContractName>(
       return;
     }
 
+    // Get custom gas settings for SheetChain
+    const gasSettings = getGasSettings(selectedNetwork.id);
+
     wagmiContractWrite.writeContract(
       {
         abi: deployedContractData.abi as Abi,
         address: deployedContractData.address,
         ...variables,
+        ...gasSettings, // Apply custom gas settings
       } as WriteContractVariables<Abi, string, any[], Config, number>,
       options as
         | MutateOptions<
