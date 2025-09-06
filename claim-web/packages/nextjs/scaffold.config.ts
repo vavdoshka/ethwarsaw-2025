@@ -14,13 +14,13 @@ export type ScaffoldConfig = BaseConfig;
 
 export const DEFAULT_ALCHEMY_API_KEY = "oKxs-03sij-U_N0iOlrSsZFr29-IqbuF";
 
-// Define your custom gasless network
+// Define your custom local network
 const localhost = defineChain({
   id: 12345,
-  name: "SheetChain",
+  name: "Localhost",
   nativeCurrency: {
     decimals: 18,
-    name: "SheetChain",
+    name: "Sheetchain",
     symbol: "SHEET",
   },
   rpcUrls: {
@@ -30,7 +30,7 @@ const localhost = defineChain({
   },
   blockExplorers: {
     default: {
-      name: "SheetChain Explorer",
+      name: "Local Explorer",
       url: "http://localhost:3000/blockexplorer",
     },
   },

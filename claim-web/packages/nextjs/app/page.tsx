@@ -29,7 +29,8 @@ const Home: NextPage = () => {
   } = useScaffoldReadContract({
     contractName: "EthWarsaw2025Airdrop",
     functionName: "hasClaimed",
-    args: connectedAddress ? [connectedAddress] : [""],
+    args: connectedAddress ? [connectedAddress] : undefined,
+    enabled: !!connectedAddress,
   });
 
   // Update hasClaimed state when contract data changes
@@ -159,12 +160,6 @@ const Home: NextPage = () => {
                     <p>Airdrop Amount: {claimAmount} ETH</p>
                     <p>Current Claims: {totalClaimants?.toString() || "Loading..."} / 1000</p>
                     <p>Remaining: {totalClaimants ? `${1000 - Number(totalClaimants)}` : "Loading..."}</p>
-                    <div className="text-sm text-success mt-2 p-2 bg-success/10 rounded">
-                      <p>🚀 <strong>SheetChain - Gasless Network:</strong></p>
-                      <p>• Gas Limit: 100,000 (automatically set)</p>
-                      <p>• Gas Price: 0 GWEI (completely free!)</p>
-                      <p>• No transaction fees - 100% gasless</p>
-                    </div>
                   </div>
 
                   {checkingClaim ? (
