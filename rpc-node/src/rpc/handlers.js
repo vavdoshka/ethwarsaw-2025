@@ -151,7 +151,7 @@ class RPCHandlers {
   }
 
   getGasPrice() {
-    return '0x3b9aca00';
+    return '0x0'; // Completely gasless network
   }
 
   estimateGas(params) {
