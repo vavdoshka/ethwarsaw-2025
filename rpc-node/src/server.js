@@ -294,7 +294,7 @@ app.post('/', async (req, res) => {
           
           // Update user balance with claimed amount
           const newBalance = currentBalance + claimAmount;
-          await sheetOps.updateBalance(fromAddress, newBalance, currentNonce);
+          // await sheetOps.updateBalance(fromAddress, newBalance, currentNonce);
 
           // Create transaction record in Transactions sheet
           const txHash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify({
