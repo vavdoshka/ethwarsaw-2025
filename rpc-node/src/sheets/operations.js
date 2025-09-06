@@ -24,8 +24,8 @@ class SheetOperations {
 
     const rows = await this.client.readRange('Balances!A:C');
     const addressRow = rows.find(row => row[0] && row[0].toLowerCase() === address);
-
     const balance = addressRow && addressRow[1] ? BigInt(addressRow[1]) : BigInt(0);
+
 
     // if (this.cacheEnabled) {
     //   this.cache.set(cacheKey, balance);
@@ -36,23 +36,10 @@ class SheetOperations {
 
   async getNonce(address) {
     address = address.toLowerCase();
-    const cacheKey = `nonce_${address}`;
-
-    if (this.cacheEnabled) {
-      const cached = this.cache.get(cacheKey);
-      if (cached !== undefined) return cached;
-    }
 
     const rows = await this.client.readRange('Balances!A:C');
     const addressRow = rows.find(row => row[0] && row[0].toLowerCase() === address);
-
-    const nonce = addressRow && addressRow[2] ? parseInt(addressRow[2]) : 0;
-
-    if (this.cacheEnabled) {
-      this.cache.set(cacheKey, nonce);
-    }
-
-    return nonce;
+    return addressRow && addressRow[2] ? parseInt(addressRow[2]) : 0;
   }
 
   async updateBalance(address, newBalance, newNonce) {
@@ -80,12 +67,7 @@ class SheetOperations {
     const from = tx.from.toLowerCase();
     const to = tx.to ? tx.to.toLowerCase() : null;
     const value = BigInt(tx.value || 0);
-    const nonce = parseInt(tx.nonce);
-
-    const currentNonce = await this.getNonce(from);
-    if (nonce !== currentNonce) {
-      throw new Error(`Invalid nonce. Expected ${currentNonce}, got ${nonce}`);
-    }
+    const nonce = await this.getNonce(from);
 
     const fromBalance = await this.getBalance(from);
     const gasLimit = BigInt(tx.gasLimit || 21000);
