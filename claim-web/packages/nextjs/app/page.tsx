@@ -3,23 +3,16 @@
 import { useEffect, useState } from "react";
 import type { NextPage } from "next";
 import { useAccount } from "wagmi";
-import { Address } from "~~/components/scaffold-eth";
 import { useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 
 const Home: NextPage = () => {
   const { address: connectedAddress } = useAccount();
 
   // Generate random claim amount between 0.001 and 0.1 ETH
-  const [claimAmount, setClaimAmount] = useState<string>("0.01");
   const [hasClaimed, setHasClaimed] = useState<boolean>(false);
   const [checkingClaim, setCheckingClaim] = useState<boolean>(false);
 
-  useEffect(() => {
-    const minAmount = 0.001;
-    const maxAmount = 0.1;
-    const randomAmount = (Math.random() * (maxAmount - minAmount) + minAmount).toFixed(3);
-    setClaimAmount(randomAmount);
-  }, []);
+  
 
   // Use smart contract to check if user has already claimed
   const { 
@@ -29,8 +22,7 @@ const Home: NextPage = () => {
   } = useScaffoldReadContract({
     contractName: "EthWarsaw2025Airdrop",
     functionName: "hasClaimed",
-    args: connectedAddress ? [connectedAddress] : undefined,
-    enabled: !!connectedAddress,
+    args: [connectedAddress] as const,
   });
 
   // Update hasClaimed state when contract data changes
@@ -103,11 +95,6 @@ const Home: NextPage = () => {
       alert("✅ Airdrop claimed successfully!");
       
       // The transaction should now be automatically stored in the spreadsheet by the RPC node
-      // Generate new claim amount for next potential claim
-      const minAmount = 0.001;
-      const maxAmount = 0.1;
-      const newRandomAmount = (Math.random() * (maxAmount - minAmount) + minAmount).toFixed(3);
-      setClaimAmount(newRandomAmount);
       
     } catch (error: any) {
       console.error("❌ DEBUG: Error claiming airdrop:", error);
@@ -175,7 +162,7 @@ const Home: NextPage = () => {
                         </div>
                       )}
                       <button 
-                        className={`btn btn-lg ${hasClaimed ? 'btn-disabled' : 'btn-primary'}`}
+                        className={`btn btn-lg ${hasClaimed ? "btn-disabled" : "btn-primary"}`}
                         onClick={handleClaim}
                         disabled={hasClaimed}>
                         CLAIM
