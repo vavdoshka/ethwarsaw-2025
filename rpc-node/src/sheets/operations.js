@@ -223,6 +223,127 @@ class SheetOperations {
       this.cache.flushAll();
     }
   }
+
+  async createClaim(address, amount) {
+    address = address.toLowerCase();
+    const claimId = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify({
+      address,
+      amount: amount.toString(),
+      timestamp: Date.now(),
+      random: Math.random()
+    })));
+
+    const blockNumber = await this.getLatestBlockNumber();
+
+    await this.client.appendRow('Claims', [
+      claimId,
+      address,
+      amount.toString(),
+      new Date().toISOString(),
+      'pending',
+      '',
+      blockNumber.toString()
+    ]);
+
+    return {
+      claimId,
+      address,
+      amount: amount.toString(),
+      status: 'pending',
+      blockNumber
+    };
+  }
+
+  async processClaim(claimId, transactionHash) {
+    const rows = await this.client.readRange('Claims!A:G');
+    const rowIndex = rows.findIndex(row => row[0] === claimId);
+
+    if (rowIndex === -1) {
+      throw new Error(`Claim ${claimId} not found`);
+    }
+
+    const claim = rows[rowIndex];
+    if (claim[4] !== 'pending') {
+      throw new Error(`Claim ${claimId} is not pending`);
+    }
+
+    const address = claim[1].toLowerCase();
+    const amount = BigInt(claim[2]);
+
+    const currentBalance = await this.getBalance(address);
+    await this.updateBalance(address, currentBalance + amount, await this.getNonce(address));
+
+    await this.client.updateRange(
+      `Claims!A${rowIndex + 1}:G${rowIndex + 1}`,
+      [[
+        claim[0],
+        claim[1],
+        claim[2],
+        claim[3],
+        'completed',
+        transactionHash,
+        claim[6]
+      ]]
+    );
+
+    return {
+      claimId,
+      address,
+      amount: amount.toString(),
+      status: 'completed',
+      transactionHash
+    };
+  }
+
+  async getClaim(claimId) {
+    const rows = await this.client.readRange('Claims!A:G');
+    const claim = rows.find(row => row[0] === claimId);
+
+    if (!claim) return null;
+
+    return {
+      claimId: claim[0],
+      address: claim[1],
+      amount: claim[2],
+      timestamp: claim[3],
+      status: claim[4],
+      transactionHash: claim[5] || null,
+      blockNumber: claim[6]
+    };
+  }
+
+  async getClaimsByAddress(address) {
+    address = address.toLowerCase();
+    const rows = await this.client.readRange('Claims!A:G');
+
+    return rows
+      .filter(row => row[1] && row[1].toLowerCase() === address)
+      .map(row => ({
+        claimId: row[0],
+        address: row[1],
+        amount: row[2],
+        timestamp: row[3],
+        status: row[4],
+        transactionHash: row[5] || null,
+        blockNumber: row[6]
+      }));
+  }
+
+  async getAllClaims() {
+    const rows = await this.client.readRange('Claims!A:G');
+
+    return rows
+      .filter(row => row[0])
+      .map(row => ({
+        claimId: row[0],
+        address: row[1],
+        amount: row[2],
+        timestamp: row[3],
+        status: row[4],
+        transactionHash: row[5] || null,
+        blockNumber: row[6]
+      }));
+  }
 }
 
 module.exports = SheetOperations;

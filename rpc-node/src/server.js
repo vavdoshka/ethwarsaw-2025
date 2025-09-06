@@ -287,7 +287,12 @@ app.get('/', (req, res) => {
       'eth_getBlockByHash',
       'eth_call',
       'eth_getLogs',
-      'web3_clientVersion'
+      'web3_clientVersion',
+      'claim_create',
+      'claim_process',
+      'claim_get',
+      'claim_getByAddress',
+      'claim_getAll'
     ]
   });
 });
