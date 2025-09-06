@@ -7,10 +7,9 @@
     <list default="true" id="30298064-7776-44f1-b341-6aac50a4dc82" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claim-web/packages/nextjs/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/claim-web/packages/nextjs/app/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/claim-web/packages/nextjs/components/Header.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/claim-web/packages/nextjs/components/Header.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/claim-web/packages/nextjs/hooks/scaffold-eth/useScaffoldWriteContract.ts" beforeDir="false" afterPath="$PROJECT_DIR$/claim-web/packages/nextjs/hooks/scaffold-eth/useScaffoldWriteContract.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/rpc-node/src/rpc/handlers.js" beforeDir="false" afterPath="$PROJECT_DIR$/rpc-node/src/rpc/handlers.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rpc-node/src/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/rpc-node/src/server.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rpc-node/src/sheets/operations.js" beforeDir="false" afterPath="$PROJECT_DIR$/rpc-node/src/sheets/operations.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rpc-node/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/rpc-node/yarn.lock" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -82,5 +81,16 @@
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
 </project>

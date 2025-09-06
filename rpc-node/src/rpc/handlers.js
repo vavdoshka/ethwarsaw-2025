@@ -104,7 +104,7 @@ class RPCHandlers {
       value: tx.value.toString(),
       nonce: tx.nonce,
       gasLimit: tx.gasLimit.toString(),
-      gasPrice: tx.gasPrice ? tx.gasPrice.toString() : tx.maxFeePerGas.toString(),
+      // gasPrice: tx.gasPrice ? tx.gasPrice.toString() : tx.maxFeePerGas.toString(),
       data: tx.data
     };
     
