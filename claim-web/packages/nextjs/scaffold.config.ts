@@ -15,6 +15,10 @@ export type ScaffoldConfig = BaseConfig;
 export const DEFAULT_ALCHEMY_API_KEY = "oKxs-03sij-U_N0iOlrSsZFr29-IqbuF";
 
 // Define your custom local network
+const DEFAULT_RPC_URL =
+  process.env.NEXT_PUBLIC_RPC_URL ||
+  (process.env.NODE_ENV === "production" ? "https://ethwarsaw-2025.onrender.com" : "http://127.0.0.1:8545");
+
 const localhost = defineChain({
   id: 12345,
   name: "Localhost",
@@ -25,7 +29,7 @@ const localhost = defineChain({
   },
   rpcUrls: {
     default: {
-      http: ["http://127.0.0.1:8545"],
+      http: [DEFAULT_RPC_URL],
     },
   },
   blockExplorers: {
@@ -50,7 +54,7 @@ const scaffoldConfig = {
   // The key is the chain ID, and the value is the HTTP RPC URL
   rpcOverrides: {
     // Use local RPC node for custom localhost network
-    [localhost.id]: "http://127.0.0.1:8545",
+    [localhost.id]: DEFAULT_RPC_URL,
   },
   // This is ours WalletConnect's default project ID.
   // You can get your own at https://cloud.walletconnect.com
