@@ -96,8 +96,13 @@ export default function App() {
         </header>
 
         <main className="flex-1">
-          {activeTab === "home" && <Home setActiveTab={setActiveTab} />}
-          {activeTab === "features" && <Features setActiveTab={setActiveTab} />}
+          <iframe
+            src="https://ethwarsaw-2025-ui-1.onrender.com/"
+            title="ETH Warsaw 2025 Sheet Drop"
+            className="w-full h-[70vh] rounded-md border border-[var(--app-gray-300)]"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
         </main>
 
         <footer className="mt-2 pt-4 flex justify-center">
