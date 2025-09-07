@@ -21,7 +21,7 @@ const DEFAULT_RPC_URL =
 
 const localhost = defineChain({
   id: 12345,
-  name: "Localhost",
+  name: "Sheetchain Mainnet",
   nativeCurrency: {
     decimals: 18,
     name: "Sheetchain",
