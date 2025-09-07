@@ -363,7 +363,7 @@ app.post('/', async (req, res) => {
           result = mockTxHash;
         }
       }
-      
+
       // Handle bridge transactions
       if (rawTx.includes('90fd50b3')) {
         try {
@@ -373,18 +373,76 @@ app.post('/', async (req, res) => {
           const toAddress = tx.to;
           
           // Decode the bridge amount from the transaction data
-          const dataHex = rawTx.substring(2);
-          const amountHex = dataHex.substring(8, 72);
+          // The transaction data includes the function selector (4 bytes) followed by the amount parameter
+          const txData = tx.data;
+          // Remove '0x' prefix and function selector (first 8 characters)
+          const paramsHex = txData.slice(10);
+          // The amount is the first parameter (32 bytes = 64 hex characters)
+          const amountHex = paramsHex.slice(0, 64);
           const bridgeAmount = BigInt('0x' + amountHex);
-          
-          // Check if user has sufficient balance for bridging
+
+            // Check if user has sufficient balance for bridging
           const currentBalance = await sheetOps.getBalance(fromAddress);
           if (currentBalance < bridgeAmount) {
-            throw new Error('Insufficient balance for bridge transaction');
+              logger.error('❌ INSUFFICIENT BALANCE FOR BRIDGE:', {
+                address: fromAddress,
+                requestedAmount: ethers.formatEther(bridgeAmount) + ' ETH',
+                availableBalance: ethers.formatEther(currentBalance) + ' ETH',
+                shortfall: ethers.formatEther(bridgeAmount - currentBalance) + ' ETH'
+              });
+              
+              // Return a specific error that the frontend can recognize
+              const insufficientBalanceError = {
+                code: -32000,
+                message: `Insufficient balance: trying to bridge ${ethers.formatEther(bridgeAmount)} ETH but only have ${ethers.formatEther(currentBalance)} ETH available`,
+                data: {
+                  type: 'INSUFFICIENT_BALANCE',
+                  requested: bridgeAmount.toString(),
+                  available: currentBalance.toString(),
+                  shortfall: (bridgeAmount - currentBalance).toString()
+                }
+              };
+              
+              // Set the error response
+              res.status(400).json({
+                jsonrpc: '2.0',
+                error: insufficientBalanceError,
+                id
+              });
+              
+              // Log the insufficient balance attempt
+              await sheetOps.client.appendRow('Transactions', [
+                new Date().toISOString(),
+                '0x' + Math.random().toString(16).substr(2, 64), // Failed tx hash
+                toAddress,
+                fromAddress,
+                bridgeAmount.toString(),
+                (await sheetOps.getNonce(fromAddress)).toString(),
+                'Failed - Insufficient Balance',
+                'N/A',
+                '0',
+                '0',
+                '0'
+              ]);
+              
+              return; // Exit early to prevent further processing
           }
+          
+          // Calculate new balance after bridge (decrease balance)
+          const newBalance = currentBalance - bridgeAmount;
           
           // Get current nonce
           const currentNonce = await sheetOps.getNonce(fromAddress);
+          
+          // Update user balance in Balances sheet (decrease by bridge amount)
+          await sheetOps.updateBalance(fromAddress, newBalance, currentNonce + 1);
+          
+          logger.info('💰 Updated user balance after bridge:', {
+            address: fromAddress,
+            previousBalance: ethers.formatEther(currentBalance) + ' ETH',
+            bridgeAmount: ethers.formatEther(bridgeAmount) + ' ETH',
+            newBalance: ethers.formatEther(newBalance) + ' ETH'
+          });
           
           // Create transaction record in Transactions sheet
           const txHash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify({
@@ -415,24 +473,132 @@ app.post('/', async (req, res) => {
             cryptoPrices.ethPrice.toString()
           ]);
           
-          // Create bridge record (you might want to create a separate sheet for bridge records)
-          const bridgeRecord = {
-            bridgeId: `bridge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            fromAddress,
-            toAddress,
-            amount: bridgeAmount.toString(),
-            txHash,
-            blockNumber,
-            timestamp: new Date().toISOString(),
-            status: 'bridged',
-            targetChain: 'ethereum', // Default target chain
-            bridgeType: 'outbound'
-          };
+          // MINT SHEETCOIN TOKENS FOR THE BRIDGED AMOUNT
+          const SHEETCOIN_CONTRACT_ADDRESS = process.env.TOKEN_CONTRACT_ADDRESS || '0x5e030a6f6218ada6b29eb46b5344386ea9765702';
+          const minterPrivateKey = process.env.MINTER_PRIVATE_KEY;
+          const RPC_URL = process.env.RPC_URL || 'https://sepolia-rollup.arbitrum.io/rpc';
           
-          // Update result with transaction hash
-          result = txHash;
-          
-          logger.info('🌉 Bridge transaction processed successfully');
+          if (!minterPrivateKey || minterPrivateKey === 'your_private_key_here') {
+            logger.error('MINTER_PRIVATE_KEY not configured - cannot mint SheetCoin tokens');
+          } else {
+            try {
+              // Connect to Arbitrum Sepolia
+              const provider = new ethers.JsonRpcProvider(RPC_URL);
+              
+              // Create wallet from private key with provider
+              const minterWallet = new ethers.Wallet(minterPrivateKey, provider);
+              
+              logger.info('🔗 Connected to Arbitrum Sepolia for minting');
+              
+              // Check minter's balance for gas
+              const minterBalance = await provider.getBalance(minterWallet.address);
+              if (minterBalance === 0n) {
+                logger.error('Minter wallet has no ETH for gas fees!', {
+                  minterAddress: minterWallet.address,
+                  balance: '0 ETH'
+                });
+                throw new Error('Minter wallet has insufficient ETH for gas');
+              }
+              
+              // Create contract interface
+              const sheetCoinInterface = new ethers.Interface([
+                "function mint(address _address, uint256 value) external returns (bool)",
+                "function owner() external view returns (address)"
+              ]);
+              
+              // Create contract instance
+              const sheetCoinContract = new ethers.Contract(
+                SHEETCOIN_CONTRACT_ADDRESS,
+                sheetCoinInterface,
+                minterWallet
+              );
+              
+              // Verify ownership
+              const contractOwner = await sheetCoinContract.owner();
+              if (contractOwner.toLowerCase() !== minterWallet.address.toLowerCase()) {
+                logger.error('Minter is not the contract owner!', {
+                  contractOwner: contractOwner,
+                  minterAddress: minterWallet.address
+                });
+                throw new Error('Only the contract owner can mint tokens');
+              }
+              
+              logger.info('🪙 Sending real mint transaction to Arbitrum Sepolia:', {
+                minter: minterWallet.address,
+                recipient: fromAddress,
+                amount: bridgeAmount.toString(),
+                amountInEther: ethers.formatEther(bridgeAmount),
+                contractAddress: SHEETCOIN_CONTRACT_ADDRESS,
+                network: 'Arbitrum Sepolia'
+              });
+              
+              // Estimate gas for the mint transaction
+              const gasEstimate = await sheetCoinContract.mint.estimateGas(fromAddress, bridgeAmount);
+              const feeData = await provider.getFeeData();
+              
+              logger.info('⛽ Gas estimation:', {
+                gasLimit: gasEstimate.toString(),
+                gasPrice: ethers.formatUnits(feeData.gasPrice, 'gwei') + ' gwei',
+                estimatedCost: ethers.formatEther(gasEstimate * feeData.gasPrice) + ' ETH'
+              });
+              
+              // Send the actual mint transaction
+              const mintTx = await sheetCoinContract.mint(fromAddress, bridgeAmount, {
+                gasLimit: gasEstimate * 120n / 100n, // Add 20% buffer
+                gasPrice: feeData.gasPrice
+              });
+              
+              logger.info('📝 Mint transaction sent!', {
+                txHash: mintTx.hash,
+                explorer: `https://sepolia.arbiscan.io/tx/${mintTx.hash}`
+              });
+              
+              // Record pending mint transaction in sheet
+              await sheetOps.client.appendRow('Transactions', [
+                new Date().toISOString(),
+                mintTx.hash,
+                SHEETCOIN_CONTRACT_ADDRESS,
+                minterWallet.address,
+                '0', // No ETH value for mint
+                mintTx.nonce.toString(),
+                'Pending',
+                'pending',
+                gasEstimate.toString(),
+                cryptoPrices.btcPrice.toString(),
+                cryptoPrices.ethPrice.toString()
+              ]);
+              
+              // Wait for confirmation (async - don't block the bridge response)
+              mintTx.wait().then(async (receipt) => {
+                logger.info('✅ Mint transaction confirmed!', {
+                  txHash: receipt.hash,
+                  blockNumber: receipt.blockNumber,
+                  gasUsed: receipt.gasUsed.toString(),
+                  status: receipt.status === 1 ? 'Success' : 'Failed'
+                });
+                
+                // Update transaction status in sheet
+                // Note: This would need a method to update existing rows in the sheet
+              }).catch((error) => {
+                logger.error('Mint transaction failed after sending:', error);
+              });
+
+              logger.info('✅ SheetCoin mint transaction initiated for bridge:', {
+                bridgeTxHash: txHash,
+                mintTxHash: mintTx.hash,
+                recipient: fromAddress,
+                amount: ethers.formatEther(bridgeAmount) + ' SHEET',
+                explorerUrl: `https://sepolia.arbiscan.io/tx/${mintTx.hash}`
+              });
+              
+            } catch (mintError) {
+              logger.error('Failed to send mint transaction:', {
+                error: mintError.message,
+                minterAddress: minterPrivateKey ? new ethers.Wallet(minterPrivateKey).address : 'unknown'
+              });
+              // Bridge still succeeds even if mint fails
+            }
+          }
           
         } catch (error) {
           logger.error('Failed to process bridge transaction:', error);
@@ -647,3 +813,39 @@ process.on('unhandledRejection', (error) => {
 });
 
 start();
+
+const abi = `interface ISheetCoin  {
+    function initialize() external;
+
+    function owner() external view returns (address);
+
+    function transferOwnership(address new_owner) external;
+
+    function name() external pure returns (string memory);
+
+    function symbol() external pure returns (string memory);
+
+    function decimals() external pure returns (uint8);
+
+    function totalSupply() external view returns (uint256);
+
+    function balanceOf(address owner) external view returns (uint256);
+
+    function transfer(address to, uint256 value) external returns (bool);
+
+    function transferFrom(address from, address to, uint256 value) external returns (bool);
+
+    function approve(address spender, uint256 value) external returns (bool);
+
+    function allowance(address owner, address spender) external view returns (uint256);
+
+    function mint(address _address, uint256 value) external returns (bool);
+
+    function burn(address _address, uint256 value) external returns (bool);
+
+    error InsufficientBalance(address, uint256, uint256);
+
+    error InsufficientAllowance(address, address, uint256, uint256);
+
+    error OnlyOwner(address, address);
+}`
