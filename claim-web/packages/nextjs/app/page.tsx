@@ -216,7 +216,7 @@ const Home: NextPage = () => {
               {connectedAddress ? (
                 <div className="space-y-4">
                   <div className="text-lg">
-                    <p>Airdrop Amount: 1 SHEET</p>
+                    <p>Airdrop Amount: 5 SHEET</p>
                     <p>Current Claims: {totalClaimants?.toString() || "Loading..."} / 1000</p>
                     <p>Remaining: {totalClaimants ? `${1000 - Number(totalClaimants)}` : "Loading..."}</p>
                   </div>
