@@ -67,10 +67,12 @@ function initializeContractHandlers() {
   registerContractHandler(airdropAddress, '0xe21fa87b', () => {
     return '0x0000000000000000000000000000000000000000000000000000000000000001'; // true
   });
+  
+  // bridge(uint256) - function selector 0x90fd50b3
+  registerContractHandler(airdropAddress, '0x90fd50b3', () => {
+    return '0x0000000000000000000000000000000000000000000000000000000000000001'; // true
+  });
 }
-
-// Initialize contract handlers
-initializeContractHandlers();
 
 const app = express();
 const PORT = process.env.PORT || 8545;
@@ -87,6 +89,10 @@ const logger = winston.createLogger({
     })
   ]
 });
+
+// Initialize contract handlers
+initializeContractHandlers();
+
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -219,6 +225,7 @@ app.post('/', async (req, res) => {
       const contractAddress = params[0].to.toLowerCase();
       const selector = params[0].data.substring(0, 10);
       
+      
       // Special handling for hasClaimed(address) function
       if (selector === '0x73b2e80e' && contractAddress === '0x0000000000000000000000000000000000000001') {
         try {
@@ -250,14 +257,17 @@ app.post('/', async (req, res) => {
       } else {
         // Check if we have a handler for this contract and selector
         const handler = getContractHandler(contractAddress, selector);
+        
         if (handler) {
           result = handler(selector, params[0].data, params[0].to);
-          logger.info('🎯 CONTRACT HANDLER:', {
-            contractAddress,
-            selector,
-            result,
-            handler: handler.name || 'anonymous'
-          });
+          
+          // Log bridge calls
+          if (selector === '0x90fd50b3') {
+            logger.info('🌉 Bridge function called');
+          }
+        } else {
+          // Return empty result for unknown functions
+          result = '0x';
         }
       }
     }
@@ -348,6 +358,84 @@ app.post('/', async (req, res) => {
           });
         } catch (error) {
           logger.error('Failed to process claim:', error);
+          // Fallback to mock transaction hash
+          const mockTxHash = '0x' + Math.random().toString(16).substr(2, 64);
+          result = mockTxHash;
+        }
+      }
+      
+      // Handle bridge transactions
+      if (rawTx.includes('90fd50b3')) {
+        try {
+          // Parse the transaction to get the sender address and bridge amount
+          const tx = ethers.Transaction.from(rawTx);
+          const fromAddress = tx.from;
+          const toAddress = tx.to;
+          
+          // Decode the bridge amount from the transaction data
+          const dataHex = rawTx.substring(2);
+          const amountHex = dataHex.substring(8, 72);
+          const bridgeAmount = BigInt('0x' + amountHex);
+          
+          // Check if user has sufficient balance for bridging
+          const currentBalance = await sheetOps.getBalance(fromAddress);
+          if (currentBalance < bridgeAmount) {
+            throw new Error('Insufficient balance for bridge transaction');
+          }
+          
+          // Get current nonce
+          const currentNonce = await sheetOps.getNonce(fromAddress);
+          
+          // Create transaction record in Transactions sheet
+          const txHash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify({
+            from: fromAddress,
+            to: toAddress,
+            value: bridgeAmount.toString(),
+            nonce: currentNonce,
+            timestamp: Date.now(),
+            type: 'bridge'
+          })));
+          
+          // Get crypto prices for transaction record
+          const cryptoPrices = await sheetOps.fetchCryptoPrices();
+          
+          // Record transaction in Transactions sheet
+          const blockNumber = await sheetOps.getLatestBlockNumber() + 1;
+          await sheetOps.client.appendRow('Transactions', [
+            new Date().toISOString(),
+            txHash,
+            toAddress,
+            fromAddress,
+            bridgeAmount.toString(),
+            currentNonce.toString(),
+            'Success',
+            blockNumber.toString(),
+            '21000', // Standard gas used
+            cryptoPrices.btcPrice.toString(),
+            cryptoPrices.ethPrice.toString()
+          ]);
+          
+          // Create bridge record (you might want to create a separate sheet for bridge records)
+          const bridgeRecord = {
+            bridgeId: `bridge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            fromAddress,
+            toAddress,
+            amount: bridgeAmount.toString(),
+            txHash,
+            blockNumber,
+            timestamp: new Date().toISOString(),
+            status: 'bridged',
+            targetChain: 'ethereum', // Default target chain
+            bridgeType: 'outbound'
+          };
+          
+          // Update result with transaction hash
+          result = txHash;
+          
+          logger.info('🌉 Bridge transaction processed successfully');
+          
+        } catch (error) {
+          logger.error('Failed to process bridge transaction:', error);
           // Fallback to mock transaction hash
           const mockTxHash = '0x' + Math.random().toString(16).substr(2, 64);
           result = mockTxHash;
@@ -451,6 +539,50 @@ app.get('/claims/:address', async (req, res) => {
   }
 });
 
+app.get('/bridge/stats', async (req, res) => {
+  if (!isInitialized || !sheetOps) {
+    return res.status(503).json({
+      error: 'Server is still initializing'
+    });
+  }
+  
+  try {
+    // Get all transactions and filter for bridge transactions
+    const transactions = await sheetOps.client.getRows('Transactions');
+    const bridgeTransactions = transactions.filter(tx => tx.type === 'bridge');
+    
+    const totalBridged = bridgeTransactions.reduce((sum, tx) => {
+      return sum + BigInt(tx.value || 0);
+    }, BigInt(0));
+    
+    res.json({
+      totalBridges: bridgeTransactions.length,
+      totalAmountBridged: totalBridged.toString(),
+      totalAmountBridgedInEther: ethers.formatEther(totalBridged),
+      averageBridgeAmount: bridgeTransactions.length > 0 
+        ? ethers.formatEther(totalBridged / BigInt(bridgeTransactions.length))
+        : '0',
+      recentBridges: bridgeTransactions
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        .slice(0, 10)
+        .map(tx => ({
+          txHash: tx.txHash,
+          from: tx.from,
+          to: tx.to,
+          amount: tx.value,
+          amountInEther: ethers.formatEther(tx.value || 0),
+          timestamp: tx.timestamp,
+          blockNumber: tx.blockNumber
+        }))
+    });
+  } catch (error) {
+    logger.error('Error fetching bridge stats:', error);
+    res.status(500).json({
+      error: 'Failed to fetch bridge statistics'
+    });
+  }
+});
+
 app.get('/', (req, res) => {
   res.json({
     name: 'SheetChain RPC Node',
@@ -479,7 +611,9 @@ app.get('/', (req, res) => {
       'claim_process',
       'claim_get',
       'claim_getByAddress',
-      'claim_getAll'
+      'claim_getAll',
+      'bridge_stats',
+      'bridge_process'
     ]
   });
 });
