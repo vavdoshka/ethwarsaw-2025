@@ -5,6 +5,7 @@ import type { NextPage } from "next";
 import { useAccount } from "wagmi";
 import { useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 import { parseEther } from "viem";
+import AddNetworkButton from "~~/components/AddNetworkButton";
 
 const Home: NextPage = () => {
   const { address: connectedAddress } = useAccount();
@@ -200,6 +201,10 @@ const Home: NextPage = () => {
             <span className="block text-2xl mb-2">Welcome to</span>
             <span className="block text-4xl font-bold">ETH Warsaw 2025 SHEET drop</span>
           </h1>
+          <div className="flex flex-col items-center mt-4 space-y-2">
+            <p className="text-sm text-base-content/70">First time? Add the Sheet Chain network to MetaMask:</p>
+            <AddNetworkButton className="btn-primary" />
+          </div>
         </div>
 
         <div className="grow bg-base-300 w-full mt-16 px-8 py-12">

@@ -14,3 +14,11 @@ declare module "~~/node_modules/viem/node_modules/abitype" {
     AddressType: AddressType;
   }
 }
+
+// MetaMask types
+interface Window {
+  ethereum?: {
+    request: (args: { method: string; params?: any[] }) => Promise<any>;
+    isMetaMask?: boolean;
+  };
+}
