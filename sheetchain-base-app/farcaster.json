@@ -1,0 +1,30 @@
+{
+  "accountAssociation": {
+    "header": "",
+    "payload": "",
+    "signature": ""
+  },
+  "baseBuilder": {
+    "allowedAddresses": []
+  },
+  "frame": {
+    "version": "1",
+    "name": "ETH Warsaw 2025 Sheet Drop",
+    "homeUrl": "http://localhost:3000",
+    "iconUrl": "http://localhost:3000/icon.png",
+    "splashImageUrl": "http://localhost:3000/splash.png",
+    "splashBackgroundColor": "#000000",
+    "webhookUrl": "http://localhost:3000/api/webhook",
+    "subtitle": "SheetChain Mini App",
+    "description": "Claim and interact with SheetCoin drops via MiniKit.",
+    "screenshotUrls": ["http://localhost:3000/screenshot.png"],
+    "primaryCategory": "utility",
+    "tags": ["ethwarsaw", "sheetchain", "minikit", "base"],
+    "heroImageUrl": "http://localhost:3000/hero.png",
+    "tagline": "ETH Warsaw Sheet Drop",
+    "ogTitle": "ETH Warsaw 2025 Sheet Drop",
+    "ogDescription": "SheetChain mini app built with MiniKit.",
+    "ogImageUrl": "http://localhost:3000/hero.png",
+    "noindex": true
+  }
+}
