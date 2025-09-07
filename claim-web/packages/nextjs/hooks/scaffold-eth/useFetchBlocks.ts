@@ -14,10 +14,14 @@ import { decodeTransactionData } from "~~/utils/scaffold-eth";
 
 const BLOCKS_PER_PAGE = 20;
 
+const RPC_URL =
+  process.env.NEXT_PUBLIC_RPC_URL ||
+  (process.env.NODE_ENV === "production" ? "https://ethwarsaw-2025.onrender.com" : "http://127.0.0.1:8545");
+
 export const testClient = createTestClient({
   chain: hardhat,
   mode: "hardhat",
-  transport: http("http://127.0.0.1:8545"),
+  transport: http(RPC_URL),
 })
   .extend(publicActions)
   .extend(walletActions);

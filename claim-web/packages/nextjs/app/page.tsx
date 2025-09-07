@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { NextPage } from "next";
 import { useAccount } from "wagmi";
 import { useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
-import { parseEther, formatEther } from "viem";
+import { parseEther } from "viem";
 
 const Home: NextPage = () => {
   const { address: connectedAddress } = useAccount();
