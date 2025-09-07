@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { NextPage } from "next";
 import { useAccount } from "wagmi";
 import { useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
+import { parseEther, formatEther } from "viem";
 
 const Home: NextPage = () => {
   const { address: connectedAddress } = useAccount();
@@ -11,6 +12,10 @@ const Home: NextPage = () => {
   // Generate random claim amount between 0.001 and 0.1 ETH
   const [hasClaimed, setHasClaimed] = useState<boolean>(false);
   const [checkingClaim, setCheckingClaim] = useState<boolean>(false);
+  
+  // Bridge functionality state
+  const [bridgeAmount, setBridgeAmount] = useState<string>("");
+  const [isBridging, setIsBridging] = useState<boolean>(false);
 
   
 
@@ -47,6 +52,16 @@ const Home: NextPage = () => {
     functionName: "totalClaimants",
   });
 
+  // Test read from external contract to verify it's working
+  const {
+    data: ownerData,
+    isLoading: ownerLoading,
+    error: ownerError,
+  } = useScaffoldReadContract({
+    contractName: "EthWarsaw2025Airdrop",
+    functionName: "owner",
+  });
+
   // Debug: Log contract responses
   useEffect(() => {
     console.log("📊 DEBUG: Contract call results:");
@@ -60,12 +75,67 @@ const Home: NextPage = () => {
       loading: hasClaimedLoading,
       address: connectedAddress,
     });
-  }, [totalClaimants, totalClaimantsLoading, totalClaimantsError, hasClaimedData, hasClaimedLoading, connectedAddress]);
+    console.log("owner (external contract test):", {
+      data: ownerData,
+      loading: ownerLoading,
+      error: ownerError,
+    });
+  }, [totalClaimants, totalClaimantsLoading, totalClaimantsError, hasClaimedData, hasClaimedLoading, connectedAddress, ownerData, ownerLoading, ownerError]);
 
-  // Write contract function
+  // Write contract function for airdrop
   const { writeContractAsync: writeEthWarsawAirdropAsync } = useScaffoldWriteContract({
     contractName: "EthWarsaw2025Airdrop",
   });
+
+  // Write contract function for bridge (external contract)
+  const { writeContractAsync: writeBridgeAsync } = useScaffoldWriteContract({
+    contractName: "EthWarsaw2025Airdrop",
+  });
+
+  // Bridge function handler
+  const handleBridge = async () => {
+    if (!bridgeAmount || isNaN(Number(bridgeAmount)) || Number(bridgeAmount) <= 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
+
+    setIsBridging(true);
+    console.log("🌉 DEBUG: Attempting to bridge", bridgeAmount, "SHEET");
+    console.log("🌉 DEBUG: Using external contract address: 0x0000000000000000000000000000000000000001");
+    console.log("🌉 DEBUG: Function: bridge(uint256 value)");
+    console.log("🌉 DEBUG: Parsed amount:", parseEther(bridgeAmount).toString());
+
+    try {
+      const txResult = await writeBridgeAsync({
+        functionName: "bridge",
+        args: [parseEther(bridgeAmount)],
+      });
+      
+      console.log("✅ DEBUG: Bridge transaction submitted successfully");
+      console.log("Transaction Result:", txResult);
+      
+      alert("✅ Bridge transaction submitted successfully!");
+      setBridgeAmount(""); // Clear the input
+      
+    } catch (error: any) {
+      console.error("❌ DEBUG: Error bridging:", error);
+      console.error("Error details:", {
+        message: error?.message,
+        code: error?.code,
+        data: error?.data,
+        cause: error?.cause,
+      });
+      
+      if (error?.message?.includes("User rejected")) {
+        console.log("User cancelled the transaction");
+      } else {
+        alert("❌ Error bridging tokens. Please try again.");
+        console.error("Unexpected error during bridge:", error);
+      }
+    } finally {
+      setIsBridging(false);
+    }
+  };
 
   const handleClaim = async () => {
     console.log("🚀 DEBUG: Attempting to claim airdrop");
@@ -133,7 +203,8 @@ const Home: NextPage = () => {
         </div>
 
         <div className="grow bg-base-300 w-full mt-16 px-8 py-12">
-          <div className="flex justify-center items-center">
+          <div className="flex justify-center items-center gap-8">
+            {/* Airdrop Panel */}
             <div className="flex flex-col bg-base-100 px-10 py-10 text-center items-center max-w-md rounded-3xl">
               <h2 className="text-2xl font-bold mb-4">Claim Your Airdrop</h2>
 
@@ -173,6 +244,45 @@ const Home: NextPage = () => {
               ) : (
                 <div className="text-center">
                   <p className="text-lg mb-4">Please connect your wallet to claim airdrop</p>
+                </div>
+              )}
+            </div>
+
+            {/* Bridge Panel */}
+            <div className="flex flex-col bg-base-100 px-10 py-10 text-center items-center max-w-md rounded-3xl">
+              <h2 className="text-2xl font-bold mb-4">Bridge SHEET Tokens</h2>
+
+              {connectedAddress ? (
+                <div className="space-y-4 w-full">
+                  <div className="text-lg">
+                    <p>Bridge your SHEET tokens to another chain</p>
+                  </div>
+
+                  <div className="form-control w-full">
+                    <label className="label">
+                      <span className="label-text">Amount (SHEET)</span>
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Enter amount"
+                      className="input input-bordered w-full"
+                      value={bridgeAmount}
+                      onChange={(e) => setBridgeAmount(e.target.value)}
+                      min="0"
+                      step="0.000001"
+                    />
+                  </div>
+
+                  <button 
+                    className={`btn btn-lg w-full ${isBridging ? "btn-disabled" : "btn-secondary"}`}
+                    onClick={handleBridge}
+                    disabled={isBridging || !bridgeAmount || isNaN(Number(bridgeAmount)) || Number(bridgeAmount) <= 0}>
+                    {isBridging ? "Bridging..." : "BRIDGE"}
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <p className="text-lg mb-4">Please connect your wallet to bridge tokens</p>
                 </div>
               )}
             </div>
