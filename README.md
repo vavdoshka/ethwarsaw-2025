@@ -23,6 +23,7 @@ ledger - https://docs.google.com/spreadsheets/d/1SgFDDfi4GsWQfjaXUPzdJJnRN7t8TjW
 
 
 Sponsors:
+
 **Arbitrum**: We've developed a token on Arbitrum Stylus using Rust, and we've also built a bridge.
 
 **Golem DB**: We've implemented the storage of spreadsheet data in Golem DB on the Golem testnet.
