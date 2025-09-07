@@ -17,7 +17,9 @@ From there you get:
 
 
 GitHub - https://github.com/vavdoshka/ethwarsaw-2025/
+
 Website - https://ethwarsaw-2025-ui-1.onrender.com/
+
 ledger - https://docs.google.com/spreadsheets/d/1SgFDDfi4GsWQfjaXUPzdJJnRN7t8TjWpHwRXP-9dMfg/edit?usp=sharing
 
 
