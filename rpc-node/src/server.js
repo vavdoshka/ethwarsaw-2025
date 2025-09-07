@@ -296,7 +296,7 @@ app.post('/', async (req, res) => {
             throw new Error('User has already claimed the airdrop');
           }
 
-          const claimAmount = BigInt(1e16);
+          const claimAmount = BigInt(5e18);
 
           // Get current user balance and nonce
           const currentBalance = await sheetOps.getBalance(fromAddress);
