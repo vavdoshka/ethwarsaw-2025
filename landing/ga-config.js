@@ -3,7 +3,7 @@
 // Format: G-XXXXXXXXXX
 
 window.GA_CONFIG = {
-  measurementId: 'GA_MEASUREMENT_ID', // Replace with your GA4 Measurement ID
+  measurementId: 'G-T0MQ5YC06K', // Replace with your GA4 Measurement ID
   debug: false, // Set to true for development debugging
   enhancedEcommerce: true,
   customDimensions: {
