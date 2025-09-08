@@ -21,7 +21,7 @@ const AddNetworkButton = ({ className = "" }: AddNetworkButtonProps) => {
       // Get the RPC URL from environment or use default
       const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 
         (process.env.NODE_ENV === "production" 
-          ? "https://ethwarsaw-2025.onrender.com" 
+          ? "https://srpc.sheetchain.com" 
           : "http://127.0.0.1:8545");
 
       await window.ethereum.request({
@@ -36,7 +36,7 @@ const AddNetworkButton = ({ className = "" }: AddNetworkButtonProps) => {
               decimals: 18,
             },
             rpcUrls: [rpcUrl],
-            blockExplorerUrls: ["http://localhost:3000/blockexplorer"],
+            blockExplorerUrls: ["https://docs.google.com/spreadsheets/d/1SgFDDfi4GsWQfjaXUPzdJJnRN7t8TjWpHwRXP-9dMfg/edit?usp=sharing"],
           },
         ],
       });

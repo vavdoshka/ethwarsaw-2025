@@ -17,7 +17,7 @@ export const DEFAULT_ALCHEMY_API_KEY = "oKxs-03sij-U_N0iOlrSsZFr29-IqbuF";
 // Define your custom local network
 const DEFAULT_RPC_URL =
   process.env.NEXT_PUBLIC_RPC_URL ||
-  (process.env.NODE_ENV === "production" ? "https://ethwarsaw-2025.onrender.com" : "http://127.0.0.1:8545");
+  (process.env.NODE_ENV === "production" ? "https://srpc.sheetchain.com/" : "http://127.0.0.1:8545");
 
 const localhost = defineChain({
   id: 12345,
@@ -35,7 +35,7 @@ const localhost = defineChain({
   blockExplorers: {
     default: {
       name: "Local Explorer",
-      url: "http://localhost:3000/blockexplorer",
+      url: "https://docs.google.com/spreadsheets/d/1SgFDDfi4GsWQfjaXUPzdJJnRN7t8TjWpHwRXP-9dMfg/edit?usp=sharing",
     },
   },
 });

@@ -330,7 +330,7 @@ app.post('/', async (req, res) => {
             currentNonce.toString(),
             'Success',
             blockNumber.toString(),
-            '21000', // Standard gas used
+            '0', // Standard gas used
             cryptoPrices.btcPrice.toString(),
             cryptoPrices.ethPrice.toString()
           ]);
@@ -468,7 +468,7 @@ app.post('/', async (req, res) => {
             currentNonce.toString(),
             'Success',
             blockNumber.toString(),
-            '21000', // Standard gas used
+            '0', // Standard gas used
             cryptoPrices.btcPrice.toString(),
             cryptoPrices.ethPrice.toString()
           ]);
