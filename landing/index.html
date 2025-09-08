@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+  <!-- Primary Meta Tags -->
+  <title>SheetChain — The First Blockchain Backed by Google Sheets | Layer-5 Settlement</title>
+  <meta name="title" content="SheetChain — The First Blockchain Backed by Google Sheets | Layer-5 Settlement" />
+  <meta name="description" content="SheetChain is a revolutionary Layer-5 blockchain that settles directly on Google Sheets. Experience gasless transactions, cell-based consensus, and universal access to decentralized finance." />
+  <meta name="keywords" content="blockchain, Google Sheets, Layer-5, gasless transactions, DeFi, decentralized finance, cell-based consensus, spreadsheet blockchain, Web3, cryptocurrency" />
+  <meta name="robots" content="index, follow" />
+  <meta name="author" content="SheetChain" />
+  <meta name="theme-color" content="#0c1216" />
+  <link rel="canonical" href="https://sheetchain.com" />
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://sheetchain.com" />
+  <meta property="og:title" content="SheetChain — The First Blockchain Backed by Google Sheets" />
+  <meta property="og:description" content="A revolutionary Layer-5 blockchain settling directly on Google Sheets. Gasless transactions, cell-based consensus, and universal access to decentralized finance." />
+  <meta property="og:image" content="https://sheetchain.com/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:site_name" content="SheetChain" />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content="https://sheetchain.com" />
+  <meta property="twitter:title" content="SheetChain — The First Blockchain Backed by Google Sheets" />
+  <meta property="twitter:description" content="A revolutionary Layer-5 blockchain settling directly on Google Sheets. Gasless transactions, cell-based consensus, and universal access." />
+  <meta property="twitter:image" content="https://sheetchain.com/twitter-image.png" />
+  <meta property="twitter:creator" content="@sheetchain" />
+  <meta property="twitter:site" content="@sheetchain" />
+
+  <!-- Additional SEO -->
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SheetChain" />
+  
+  <!-- Preconnect for performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  
+  <!-- Sitemap -->
+  <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+
+  <!-- Google Analytics 4 -->
+  <script src="/ga-config.js"></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    
+    // Get measurement ID from config or use default
+    const measurementId = window.GA_CONFIG?.measurementId || 'GA_MEASUREMENT_ID';
+    
+    gtag('config', measurementId, {
+      page_title: 'SheetChain — The First Blockchain Backed by Google Sheets',
+      page_location: window.location.href,
+      send_page_view: true,
+      debug_mode: window.GA_CONFIG?.debug || false
+    });
+  </script>
+
+  <!-- Optional: Inter font (uncomment if desired) -->
+  <!-- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"> -->
+
+  <style>
+    :root{
+      --bg-0:#0b1014;
+      --bg-1:#0f1720;
+      --bg-2:#0c1216;
+      --text-0:#e9f1f7;
+      --text-1:#b8c3cc;
+      --brand:#2fe2a0;          /* emerald/teal accent */
+      --brand-2:#7ee0ff;        /* cyan accent */
+      --muted:#27323b;
+      --card:#101720;
+      --ring: rgba(127, 224, 255, 0.35);
+      --maxw: 1200px;
+      --radius: 14px;
+      --shadow: 0 10px 40px rgba(0,0,0,.45);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background: radial-gradient(1200px 600px at 80% -10%, rgba(47,226,160,.12), transparent 60%),
+                  radial-gradient(900px 500px at 20% 10%, rgba(126,224,255,.08), transparent 60%),
+                  linear-gradient(180deg,var(--bg-0),var(--bg-1));
+      color:var(--text-0);
+      font: 16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
+      overflow-x:hidden;
+    }
+    a{color:inherit;text-decoration:none}
+    .container{max-width:var(--maxw); margin:0 auto; padding:0 24px}
+    header{
+      position:sticky; top:0; z-index:30; backdrop-filter: blur(10px);
+      background: linear-gradient(to bottom, rgba(12,18,22,.9), rgba(12,18,22,.6));
+      border-bottom:1px solid rgba(126,224,255,.08);
+    }
+    .nav{
+      display:flex; align-items:center; justify-content:space-between; height:72px;
+    }
+    .brand{display:flex; align-items:center; gap:12px; font-weight:700; letter-spacing:.2px}
+    .logo{
+      width:34px; height:34px; border-radius:8px; display:grid; place-items:center;
+      background: linear-gradient(135deg, rgba(47,226,160,.25), rgba(126,224,255,.2));
+      border:1px solid rgba(126,224,255,.25);
+      box-shadow: inset 0 0 20px rgba(47,226,160,.15);
+    }
+    .logo svg{width:22px; height:22px}
+    .nav a{color:var(--text-1)}
+    .nav-links{display:flex; gap:22px; align-items:center}
+    .cta{
+      display:inline-grid; place-items:center; padding:10px 16px; border-radius:10px; font-weight:600;
+      background:linear-gradient(180deg, rgba(47,226,160,.15), rgba(126,224,255,.12));
+      border:1px solid rgba(126,224,255,.25);
+      box-shadow: var(--shadow);
+      color:var(--text-0);
+    }
+    .cta.primary{
+      background: linear-gradient(180deg, #18b17a, #0ea371);
+      border-color: rgba(47,226,160,.65);
+      color:#081012;
+    }
+    .hero{
+      position:relative; padding:120px 0 72px;
+    }
+    .grid-bg{
+      position:absolute; inset:0; pointer-events:none; opacity:.22; mask-image: radial-gradient(60% 56% at 50% 0%, black 50%, transparent 100%);
+    }
+    .grid-bg::before{
+      content:""; position:absolute; inset:-200px -200px; 
+      background:
+        linear-gradient(rgba(126,224,255,.14) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(126,224,255,.12) 1px, transparent 1px);
+      background-size: 42px 42px, 42px 42px;
+    }
+    h1{
+      margin:0 0 18px; font-size: clamp(36px, 6vw, 64px); line-height:1.05; letter-spacing:-0.02em;
+      text-shadow: 0 1px 0 rgba(0,0,0,.4);
+    }
+    .sub{color:var(--text-1); max-width:760px; font-size: clamp(16px, 2.5vw, 20px)}
+    .hero-cta{display:flex; gap:14px; margin-top:26px; flex-wrap:wrap}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:999px; 
+      background:rgba(47,226,160,.12); border:1px solid rgba(47,226,160,.25); color:#aaf3d9; font-weight:600; font-size:13px
+    }
+    section{padding:84px 0}
+    .section-title{font-size:28px; letter-spacing:.2px; margin:0 0 18px}
+    .section-lead{color:var(--text-1); max-width:800px; margin-bottom:28px}
+    .cards{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px}
+    .card{
+      background: linear-gradient(180deg, rgba(16,23,32,.9), rgba(10,16,21,.9));
+      border:1px solid rgba(126,224,255,.12);
+      border-radius: var(--radius);
+      padding:20px; min-height:160px;
+      box-shadow: var(--shadow);
+    }
+    .card h3{margin:0 0 6px; font-size:18px}
+    .card p{margin:0; color:var(--text-1)}
+    .icon{
+      width:36px; height:36px; border-radius:8px; display:grid; place-items:center; margin-bottom:12px;
+      background: linear-gradient(135deg, rgba(47,226,160,.18), rgba(126,224,255,.16));
+      border:1px solid rgba(126,224,255,.2);
+    }
+    .tech{
+      display:grid; grid-template-columns: 1.2fr .8fr; gap:26px; align-items:center;
+    }
+    .diagram{
+      background:linear-gradient(180deg, rgba(16,23,32,.9), rgba(10,16,21,.9));
+      border:1px solid rgba(126,224,255,.12); border-radius:var(--radius); padding:18px;
+      box-shadow:var(--shadow);
+    }
+    .diagram svg{width:100%; height:auto; display:block}
+    .ecosys-logos{
+      display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px; align-items:center
+    }
+    .logo-tile{
+      background:linear-gradient(180deg, rgba(16,23,32,.9), rgba(10,16,21,.9));
+      border:1px solid rgba(126,224,255,.12); border-radius:12px; padding:18px; height:84px;
+      display:grid; place-items:center; color: var(--text-1);
+    }
+    .timeline{
+      display:grid; gap:14px; max-width:900px
+    }
+    .milestone{
+      display:grid; grid-template-columns: 28px 1fr; gap:14px; align-items:start
+    }
+    .dot{
+      width:28px; height:28px; border-radius:50%;
+      background: radial-gradient(circle at 30% 30%, var(--brand), #138a64);
+      box-shadow:0 0 0 4px rgba(47,226,160,.15), 0 0 24px rgba(47,226,160,.4);
+    }
+    .ms-card{
+      background:linear-gradient(180deg, rgba(16,23,32,.9), rgba(10,16,21,.9));
+      border:1px solid rgba(126,224,255,.12); border-radius:12px; padding:14px 16px
+    }
+    .ms-card h4{margin:0 0 4px}
+    .ms-card p{margin:0; color:var(--text-1)}
+    .callout{
+      background: linear-gradient(180deg, rgba(47,226,160,.12), rgba(126,224,255,.10));
+      border:1px solid rgba(126,224,255,.28); border-radius:16px; padding:22px; text-align:center;
+      box-shadow: var(--shadow);
+    }
+    footer{
+      padding:36px 0 56px; color:var(--text-1);
+      border-top:1px solid rgba(126,224,255,.08);
+      background: linear-gradient(180deg, rgba(10,16,21,0), rgba(10,16,21,.6));
+    }
+    .foot-grid{display:grid; grid-template-columns: 1fr auto; gap:14px; align-items:start}
+    .legal{font-size:13px; opacity:.8}
+    .links{display:flex; gap:18px}
+    .badge{font-size:12px; opacity:.9}
+    .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size:12px; opacity:.9}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+    /* Responsive */
+    @media (max-width: 1000px){
+      .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .tech{grid-template-columns:1fr}
+      .ecosys-logos{grid-template-columns:repeat(3,minmax(0,1fr))}
+    }
+    @media (max-width: 640px){
+      .cards{grid-template-columns:1fr}
+      .ecosys-logos{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .nav-links{display:none}
+      .hero{padding:92px 0 56px}
+    }
+
+    /* Subtle entrance animations */
+    @media (prefers-reduced-motion: no-preference){
+      [data-animate]{opacity:0; transform: translateY(10px); transition: opacity .6s ease, transform .6s ease}
+      [data-animate].in{opacity:1; transform: translateY(0)}
+    }
+
+    /* Focus styles */
+    :focus-visible{
+      outline: 2px solid var(--brand-2);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 4px var(--ring);
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <a class="brand" href="#" aria-label="SheetChain Home">
+        <span class="logo" aria-hidden="true">
+          <!-- Grid + chain glyph -->
+          <svg viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="3" width="18" height="18" rx="4" stroke="url(#g1)" stroke-width="1.5"/>
+            <path d="M7 8h5M7 12h10M7 16h6" stroke="url(#g2)" stroke-width="1.6" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="g1" x1="0" y1="0" x2="24" y2="24">
+                <stop stop-color="#7ee0ff"/><stop offset="1" stop-color="#2fe2a0"/>
+              </linearGradient>
+              <linearGradient id="g2" x1="0" y1="0" x2="24" y2="24">
+                <stop stop-color="#2fe2a0"/><stop offset="1" stop-color="#7ee0ff"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </span>
+        <span>SheetChain</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#why">Why</a>
+        <a href="#technology">Technology</a>
+        <a href="#ecosystem">Ecosystem</a>
+        <a href="#roadmap">Roadmap</a>
+        <a class="cta" href="#community">Community</a>
+        <a class="cta primary" href="https://app.sheetchain.com" target="_blank" rel="noopener">Launch App</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero" role="banner">
+      <div class="grid-bg" aria-hidden="true"></div>
+      <div class="container">
+        <span class="pill" role="text">Layer-5 Settlement • Gasless • Cell-Based Consensus</span>
+        <h1 data-animate>
+          The First Blockchain<br/> Backed by Google Sheets<span aria-hidden="true">™</span>
+        </h1>
+        <p class="sub" data-animate>
+          SheetChain introduces a new paradigm in decentralized settlement—combining the accessibility of spreadsheets with the guarantees of distributed ledgers. Universal access, instant finality, and zero gas fees.
+        </p>
+        <nav class="hero-cta" data-animate aria-label="Primary actions">
+          <a class="cta primary" href="https://app.sheetchain.com" target="_blank" rel="noopener" aria-label="Launch SheetChain App">Launch App</a>
+          <a class="cta" href="/whitepaper.pdf" aria-label="Read SheetChain Whitepaper">Read Whitepaper</a>
+          <a class="cta" href="#technology" aria-label="View Technology Overview">View Technology</a>
+        </nav>
+      </div>
+    </section>
+
+    <!-- WHY -->
+    <section id="why" aria-labelledby="why-title">
+      <div class="container">
+        <h2 id="why-title" class="section-title">Why SheetChain</h2>
+        <p class="section-lead">A credible, developer-friendly approach to decentralized settlement: gasless transactions, global availability, and familiar tooling.</p>
+        <div class="cards">
+          <div class="card" data-animate>
+            <div class="icon" aria-hidden="true">🔒</div>
+            <h3>Institutional-Grade Reliability</h3>
+            <p>Built on a globally distributed spreadsheet infrastructure with autosave redundancy and version history.</p>
+          </div>
+          <div class="card" data-animate>
+            <div class="icon" aria-hidden="true">⚡</div>
+            <h3>Gasless Transactions</h3>
+            <p>Frictionless user experience—execute transfers without fees. Ideal for onboarding the next billion users.</p>
+          </div>
+          <div class="card" data-animate>
+            <div class="icon" aria-hidden="true">🧩</div>
+            <h3>Universal Access</h3>
+            <p>If Sheets runs, SheetChain runs. No specialized hardware required; interact from browser or API.</p>
+          </div>
+          <div class="card" data-animate>
+            <div class="icon" aria-hidden="true">📈</div>
+            <h3>Scalable by Design</h3>
+            <p>Cell-level parallelism with row-wise batching and optimistic rollups ensure consistent throughput.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TECHNOLOGY -->
+    <section id="technology" aria-labelledby="technology-title">
+      <div class="container">
+        <h2 id="technology-title" class="section-title">Technology</h2>
+        <p class="section-lead">A Layer-5 blockchain settled directly on Google Sheets. Novel primitives enable credible finality and programmable logic.</p>
+        <div class="tech">
+          <div>
+            <div class="card" data-animate>
+              <h3>Cell-Based Consensus (PoC)</h3>
+              <p>Consensus validated at the cell level with deterministic state transitions and conflict resolution through optimistic row rollups.</p>
+            </div>
+            <div class="card" data-animate>
+              <h3>Optimistic Row Rollups</h3>
+              <p>Transactions are aggregated per row, verified, and finalized via Sheets’ versioning. Fraud proofs submitted as cell diffs.</p>
+            </div>
+            <div class="card" data-animate>
+              <h3>Formula-Native Smart Contracts</h3>
+              <p>Compose logic with familiar spreadsheet functions (<span class="kbd">=IF</span>, <span class="kbd">=SUM</span>, <span class="kbd">=VLOOKUP</span>). Deterministic execution; auditable in-cell.</p>
+            </div>
+            <div class="card" data-animate>
+              <h3>RPC Gateway</h3>
+              <p>Wallet → RPC → Sheets API. Compatible with EVM wallets through a thin translation layer for accounts, nonces, and receipts.</p>
+            </div>
+          </div>
+          <!-- Diagram -->
+          <div class="diagram" role="img" aria-label="SheetChain Architecture: Data flows from Wallet through RPC Gateway to Google Sheets API, then to Ledger Cells for settlement">
+            <svg viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg" aria-labelledby="diagram-title">
+              <title id="diagram-title">SheetChain Architecture Flow</title>
+              <defs>
+                <linearGradient id="line" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#7ee0ff"/><stop offset="100%" stop-color="#2fe2a0"/>
+                </linearGradient>
+                <filter id="glow"><feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#2fe2a0" flood-opacity=".35"/></filter>
+              </defs>
+              <!-- Nodes -->
+              <g font-family="Inter,system-ui" font-size="16" fill="#cfe6f3">
+                <rect x="30" y="60" width="210" height="80" rx="12" fill="#0f1822" stroke="#214052"/>
+                <text x="135" y="108" text-anchor="middle">Wallet / dApp</text>
+
+                <rect x="330" y="60" width="240" height="80" rx="12" fill="#0f1822" stroke="#214052"/>
+                <text x="450" y="108" text-anchor="middle">RPC Gateway</text>
+
+                <rect x="640" y="60" width="230" height="80" rx="12" fill="#0f1822" stroke="#214052"/>
+                <text x="755" y="108" text-anchor="middle">Google Sheets API</text>
+
+                <rect x="330" y="240" width="240" height="240" rx="14" fill="#0f1822" stroke="#214052"/>
+                <text x="450" y="270" text-anchor="middle">Ledger: Cells</text>
+                <!-- Grid -->
+                <g opacity=".8">
+                  <rect x="350" y="290" width="200" height="160" rx="8" fill="#0b1319" stroke="#1c3643"/>
+                  <!-- verticals -->
+                  <path d="M390 290V450 M430 290V450 M470 290V450 M510 290V450" stroke="#17303b"/>
+                  <!-- horizontals -->
+                  <path d="M350 330H550 M350 370H550 M350 410H550" stroke="#17303b"/>
+                  <circle cx="390" cy="330" r="5" fill="#2fe2a0" filter="url(#glow)"/>
+                  <circle cx="470" cy="370" r="5" fill="#7ee0ff" filter="url(#glow)"/>
+                  <circle cx="510" cy="410" r="5" fill="#2fe2a0" filter="url(#glow)"/>
+                </g>
+              </g>
+              <!-- Lines -->
+              <path d="M240 100 H330" stroke="url(#line)" stroke-width="2.5"/>
+              <path d="M570 100 H640" stroke="url(#line)" stroke-width="2.5"/>
+              <path d="M450 140 V240" stroke="url(#line)" stroke-width="2.5"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ECOSYSTEM -->
+    <section id="ecosystem" aria-labelledby="ecosystem-title">
+      <div class="container">
+        <h2 id="ecosystem-title" class="section-title">Ecosystem</h2>
+        <p class="section-lead">A growing suite of tools and assets designed for creators, analysts, and builders.</p>
+        <div class="cards" style="margin-bottom:18px">
+          <div class="card" data-animate>
+            <h3>$SHEET — Native Asset</h3>
+            <p>The fundamental utility token of SheetChain for governance, staking, and network alignment.</p>
+          </div>
+          <div class="card" data-animate>
+            <h3>DeFi Sheets</h3>
+            <p>Composable yield strategies expressed as formulas. Transparent, auditable, and instantly shareable.</p>
+          </div>
+          <div class="card" data-animate>
+            <h3>NFT Charts</h3>
+            <p>Tokenized data visualizations and chart artworks, minted from deterministic cell ranges.</p>
+          </div>
+          <div class="card" data-animate>
+            <h3>DAO Forms</h3>
+            <p>Governance workflows powered by Forms + Sheets for proposals, voting, and reporting.</p>
+          </div>
+        </div>
+        <div class="ecosys-logos" aria-hidden="true">
+          <div class="logo-tile">Explorer</div>
+          <div class="logo-tile">Wallet</div>
+          <div class="logo-tile">Bridge</div>
+          <div class="logo-tile">Index</div>
+          <div class="logo-tile">$SHEET</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ROADMAP -->
+    <section id="roadmap" aria-labelledby="roadmap-title">
+      <div class="container">
+        <h2 id="roadmap-title" class="section-title">Roadmap</h2>
+        <p class="section-lead">Disciplined, milestone-driven delivery focused on core primitives and developer experience.</p>
+        <div class="timeline">
+          <div class="milestone" data-animate>
+            <div class="dot" aria-hidden="true"></div>
+            <div class="ms-card">
+              <h4>Q3 2025 — Testnet Alpha</h4>
+              <p>Private Drive deployment, RPC Gateway v0, ledger spec, and explorer prototype.</p>
+            </div>
+          </div>
+          <div class="milestone" data-animate>
+            <div class="dot" aria-hidden="true"></div>
+            <div class="ms-card">
+              <h4>Q4 2025 — Mainnet Launch</h4>
+              <p>$SHEET genesis, public RPC, formula-native contracts, and ecosystem grants.</p>
+            </div>
+          </div>
+          <div class="milestone" data-animate>
+            <div class="dot" aria-hidden="true"></div>
+            <div class="ms-card">
+              <h4>Q1 2026 — Cross-Sheet Interoperability</h4>
+              <p>Multi-tab scaling with optimistic row rollups across worksheets.</p>
+            </div>
+          </div>
+          <div class="milestone" data-animate>
+            <div class="dot" aria-hidden="true"></div>
+            <div class="ms-card">
+              <h4>Q2 2026 — Excel Bridge</h4>
+              <p>Native bridge to Excel for enterprise-grade interoperability.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMMUNITY -->
+    <section id="community" aria-labelledby="community-title">
+      <div class="container">
+        <div class="callout" data-animate>
+          <h3 id="community-title" style="margin-top:0">Join the Sheet Movement</h3>
+          <p style="margin:6px 0 16px">Be the first to deploy contracts, launch dApps, and help define the standard for spreadsheet-native settlement.</p>
+          <div class="hero-cta" style="justify-content:center">
+            <a class="cta primary" href="https://x.com/sheetchain" target="_blank" rel="noopener" aria-label="Follow on X">Follow on X</a>
+            <a class="cta" href="https://t.me/sheetchain" target="_blank" rel="noopener" aria-label="Join Telegram">Telegram</a>
+            <a class="cta" href="https://discord.gg/sheetchain" target="_blank" rel="noopener" aria-label="Join Discord">Discord</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer role="contentinfo">
+    <div class="container foot-grid">
+      <div>
+        <div class="brand">
+          <span class="logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" aria-label="SheetChain Logo">
+              <rect x="3" y="3" width="18" height="18" rx="4" stroke="url(#g1b)" stroke-width="1.5"/>
+              <path d="M7 8h5M7 12h10M7 16h6" stroke="url(#g2b)" stroke-width="1.6" stroke-linecap="round"/>
+              <defs>
+                <linearGradient id="g1b" x1="0" y1="0" x2="24" y2="24">
+                  <stop stop-color="#7ee0ff"/><stop offset="1" stop-color="#2fe2a0"/>
+                </linearGradient>
+                <linearGradient id="g2b" x1="0" y1="0" x2="24" y2="24">
+                  <stop stop-color="#2fe2a0"/><stop offset="1" stop-color="#7ee0ff"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </span>
+          <span>SheetChain</span>
+        </div>
+        <p class="legal" style="margin:10px 0 0">
+          © <span id="year"></span> SheetChain. All rights reserved. Google Sheets is a trademark of Google LLC.
+          SheetChain is an independent project and is not affiliated with Google.
+        </p>
+      </div>
+      <nav class="links" aria-label="Footer navigation">
+        <a href="/whitepaper.pdf">Whitepaper</a>
+        <a href="#technology">Technology</a>
+        <a href="#ecosystem">Ecosystem</a>
+        <a href="#roadmap">Roadmap</a>
+        <a href="mailto:hello@sheetchain.com">Contact</a>
+      </nav>
+    </div>
+  </footer>
+
+  <!-- JSON-LD Structured Data for better SEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://sheetchain.com/#organization",
+        "name": "SheetChain",
+        "url": "https://sheetchain.com",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://sheetchain.com/logo.png",
+          "width": 200,
+          "height": 200
+        },
+        "description": "A revolutionary Layer-5 blockchain that settles directly on Google Sheets, offering gasless transactions, cell-based consensus, and universal access to decentralized finance.",
+        "foundingDate": "2025",
+        "sameAs": [
+          "https://x.com/sheetchain",
+          "https://t.me/sheetchain",
+          "https://discord.gg/sheetchain"
+        ],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "email": "hello@sheetchain.com",
+          "contactType": "customer service"
+        }
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://sheetchain.com/#website",
+        "url": "https://sheetchain.com",
+        "name": "SheetChain",
+        "description": "The first blockchain backed by Google Sheets - Layer-5 settlement with gasless transactions",
+        "publisher": {
+          "@id": "https://sheetchain.com/#organization"
+        },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://sheetchain.com/search?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "WebPage",
+        "@id": "https://sheetchain.com/#webpage",
+        "url": "https://sheetchain.com",
+        "name": "SheetChain — The First Blockchain Backed by Google Sheets",
+        "isPartOf": {
+          "@id": "https://sheetchain.com/#website"
+        },
+        "about": {
+          "@id": "https://sheetchain.com/#organization"
+        },
+        "description": "SheetChain is a revolutionary Layer-5 blockchain that settles directly on Google Sheets. Experience gasless transactions, cell-based consensus, and universal access to decentralized finance.",
+        "breadcrumb": {
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://sheetchain.com"
+            }
+          ]
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "name": "SheetChain",
+        "description": "A Layer-5 blockchain that settles directly on Google Sheets with gasless transactions and cell-based consensus",
+        "applicationCategory": "Blockchain",
+        "operatingSystem": "Web Browser",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD",
+          "description": "Free to use with gasless transactions"
+        },
+        "featureList": [
+          "Gasless Transactions",
+          "Cell-Based Consensus",
+          "Universal Access",
+          "Formula-Native Smart Contracts",
+          "Optimistic Row Rollups"
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <script>
+    // Smooth in-view animations
+    const io = ('IntersectionObserver' in window) ? new IntersectionObserver((entries)=>{
+      entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
+    }, {threshold: 0.12}) : null;
+    document.querySelectorAll('[data-animate]').forEach(el=> io && io.observe(el));
+
+    // Current year
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Basic smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(a=>{
+      a.addEventListener('click', (e)=>{
+        const id = a.getAttribute('href');
+        const el = document.querySelector(id);
+        if(el){ e.preventDefault(); el.scrollIntoView({behavior:'smooth', block:'start'}); }
+      });
+    });
+
+    // Google Analytics Enhanced Tracking
+    function trackEvent(eventName, parameters = {}) {
+      if (typeof gtag !== 'undefined') {
+        gtag('event', eventName, parameters);
+      }
+    }
+
+    // Track section views
+    const sectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const sectionName = entry.target.id || entry.target.className;
+          trackEvent('section_view', {
+            section_name: sectionName,
+            page_title: document.title
+          });
+        }
+      });
+    }, { threshold: 0.5 });
+
+    // Observe all sections
+    document.querySelectorAll('section[id]').forEach(section => {
+      sectionObserver.observe(section);
+    });
+
+    // Track CTA clicks
+    document.querySelectorAll('.cta').forEach(cta => {
+      cta.addEventListener('click', (e) => {
+        const ctaText = cta.textContent.trim();
+        const ctaHref = cta.getAttribute('href');
+        
+        trackEvent('cta_click', {
+          cta_text: ctaText,
+          cta_url: ctaHref,
+          cta_type: cta.classList.contains('primary') ? 'primary' : 'secondary'
+        });
+      });
+    });
+
+    // Track external link clicks
+    document.querySelectorAll('a[href^="http"]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        const linkText = link.textContent.trim();
+        const linkUrl = link.getAttribute('href');
+        
+        trackEvent('external_link_click', {
+          link_text: linkText,
+          link_url: linkUrl,
+          link_domain: new URL(linkUrl).hostname
+        });
+      });
+    });
+
+    // Track scroll depth
+    let maxScroll = 0;
+    window.addEventListener('scroll', () => {
+      const scrollPercent = Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100);
+      if (scrollPercent > maxScroll && scrollPercent % 25 === 0) {
+        maxScroll = scrollPercent;
+        trackEvent('scroll_depth', {
+          scroll_percent: scrollPercent
+        });
+      }
+    });
+
+    // Track time on page
+    let startTime = Date.now();
+    window.addEventListener('beforeunload', () => {
+      const timeOnPage = Math.round((Date.now() - startTime) / 1000);
+      trackEvent('time_on_page', {
+        time_seconds: timeOnPage
+      });
+    });
+  </script>
+</body>
+</html>
