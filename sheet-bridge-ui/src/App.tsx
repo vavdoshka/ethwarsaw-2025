@@ -1,7 +1,7 @@
 import { WalletProvider } from './contexts/walletContext';
-import { Header } from './components/header';
-import { BridgeForm } from './components/bridgeForm';
-import { Footer } from './components/footer';
+import { Header } from './components/Header';
+import { BridgeForm } from './components/BridgeForm';
+import { Footer } from './components/Footer';
 
 function App() {
   return (
