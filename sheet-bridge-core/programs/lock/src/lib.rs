@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
-declare_id!("46BKi3nxgwFpc8EXE2Yem3syK5yqQRvJLasWzvsTEEgx");
+declare_id!("A71HPBKuZWm5AeEHTant8rdC2nkMDBcaWcfSrqtjU94F");
 
 #[program]
 pub mod lock {
@@ -14,7 +14,10 @@ pub mod lock {
         Ok(())
     }
 
-    pub fn lock_tokens(ctx: Context<LockTokens>, amount: u64) -> Result<()> {
+    pub fn lock_tokens(ctx: Context<LockTokens>, amount: u64, recipient: String) -> Result<()> {
+        // Basic recipient format validation (Ethereum-style 0x + 40 hex chars)
+        require!(is_valid_eth_address(&recipient), LockError::InvalidRecipient);
+
         // Transfer user's tokens to the program vault
         let cpi_accounts = Transfer {
             from: ctx.accounts.user_token_account.to_account_info(),
@@ -28,6 +31,7 @@ pub mod lock {
         emit!(TokensLocked {
             sender: ctx.accounts.user.key(),
             amount,
+            recipient,
         });
 
         Ok(())
@@ -122,6 +126,7 @@ impl LockAccount {
 pub struct TokensLocked {
     pub sender: Pubkey,
     pub amount: u64,
+    pub recipient: String,
 }
 
 #[error_code]
@@ -132,4 +137,14 @@ pub enum LockError {
     InvalidOwner,
     #[msg("Invalid vault token account")]
     InvalidVault,
+    #[msg("Invalid recipient address")]
+    InvalidRecipient,
+}
+
+fn is_valid_eth_address(s: &str) -> bool {
+    if s.len() != 42 { return false; }
+    if !s.starts_with("0x") { return false; }
+    s.as_bytes()[2..].iter().all(|c| matches!(c,
+        b'0'..=b'9' | b'a'..=b'f' | b'A'..=b'F'
+    ))
 }
