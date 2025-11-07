@@ -4,13 +4,16 @@ import idl from '../target/idl/lock.json';
 import logger from './logger';
 import 'dotenv/config';
 import { JsonRpcProvider, Wallet, isAddress } from 'ethers';
+import { setupDatabase, insertSwap, closeDatabase } from './db';
 
 const SOLANA_RPC_URL = 'https://api.devnet.solana.com';
-const SHEET_RPC_URL = 'http://127.0.0.1:8545';
-const LOCK_PROGRAM_ID = new PublicKey('A71HPBKuZWm5AeEHTant8rdC2nkMDBcaWcfSrqtjU94F');
+const SHEET_RPC_URL = 'https://ethwarsaw-2025.onrender.com';
+const LOCK_PROGRAM_ID = new PublicKey('46BKi3nxgwFpc8EXE2Yem3syK5yqQRvJLasWzvsTEEgx');
 const TOKENS_LOCKED_EVENT = 'TokensLocked';
 
 async function main() {
+    setupDatabase();
+
     const coder = new BorshCoder(idl as Idl);
     const parser = new EventParser(LOCK_PROGRAM_ID, coder);
     const connection = new Connection(SOLANA_RPC_URL, 'confirmed');
@@ -44,7 +47,19 @@ async function main() {
                         `transfer event cached, user: ${sender.toString()}, amount: ${amountStr}, recipient: ${recipient}`
                     );
 
-                    sendSheetTransfer(ethWallet, recipient, amount);
+                    // Insert swap record into database
+                    insertSwap({
+                        from_chain: 'solana',
+                        from_address: sender.toString(),
+                        from_amount: amountStr,
+                        to_chain: 'sheet',
+                        to_address: recipient,
+                        to_amount: amountStr,
+                        signature: logs.signature,
+                        status: 'pending',
+                    });
+
+                    sendSheetTransfer(ethWallet, recipient, amount, logs.signature);
                 }
             }
         },
@@ -55,6 +70,7 @@ async function main() {
 
     process.on('SIGINT', () => {
         logger.info('\nStopping event listener...');
+        closeDatabase();
         process.exit(0);
     });
 }
