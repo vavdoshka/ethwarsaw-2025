@@ -261,13 +261,13 @@ export const BridgeForm: React.FC = () => {
           <div className="space-y-4 pt-2">
             <div>
               <label className="block text-sm text-white/60 mb-2.5">
-                Send to another address
+                Send to address:
               </label>
               <input
                 type="text"
                 value={destinationAddress}
                 onChange={(e) => setDestinationAddress(e.target.value)}
-                placeholder="Enter Solana adress"
+                placeholder={'Enter ' + toChain.display_name + ' adress'}
                 className="w-full border border-white/[0.08] bg-[#0a0a0a] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/10 transition-colors"
               />
             </div>
