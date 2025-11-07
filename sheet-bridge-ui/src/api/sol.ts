@@ -27,16 +27,30 @@ export async function getSplTokenBalance(userAddress: string): Promise<number> {
 }
 
 export async function lockSplTokens(
-  wallet: any,
-  amount: number
+  walletAdapter: any,
+  amount: number,
+  recipient: string
 ): Promise<string> {
-  if (!wallet) {
-    throw new Error('Phantom wallet not connected');
+  if (!walletAdapter) {
+    throw new Error('Wallet not connected');
   }
+
+  if (!recipient || recipient.trim() === '') {
+    throw new Error('Recipient address is required');
+  }
+
   const connection = new Connection(SOL_RPC_ENDPOINT, 'confirmed');
+
+  // Create a wallet compatible with AnchorProvider
+  const wallet = {
+    publicKey: walletAdapter.publicKey,
+    signTransaction: walletAdapter.signTransaction.bind(walletAdapter),
+    signAllTransactions: walletAdapter.signAllTransactions.bind(walletAdapter),
+  };
+
   const provider = new AnchorProvider(
     connection,
-    wallet,
+    wallet as any,
     AnchorProvider.defaultOptions()
   );
 
@@ -65,7 +79,7 @@ export async function lockSplTokens(
   const lockAmount = new BN(amount * Math.pow(10, 9));
 
   const signature = await program.methods
-    .lockTokens(lockAmount)
+    .lockTokens(lockAmount, recipient)
     .accounts({
       user,
       lockAccount: lockAccountPda,
