@@ -274,6 +274,10 @@
         {
           "name": "amount",
           "type": "u64"
+        },
+        {
+          "name": "recipient",
+          "type": "string"
         }
       ]
     }
@@ -323,6 +327,11 @@
       "code": 6002,
       "name": "InvalidVault",
       "msg": "Invalid vault token account"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidRecipient",
+      "msg": "Invalid recipient address"
     }
   ],
   "types": [
@@ -350,6 +359,10 @@
           {
             "name": "amount",
             "type": "u64"
+          },
+          {
+            "name": "recipient",
+            "type": "string"
           }
         ]
       }

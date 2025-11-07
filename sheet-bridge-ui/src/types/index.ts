@@ -1,13 +1,6 @@
 export type WalletType = 'phantom' | 'metamask';
 
-export type ChainType = 'solana' | 'sheet chain';
-
-export interface WalletInfo {
-  name: string;
-  icon: string;
-  type: WalletType;
-  chain: ChainType;
-}
+export type ChainType = 'solana' | 'sheet chain' | 'bsc';
 
 export type Chain = {
   id: number;

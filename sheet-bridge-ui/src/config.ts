@@ -1,19 +1,4 @@
-import type { Chain, WalletInfo } from './types';
-
-export const WALLETS: WalletInfo[] = [
-  {
-    name: 'Phantom',
-    icon: '/phantom.svg',
-    type: 'phantom',
-    chain: 'solana',
-  },
-  {
-    name: 'MetaMask',
-    icon: '/metamask.svg',
-    type: 'metamask',
-    chain: 'sheet chain',
-  },
-];
+import type { Chain } from './types';
 
 export const CHAINS: Chain[] = [
   {
@@ -23,7 +8,7 @@ export const CHAINS: Chain[] = [
     tokens: [
       {
         symbol: 'SHEET',
-        name: 'Sheet Coin',
+        name: 'Native Sheet',
         icon: '/sheet.svg',
       },
     ],
@@ -40,7 +25,21 @@ export const CHAINS: Chain[] = [
       },
     ],
   },
+  {
+    id: 2,
+    name: 'bsc',
+    icon: '/bsc.svg',
+    tokens: [
+      {
+        symbol: 'SHEET',
+        name: 'BSC Sheet Coin',
+        icon: '/sheet_bsc.svg',
+      },
+    ],
+  },
 ];
+
+export const IS_MAINNET = false;
 
 export const SOL_RPC_ENDPOINT = 'https://api.devnet.solana.com';
 export const SOL_SHEET_MINT_ADDRESS =
@@ -49,3 +48,7 @@ export const SOL_SHEET_BRIDGE_PROGRAM_ID =
   '46BKi3nxgwFpc8EXE2Yem3syK5yqQRvJLasWzvsTEEgx';
 
 export const SHEET_RPC_ENDPOINT = 'https://eth.llamarpc.com';
+
+export const BSC_RPC_ENDPOINT = 'https://bsc-dataseed.binance.org';
+export const BSC_SHEET_TOKEN_ADDRESS =
+  '0x0000000000000000000000000000000000000000'; // TODO: Replace with actual BSC SHEET token address

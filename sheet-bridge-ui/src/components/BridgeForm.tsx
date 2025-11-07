@@ -5,23 +5,18 @@ import type { Token } from '../types/index';
 import { CHAINS } from '../config';
 import { isValidAmount } from '../utils/format';
 import { ArrowSwapIcon, SpinnerIcon } from './ui/icons';
-import { Button } from './ui/Button';
 import { getSplTokenBalance, lockSplTokens } from '../api/sol';
 import { getSheetBalance } from '../api/sheet';
+import { getBscBalance } from '../api/bsc';
 
 export const BridgeForm: React.FC = () => {
-  const {
-    isChainConnected,
-    fromChain,
-    toChain,
-    setFromChain,
-    setToChain,
-    getWalletByChain,
-  } = useWallet();
-  const [fromToken, setFromToken] = useState<Token>(
-    CHAINS[fromChain.id].tokens[0]
-  );
-  const [toToken, setToToken] = useState<Token>(CHAINS[toChain.id].tokens[0]);
+  const { isChainConnected, getWalletByChain, setChain } = useWallet();
+
+  const [fromChain, setFromChain] = useState(CHAINS[1]); // Solana
+  const [toChain, setToChain] = useState(CHAINS[0]); // Sheet Chain
+
+  const [fromToken, setFromToken] = useState<Token>(CHAINS[1].tokens[0]);
+  const [toToken, setToToken] = useState<Token>(CHAINS[0].tokens[0]);
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
   const [destinationAddress, setDestinationAddress] = useState('');
@@ -29,13 +24,39 @@ export const BridgeForm: React.FC = () => {
   const [fromBalance, setFromBalance] = useState('0');
   const [toBalance, setToBalance] = useState('0');
 
+  useEffect(() => {
+    setChain(fromChain);
+  }, [fromChain, setChain]);
+
+  // Allow only non-Sheet -> Sheet or Sheet -> non-Sheet bridge
+  useEffect(() => {
+    if (fromChain.name !== 'sheet chain' && toChain.name !== 'sheet chain') {
+      setToChain(CHAINS[0]);
+      setToToken(CHAINS[0].tokens[0]);
+    }
+  }, [fromChain]);
+  useEffect(() => {
+    if (fromChain.name !== 'sheet chain' && toChain.name !== 'sheet chain') {
+      setFromChain(CHAINS[0]);
+      setFromToken(CHAINS[0].tokens[0]);
+    }
+  }, [toChain]);
+
   const handleSwap = () => {
+    // Swap from and to chains
+    const tempChain = fromChain;
     setFromChain(toChain);
-    setToChain(fromChain);
+    setToChain(tempChain);
+
+    // Swap tokens
+    const tempToken = fromToken;
     setFromToken(toToken);
-    setToToken(fromToken);
+    setToToken(tempToken);
+
+    // Swap amounts
+    const tempAmount = fromAmount;
     setFromAmount(toAmount);
-    setToAmount(fromAmount);
+    setToAmount(tempAmount);
   };
 
   const handleFromAmountChange = (value: string) => {
@@ -49,7 +70,7 @@ export const BridgeForm: React.FC = () => {
     return (
       isChainConnected &&
       isChainConnected(fromChain.name) &&
-      (isChainConnected(toChain.name) || destinationAddress) &&
+      destinationAddress &&
       fromAmount &&
       parseFloat(fromAmount) > 0 &&
       toAmount &&
@@ -64,11 +85,16 @@ export const BridgeForm: React.FC = () => {
 
     try {
       if (fromChain.name === 'solana') {
-        const connectedWallet = getWalletByChain('solana');
+        const wallet = getWalletByChain('solana');
+
+        if (!wallet?.walletAdapter) {
+          throw new Error('Solana wallet not connected');
+        }
 
         const signature = await lockSplTokens(
-          connectedWallet?.walletProvider,
-          parseFloat(fromAmount)
+          wallet.walletAdapter,
+          parseFloat(fromAmount),
+          destinationAddress
         );
 
         console.log('Transaction successful:', signature);
@@ -103,12 +129,16 @@ export const BridgeForm: React.FC = () => {
     try {
       if (fromChain.name === 'solana') {
         const balance = await getSplTokenBalance(wallet.address);
-        setFromBalance(parseFloat(balance.toFixed(2)).toString());
+        setFromBalance(balance.toFixed(2));
       } else if (fromChain.name === 'sheet chain') {
         const balance = await getSheetBalance(wallet.address);
-        setFromBalance(parseFloat(balance.toFixed(2)).toString());
+        setFromBalance(balance.toFixed(2));
+      } else if (fromChain.name === 'bsc') {
+        const balance = await getBscBalance(wallet.address);
+        setFromBalance(balance.toFixed(2));
       }
     } catch (error) {
+      console.error('Failed to fetch from balance:', error);
       setFromBalance('0');
     }
   };
@@ -127,125 +157,143 @@ export const BridgeForm: React.FC = () => {
     try {
       if (toChain.name === 'solana') {
         const balance = await getSplTokenBalance(wallet.address);
-        setToBalance(parseFloat(balance.toFixed(2)).toString());
+        setToBalance(balance.toFixed(2));
       } else if (toChain.name === 'sheet chain') {
         const balance = await getSheetBalance(wallet.address);
-        setToBalance(parseFloat(balance.toFixed(2)).toString());
+        setToBalance(balance.toFixed(2));
+      } else if (toChain.name === 'bsc') {
+        const balance = await getBscBalance(wallet.address);
+        setToBalance(balance.toFixed(2));
       }
     } catch (error) {
+      console.error('Failed to fetch to balance:', error);
       setToBalance('0');
     }
   };
 
   useEffect(() => {
     fetchFromBalance();
-  }, [fromChain, isChainConnected]);
+  }, [fromChain, isChainConnected, getWalletByChain]);
 
   useEffect(() => {
     fetchToBalance();
-  }, [toChain, isChainConnected]);
+  }, [toChain, isChainConnected, getWalletByChain]);
 
   return (
-    <div className="w-full max-w-lg mx-auto">
-      <div className="bg-white rounded-2xl shadow-xl p-6 space-y-4">
-        <div className="space-y-4">
-          <div className="bg-gray-50 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-gray-600">You pay</span>
-              <span className="text-sm text-gray-500">
-                Balance: {fromBalance} {fromToken.symbol}
-              </span>
+    <>
+      <div className="w-full max-w-[480px] mx-auto border-l border-r border-white/[0.15]">
+        <h2 className="text-[36px] font-normal text-white mt-16 mb-7 text-center">
+          Bridge your Sheet
+        </h2>
+      </div>
+      <div className="w-full border-b border-white/[0.15]"></div>
+      <div className="w-full max-w-[480px] mx-auto border-l border-r border-white/[0.15]">
+        <div className="bg-[#0f0f0f] px-3 py-3 space-y-2">
+          <div className="space-y-4">
+            <div className="border border-white/[0.08] bg-[#0a0a0a] px-5 py-5">
+              <div className="flex items-center justify-between mb-5 text-sm text-white/60">
+                <span className="text-white">You pay</span>
+                <span>
+                  Balance: {fromBalance} {fromToken.symbol}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-4 overflow-hidden">
+                <TokenChainSelector
+                  selectedToken={fromToken}
+                  selectedChain={fromChain}
+                  onTokenSelect={setFromToken}
+                  onChainSelect={setFromChain}
+                  availableChains={CHAINS}
+                  label=""
+                />
+
+                <input
+                  type="text"
+                  value={fromAmount}
+                  onChange={(e) => handleFromAmountChange(e.target.value)}
+                  placeholder="0"
+                  className="flex-1 bg-transparent text-right text-4xl font-light text-white/60 placeholder-white/60 focus:outline-none min-w-0"
+                />
+              </div>
             </div>
 
-            <div className="flex items-center space-x-3">
-              <TokenChainSelector
-                selectedToken={fromToken}
-                selectedChain={fromChain}
-                onTokenSelect={setFromToken}
-                onChainSelect={setFromChain}
-                label=""
-              />
+            <div className="flex justify-center -my-1">
+              <button
+                onClick={handleSwap}
+                className="w-10 h-10 border border-white/[0.08] bg-[#0f0f0f] text-white/40 hover:bg-white/5 transition-colors flex items-center justify-center"
+              >
+                <ArrowSwapIcon className="w-4 h-4" />
+              </button>
+            </div>
 
-              <input
-                type="text"
-                value={fromAmount}
-                onChange={(e) => handleFromAmountChange(e.target.value)}
-                placeholder="0"
-                className="flex-1 text-2xl font-semibold bg-transparent outline-none text-right"
-              />
+            <div className="border border-white/[0.08] bg-[#0a0a0a] px-5 py-5">
+              <div className="flex items-center justify-between mb-5 text-sm text-white/60">
+                <span className="text-white">You pay</span>
+                <span>
+                  Balance: {toBalance} {toToken.symbol}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-4 overflow-hidden">
+                <TokenChainSelector
+                  selectedToken={toToken}
+                  selectedChain={toChain}
+                  onTokenSelect={setToToken}
+                  onChainSelect={setToChain}
+                  availableChains={
+                    fromChain.name === 'sheet chain' ? CHAINS.slice(1) : CHAINS
+                  }
+                  label=""
+                />
+
+                <input
+                  type="text"
+                  value={toAmount}
+                  readOnly
+                  placeholder="0"
+                  className="flex-1 bg-transparent text-right text-4xl font-light text-white/60 placeholder-white/60 focus:outline-none min-w-0"
+                />
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-center">
+          <div className="space-y-4 pt-2">
+            <div>
+              <label className="block text-sm text-white/60 mb-2.5">
+                Send to another address
+              </label>
+              <input
+                type="text"
+                value={destinationAddress}
+                onChange={(e) => setDestinationAddress(e.target.value)}
+                placeholder="Enter Solana adress"
+                className="w-full border border-white/[0.08] bg-[#0a0a0a] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/10 transition-colors"
+              />
+            </div>
+
             <button
-              onClick={handleSwap}
-              className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              onClick={handleBridge}
+              disabled={isLoading || !allowBridge()}
+              className={`w-full py-3.5 px-6 text-base font-medium transition-all duration-200 ${
+                isLoading || !allowBridge()
+                  ? 'bg-white/5 text-white/30 cursor-not-allowed'
+                  : 'bg-[#00d563] hover:bg-[#00c251] text-white'
+              }`}
             >
-              <ArrowSwapIcon className="w-6 h-6 text-gray-600" />
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-3">
+                  <SpinnerIcon className="animate-spin h-5 w-5 text-white" />
+                  Processing...
+                </span>
+              ) : (
+                'Bridge Token'
+              )}
             </button>
           </div>
-
-          <div className="bg-gray-50 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-gray-600">
-                You receive
-              </span>
-              <span className="text-sm text-gray-500">
-                Balance: {toBalance} {toToken.symbol}
-              </span>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <TokenChainSelector
-                selectedToken={toToken}
-                selectedChain={toChain}
-                onTokenSelect={setToToken}
-                onChainSelect={setToChain}
-                label=""
-              />
-
-              <input
-                type="text"
-                value={toAmount}
-                readOnly
-                placeholder="0"
-                className="flex-1 text-2xl font-semibold bg-transparent outline-none text-right"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-3 pt-2">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Send to another address
-            </label>
-            <input
-              type="text"
-              value={destinationAddress}
-              onChange={(e) => setDestinationAddress(e.target.value)}
-              placeholder={'Enter ' + toChain.name + ' address'}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
-          </div>
-
-          <Button
-            onClick={handleBridge}
-            disabled={isLoading || !allowBridge()}
-            size="lg"
-            className="w-full"
-          >
-            {isLoading ? (
-              <span className="flex items-center justify-center">
-                <SpinnerIcon className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
-                Processing...
-              </span>
-            ) : (
-              'Bridge Token'
-            )}
-          </Button>
         </div>
       </div>
-    </div>
+      <div className="w-full border-b border-white/[0.15]"></div>
+    </>
   );
 };

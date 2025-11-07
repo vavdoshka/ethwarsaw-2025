@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { Chain, Token } from '../types/index';
-import { CHAINS } from '../config';
 import { useClickOutside } from '../hooks/useClickOutside';
 import {
   ChevronDownIcon,
@@ -14,6 +13,7 @@ interface TokenChainSelectorProps {
   selectedChain: Chain;
   onTokenSelect: (token: Token) => void;
   onChainSelect: (chain: Chain) => void;
+  availableChains: Chain[];
   label: string;
 }
 
@@ -22,6 +22,7 @@ export const TokenChainSelector: React.FC<TokenChainSelectorProps> = ({
   selectedChain,
   onTokenSelect,
   onChainSelect,
+  availableChains,
   label,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -49,58 +50,63 @@ export const TokenChainSelector: React.FC<TokenChainSelectorProps> = ({
 
   return (
     <>
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">
+      {label && (
+        <label className="text-xs uppercase tracking-[0.2em] text-white/40 mb-2 block">
           {label}
         </label>
+      )}
 
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center space-x-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-        >
-          <img
-            src={selectedToken.icon}
-            alt={selectedToken.symbol}
-            className="w-6 h-6"
-          />
-          <span className="font-medium">{selectedToken.symbol}</span>
-          <ChevronDownIcon
-            className={`w-4 h-4 transition-transform ${isOpen ? 'transform rotate-180' : ''}`}
-          />
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 border border-white/10 bg-black/30 px-4 py-3 text-left text-white hover:border-white/30 transition-colors flex-shrink-0"
+      >
+        <img
+          src={selectedToken.icon}
+          alt={selectedToken.symbol}
+          className="w-6 h-6"
+        />
+        <div className="flex flex-col">
+          <span className="text-sm font-semibold">{selectedToken.symbol}</span>
+          {/* <span className="text-xs text-white/40 capitalize">
+            {selectedChain.name}
+          </span> */}
+        </div>
+        <ChevronDownIcon
+          className={`ml-auto w-4 h-4 text-white/60 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+        />
+      </button>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4">
           <div
             ref={modalRef}
-            className="bg-white rounded-xl shadow-2xl max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden"
+            className="max-w-4xl w-full border border-white/10 bg-[#070707] shadow-[0_40px_120px_rgba(0,0,0,0.7)] overflow-hidden"
           >
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">
+            <div className="flex items-center justify-between p-6 border-b border-white/5">
+              <h2 className="text-xl font-semibold text-white">
                 Select Token and Chain
               </h2>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-white/50 hover:text-white transition-colors"
               >
                 <CloseIcon />
               </button>
             </div>
 
-            <div className="flex">
-              <div className="w-1/2 border-r border-gray-200">
+            <div className="flex flex-col md:flex-row">
+              <div className="md:w-1/2 border-b md:border-b-0 md:border-r border-white/5">
                 <div className="h-96 overflow-y-auto">
-                  <div className="grid grid-cols-2 gap-2 p-4">
-                    {CHAINS.map((chain) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4">
+                    {availableChains.map((chain) => (
                       <button
                         key={chain.id}
                         onClick={() => handleChainSelect(chain)}
-                        className={`flex items-center space-x-3 px-4 py-3 rounded-lg border-2 transition-all ${
+                        className={`flex items-center gap-3 border px-4 py-3 transition-all ${
                           tempSelectedChain.id === chain.id
-                            ? 'border-purple-500 bg-purple-50'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                            ? 'border-[#00c853] bg-[#00c853]/10'
+                            : 'border-white/10 hover:border-white/30'
                         }`}
                       >
                         <img
@@ -108,9 +114,11 @@ export const TokenChainSelector: React.FC<TokenChainSelectorProps> = ({
                           alt={chain.name}
                           className="w-8 h-8"
                         />
-                        <span className="font-medium">{chain.name}</span>
+                        <span className="font-medium text-white">
+                          {chain.name}
+                        </span>
                         {tempSelectedChain.id === chain.id && (
-                          <CheckCircleIcon className="w-5 h-5 text-purple-500 ml-auto" />
+                          <CheckCircleIcon className="w-5 h-5 text-[#00c853] ml-auto" />
                         )}
                       </button>
                     ))}
@@ -118,16 +126,16 @@ export const TokenChainSelector: React.FC<TokenChainSelectorProps> = ({
                 </div>
               </div>
 
-              <div className="w-1/2">
+              <div className="md:w-1/2">
                 <div className="h-96 overflow-y-auto">
                   <div className="p-4 space-y-2">
                     {availableTokens.map((token) => (
                       <button
                         key={token.symbol}
                         onClick={() => handleTokenSelect(token)}
-                        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors"
+                        className="w-full flex items-center justify-between border border-white/10 px-4 py-3 text-white hover:border-[#00c853] hover:bg-[#00c853]/5 transition-all"
                       >
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center gap-3">
                           <img
                             src={token.icon}
                             alt={token.symbol}
@@ -135,12 +143,12 @@ export const TokenChainSelector: React.FC<TokenChainSelectorProps> = ({
                           />
                           <div className="text-left">
                             <div className="font-medium">{token.symbol}</div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-white/50">
                               {token.name}
                             </div>
                           </div>
                         </div>
-                        <ArrowRightIcon className="w-5 h-5 text-gray-400" />
+                        <ArrowRightIcon className="w-5 h-5 text-white/40" />
                       </button>
                     ))}
                   </div>
