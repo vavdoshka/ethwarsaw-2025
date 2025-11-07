@@ -5,6 +5,7 @@ export type ChainType = 'solana' | 'sheet chain' | 'bsc';
 export type Chain = {
   id: number;
   name: ChainType;
+  display_name: string;
   icon?: string;
   tokens: Token[];
 };

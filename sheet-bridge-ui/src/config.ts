@@ -4,6 +4,7 @@ export const CHAINS: Chain[] = [
   {
     id: 0,
     name: 'sheet chain',
+    display_name: 'Sheet Chain',
     icon: '/sheet.svg',
     tokens: [
       {
@@ -16,6 +17,7 @@ export const CHAINS: Chain[] = [
   {
     id: 1,
     name: 'solana',
+    display_name: 'Solana',
     icon: '/solana.svg',
     tokens: [
       {
@@ -28,6 +30,7 @@ export const CHAINS: Chain[] = [
   {
     id: 2,
     name: 'bsc',
+    display_name: 'Binance Smart Chain',
     icon: '/bsc.svg',
     tokens: [
       {
