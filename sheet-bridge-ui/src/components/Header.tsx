@@ -5,8 +5,10 @@ import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { WalletButton } from './WalletButton';
 import { useSwitchChain, useAccount } from 'wagmi';
-import { mainnet, sepolia, bsc, bscTestnet } from 'wagmi/chains';
+import { bsc, bscTestnet } from 'wagmi/chains';
 import { IS_MAINNET } from '../config';
+
+const SHEET_CHAIN_ID = 12345;
 
 export const Header: React.FC = () => {
   const { chain } = useWallet();
@@ -19,11 +21,10 @@ export const Header: React.FC = () => {
   useEffect(() => {
     if (!evmConnected || !switchChain || chain.name === 'solana') return;
 
-    const sheetChainConfig = IS_MAINNET ? mainnet : sepolia;
     const bscChainConfig = IS_MAINNET ? bsc : bscTestnet;
 
     const targetChainId =
-      chain.name === 'bsc' ? bscChainConfig.id : sheetChainConfig.id;
+      chain.name === 'bsc' ? bscChainConfig.id : SHEET_CHAIN_ID;
 
     if (currentEvmChain?.id !== targetChainId) {
       switchChain({ chainId: targetChainId });

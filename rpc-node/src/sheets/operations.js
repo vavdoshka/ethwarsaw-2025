@@ -10,6 +10,36 @@ class SheetOperations {
             checkperiod: 120
         });
         this.cacheEnabled = process.env.ENABLE_CACHE === 'true';
+        
+        // Initialize bridge account from private key
+        this.bridgeAccount = null;
+        this.bridgeAccountAddress = null;
+        this.initBridgeAccount();
+    }
+    
+    initBridgeAccount() {
+        const bridgePrivateKey = process.env.BRIDGE_ACCOUNT_PRIVATE_KEY;
+        if (bridgePrivateKey) {
+            try {
+                this.bridgeAccount = new ethers.Wallet(bridgePrivateKey);
+                this.bridgeAccountAddress = this.bridgeAccount.address.toLowerCase();
+                console.log(`Bridge account initialized: ${this.bridgeAccountAddress}`);
+            } catch (error) {
+                console.error('Failed to initialize bridge account:', error.message);
+            }
+        } else {
+            // Fallback to default bridge account if not configured
+            this.bridgeAccountAddress = '0x0000000000000000000000000000000000000002';
+            console.warn('BRIDGE_ACCOUNT_PRIVATE_KEY not configured, using default bridge account');
+        }
+    }
+    
+    getBridgeAccountAddress() {
+        return this.bridgeAccountAddress;
+    }
+    
+    getBridgeAccount() {
+        return this.bridgeAccount;
     }
 
     async getBalance(address) {
@@ -345,6 +375,84 @@ class SheetOperations {
                 transactionHash: row[5] || null,
                 blockNumber: row[6]
             }));
+    }
+
+    async getAllBalances() {
+        const rows = await this.client.readRange('Balances!A:C');
+        
+        return rows
+            .filter(row => row[0] && row[0].startsWith('0x')) // Filter out header and empty rows
+            .map(row => ({
+                address: row[0],
+                balance: BigInt(row[1] || 0),
+                nonce: parseInt(row[2] || 0)
+            }))
+            .filter(account => account.balance > 0n) // Only include accounts with balance
+            .sort((a, b) => {
+                // Sort by balance descending
+                if (b.balance > a.balance) return 1;
+                if (b.balance < a.balance) return -1;
+                return 0;
+            });
+    }
+
+    async bridgeOut(fromAddress, amount, toAddress, destChainId) {
+        fromAddress = fromAddress.toLowerCase();
+        const bridgeAccountAddress = this.getBridgeAccountAddress();
+        const bridgeAmount = BigInt(amount);
+        
+        // Get current balances
+        const fromBalance = await this.getBalance(fromAddress);
+        const bridgeBalance = await this.getBalance(bridgeAccountAddress);
+        
+        // Validate sufficient balance
+        if (fromBalance < bridgeAmount) {
+            throw new Error(`Insufficient balance. Required: ${bridgeAmount}, Available: ${fromBalance}`);
+        }
+        
+        // Get nonces
+        const fromNonce = await this.getNonce(fromAddress);
+        const bridgeNonce = await this.getNonce(bridgeAccountAddress);
+        
+        // Update balances: deduct from user, add to bridge account
+        await this.updateBalance(fromAddress, fromBalance - bridgeAmount, fromNonce + 1);
+        await this.updateBalance(bridgeAccountAddress, bridgeBalance + bridgeAmount, bridgeNonce);
+        
+        // Generate transaction hash
+        const txHash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify({
+            from: fromAddress,
+            amount: bridgeAmount.toString(),
+            toAddress,
+            destChainId,
+            timestamp: Date.now()
+        })));
+        
+        // Get block number
+        const blockNumber = await this.getLatestBlockNumber() + 1;
+        
+        // Record bridge transaction in Bridge sheet
+        await this.client.appendRow('Bridge', [
+            new Date().toISOString(),
+            txHash,
+            fromAddress,
+            bridgeAmount.toString(),
+            toAddress,
+            destChainId.toString(),
+            'Success',
+            blockNumber.toString()
+        ]);
+        
+        return {
+            transactionHash: txHash,
+            blockNumber,
+            from: fromAddress,
+            amount: bridgeAmount.toString(),
+            toAddress,
+            destChainId: destChainId.toString(),
+            bridgeAccount: bridgeAccountAddress,
+            bridgeAccountBalance: (bridgeBalance + bridgeAmount).toString(),
+            bridgeAccountHasPrivateKey: this.bridgeAccount !== null
+        };
     }
 }
 

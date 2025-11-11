@@ -77,6 +77,9 @@ class RPCHandlers {
     case 'eth_getStorageAt':
         return '0x'
         
+      case 'bridgeOut':
+        return await this.bridgeOut(params);
+        
       default:
         throw new Error(`Method ${method} not supported`);
     }
@@ -253,6 +256,38 @@ class RPCHandlers {
 
   async getAllClaims() {
     return await this.sheetOps.getAllClaims();
+  }
+
+  async bridgeOut(params) {
+    const [fromAddress, amount, toAddress, destChainId] = params;
+    
+    if (!fromAddress) {
+      throw new Error('From address is required');
+    }
+    
+    if (!amount || amount <= 0) {
+      throw new Error('Valid amount is required');
+    }
+    
+    if (!toAddress) {
+      throw new Error('Destination address is required');
+    }
+    
+    if (!destChainId) {
+      throw new Error('Destination chain ID is required');
+    }
+    
+    // Convert amount to BigInt if it's a string
+    const amountBigInt = typeof amount === 'string' 
+      ? (amount.startsWith('0x') ? BigInt(amount) : BigInt(amount))
+      : BigInt(amount);
+    
+    // Convert destChainId to number if it's a string
+    const chainId = typeof destChainId === 'string'
+      ? (destChainId.startsWith('0x') ? parseInt(destChainId, 16) : parseInt(destChainId))
+      : parseInt(destChainId);
+    
+    return await this.sheetOps.bridgeOut(fromAddress, amountBigInt, toAddress, chainId);
   }
 }
 

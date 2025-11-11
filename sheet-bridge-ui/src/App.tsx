@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { WagmiProvider, http } from 'wagmi';
-import { mainnet, sepolia, bsc, bscTestnet } from 'wagmi/chains';
+import { defineChain } from 'viem';
+import { bsc, bscTestnet } from 'wagmi/chains';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   RainbowKitProvider,
@@ -33,16 +34,41 @@ import {
 import '@rainbow-me/rainbowkit/styles.css';
 import '@solana/wallet-adapter-react-ui/styles.css';
 
+// Define SheetChain configuration
+export const sheetChain = defineChain({
+  id: 12345,
+  name: 'SheetChain',
+  network: 'sheetchain',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Ether',
+    symbol: 'ETH',
+  },
+  rpcUrls: {
+    default: {
+      http: [SHEET_RPC_ENDPOINT],
+    },
+    public: {
+      http: [SHEET_RPC_ENDPOINT],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'SheetChain Explorer',
+      url: '',
+    },
+  },
+});
+
 // Configure wagmi with RainbowKit for EVM chains
-const sheetChainConfig = IS_MAINNET ? mainnet : sepolia;
 const bscChainConfig = IS_MAINNET ? bsc : bscTestnet;
 
 const config = getDefaultConfig({
   appName: 'Sheet Bridge',
   projectId: '479c1dd316d4edfe4a4cce462bf1d26d',
-  chains: [sheetChainConfig, bscChainConfig],
+  chains: [sheetChain, bscChainConfig],
   transports: {
-    [sheetChainConfig.id]: http(SHEET_RPC_ENDPOINT),
+    [sheetChain.id]: http(SHEET_RPC_ENDPOINT),
     [bscChainConfig.id]: http(BSC_RPC_ENDPOINT),
   },
 });
