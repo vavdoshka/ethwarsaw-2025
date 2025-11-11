@@ -28,7 +28,7 @@ function getContractHandler(contractAddress, selector) {
 // Initialize default handlers
 function initializeContractHandlers() {
   // EthWarsaw2025Airdrop contract handlers
-  const airdropAddress = '0x0000000000000000000000000000000000000001';
+  const airdropAddress = AIRDROP_CONTRACT_ADDRESS;
   
   // totalClaimants() - returns dynamic claim count
   registerContractHandler(airdropAddress, '0x87764571', () => {
@@ -73,6 +73,10 @@ function initializeContractHandlers() {
     return '0x0000000000000000000000000000000000000000000000000000000000000001'; // true
   });
 }
+
+// Contract addresses
+const BRIDGE_CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000003';
+const AIRDROP_CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000001';
 
 const app = express();
 const PORT = process.env.PORT || 8545;
@@ -173,6 +177,15 @@ async function initialize() {
     rpcHandler = new RPCHandlers(sheetOps);
     validator = new TransactionValidator();
 
+    // Log bridge account info
+    const bridgeAccountAddress = sheetOps.getBridgeAccountAddress();
+    const bridgeAccount = sheetOps.getBridgeAccount();
+    if (bridgeAccount) {
+      logger.info(`🌉 Bridge account configured: ${bridgeAccountAddress}`);
+    } else {
+      logger.warn(`⚠️  Bridge account using default address: ${bridgeAccountAddress} (BRIDGE_ACCOUNT_PRIVATE_KEY not set)`);
+    }
+
     // Initialize claim counter from existing claims
     try {
       const existingClaims = await sheetOps.getAllClaims();
@@ -182,6 +195,24 @@ async function initialize() {
     } catch (error) {
       logger.warn('Could not initialize claim counter:', error);
       claimCounter = 0;
+    }
+
+    // Log top 3 accounts and balances
+    try {
+      const allBalances = await sheetOps.getAllBalances();
+      const topAccounts = allBalances.slice(0, 3);
+      
+      if (topAccounts.length > 0) {
+        logger.info('📊 Top 3 Accounts by Balance:');
+        topAccounts.forEach((account, index) => {
+          const balanceInEth = ethers.formatEther(account.balance);
+          logger.info(`   ${index + 1}. ${account.address}: ${balanceInEth} ETH (Nonce: ${account.nonce})`);
+        });
+      } else {
+        logger.info('📊 No accounts with balances found');
+      }
+    } catch (error) {
+      logger.warn('Could not fetch top accounts:', error.message);
     }
 
     isInitialized = true;
@@ -206,6 +237,9 @@ app.post('/', async (req, res) => {
   
   const { jsonrpc, method, params, id } = req.body;
   
+  // Log all RPC requests for debugging (especially MetaMask validation calls)
+  logger.info('📥 RPC Request:', { method, params: params ? JSON.stringify(params).substring(0, 200) : null, id });
+  
   if (jsonrpc !== '2.0') {
     return res.json({
       jsonrpc: '2.0',
@@ -220,6 +254,14 @@ app.post('/', async (req, res) => {
   try {
     let result = await rpcHandler.handleRequest(method, params || []);
     
+    // Log estimateGas requests specifically (MetaMask uses this to validate transactions)
+    if (method === 'eth_estimateGas') {
+      logger.info('⛽ eth_estimateGas request:', { 
+        params: params ? JSON.stringify(params).substring(0, 300) : null,
+        id 
+      });
+    }
+    
     // Smart contract simulation handler
     if (method === 'eth_call' && params && params[0] && params[0].data && params[0].to) {
       const contractAddress = params[0].to.toLowerCase();
@@ -227,7 +269,7 @@ app.post('/', async (req, res) => {
       
       
       // Special handling for hasClaimed(address) function
-      if (selector === '0x73b2e80e' && contractAddress === '0x0000000000000000000000000000000000000001') {
+      if (selector === '0x73b2e80e' && contractAddress === AIRDROP_CONTRACT_ADDRESS.toLowerCase()) {
         try {
           // Decode the address parameter from the data
           // Remove the selector (first 10 chars) and get the address (padded to 32 bytes)
@@ -272,15 +314,25 @@ app.post('/', async (req, res) => {
       }
     }
     
-    // Handle claim transactions
+    // Handle eth_sendRawTransaction - process different transaction types
     if (method === 'eth_sendRawTransaction' && params && params[0]) {
       const rawTx = params[0];
-      // Check if this is a claim transaction by looking for the claim selector
-      if (rawTx.includes('e21fa87b') || rawTx.includes('75066be0')) {
+      let tx;
+      
+      try {
+        tx = ethers.Transaction.from(rawTx);
+      } catch (parseError) {
+        logger.error('Failed to parse raw transaction:', parseError);
+        throw new Error(`Invalid transaction format: ${parseError.message}`);
+      }
+      
+      const txTo = tx.to ? tx.to.toLowerCase() : null;
+      const txData = tx.data || '';
+      
+      // Handle claim transactions (to airdrop contract with claim selector)
+      if (txTo === AIRDROP_CONTRACT_ADDRESS.toLowerCase() && 
+          (txData.includes('e21fa87b') || txData.includes('75066be0'))) {
         try {
-          // Parse the transaction to get the sender address
-          const { ethers } = require('ethers');
-          const tx = ethers.Transaction.from(rawTx);
           const fromAddress = tx.from;
           const toAddress = tx.to;
 
@@ -363,27 +415,101 @@ app.post('/', async (req, res) => {
           result = mockTxHash;
         }
       }
-
-      // Handle bridge transactions
-      if (rawTx.includes('90fd50b3')) {
-        try {
-          // Parse the transaction to get the sender address and bridge amount
-          const tx = ethers.Transaction.from(rawTx);
-          const fromAddress = tx.from;
-          const toAddress = tx.to;
-          
-          // Decode the bridge amount from the transaction data
-          // The transaction data includes the function selector (4 bytes) followed by the amount parameter
-          const txData = tx.data;
-          // Remove '0x' prefix and function selector (first 8 characters)
-          const paramsHex = txData.slice(10);
-          // The amount is the first parameter (32 bytes = 64 hex characters)
-          const amountHex = paramsHex.slice(0, 64);
-          const bridgeAmount = BigInt('0x' + amountHex);
+      // Handle bridgeOut transactions (Sheet Chain to other chains)
+      // bridgeOut(string toAddress, uint256 destChainId)
+      // Function selector: keccak256("bridgeOut(string,uint256)") -> 0x...
+      // Note: MetaMask signs eth_sendTransaction client-side and sends it as eth_sendRawTransaction
+      // Amount is taken from tx.value, not from function parameters
+      // toAddress is a string that can be either Ethereum address (0x...) or Solana address (base58)
+      else if (txTo === BRIDGE_CONTRACT_ADDRESS.toLowerCase() && txData) {
+        const bridgeOutSelector = ethers.id('bridgeOut(string,uint256)').slice(0, 10);
+        
+        // Check for new bridgeOut transactions (string, uint256)
+        if (txData.startsWith(bridgeOutSelector)) {
+          try {
+            // Decode bridgeOut parameters using ethers.js ABI decoder
+            // Function signature: bridgeOut(string toAddress, uint256 destChainId)
+            const iface = new ethers.Interface([
+              'function bridgeOut(string toAddress, uint256 destChainId) payable'
+            ]);
+            
+            let toAddress, destChainId;
+            try {
+              const decoded = iface.decodeFunctionData('bridgeOut', tx.data);
+              toAddress = decoded[0]; // string toAddress
+              destChainId = Number(decoded[1]); // uint256 destChainId (convert BigInt to Number)
+              
+              logger.debug('BridgeOut decoded:', {
+                toAddress,
+                destChainId,
+                destChainIdType: typeof destChainId
+              });
+            } catch (decodeError) {
+              logger.error('Failed to decode bridgeOut parameters:', {
+                error: decodeError.message,
+                data: tx.data,
+                selector: bridgeOutSelector
+              });
+              throw new Error(`Failed to decode bridgeOut parameters: ${decodeError.message}`);
+            }
+            
+            // Validate destChainId
+            if (isNaN(destChainId) || destChainId < 0) {
+              logger.error('Invalid destChainId:', {
+                destChainId,
+                toAddress
+              });
+              throw new Error(`Invalid destChainId: ${destChainId}`);
+            }
+            
+            // Use transaction value as the bridge amount (simpler and matches MetaMask display)
+            const bridgeAmount = tx.value ? BigInt(tx.value) : BigInt(0);
+            const fromAddress = tx.from.toLowerCase();
+            
+            if (bridgeAmount === BigInt(0)) {
+              throw new Error('Bridge amount cannot be zero');
+            }
+            
+            logger.info('🌉 BridgeOut transaction detected:', {
+              from: fromAddress,
+              toAddress: toAddress,
+              amount: ethers.formatEther(bridgeAmount) + ' ETH',
+              destChainId: destChainId
+            });
+            
+            // Process bridgeOut
+            const bridgeResult = await sheetOps.bridgeOut(
+              fromAddress,
+              bridgeAmount,
+              toAddress,
+              destChainId
+            );
+            
+            // Return the transaction hash
+            result = bridgeResult.transactionHash;
+            
+            logger.info('✅ BridgeOut processed:', bridgeResult);
+          } catch (bridgeError) {
+            logger.error('Failed to process bridgeOut transaction:', bridgeError);
+            throw bridgeError;
+          }
+        }
+        // Check for old bridge transactions (selector 0x90fd50b3) - legacy support
+        else if (txData.includes('90fd50b3') && !txData.includes(bridgeOutSelector.slice(2))) {
+            try {
+            // Old bridge transaction handling
+            const fromAddress = tx.from;
+            const toAddress = tx.to;
+            
+            // Decode the bridge amount from the transaction data
+            const oldTxData = tx.data;
+            const paramsHex = oldTxData.slice(10);
+            const amountHex = paramsHex.slice(0, 64);
+            const bridgeAmount = BigInt('0x' + amountHex);
 
             // Check if user has sufficient balance for bridging
-          const currentBalance = await sheetOps.getBalance(fromAddress);
-          if (currentBalance < bridgeAmount) {
+            const currentBalance = await sheetOps.getBalance(fromAddress);
+            if (currentBalance < bridgeAmount) {
               logger.error('❌ INSUFFICIENT BALANCE FOR BRIDGE:', {
                 address: fromAddress,
                 requestedAmount: ethers.formatEther(bridgeAmount) + ' ETH',
@@ -600,11 +726,40 @@ app.post('/', async (req, res) => {
             }
           }
           
-        } catch (error) {
-          logger.error('Failed to process bridge transaction:', error);
-          // Fallback to mock transaction hash
-          const mockTxHash = '0x' + Math.random().toString(16).substr(2, 64);
-          result = mockTxHash;
+          } catch (error) {
+            logger.error('Failed to process old bridge transaction:', error);
+            // Fallback to mock transaction hash
+            const mockTxHash = '0x' + Math.random().toString(16).substr(2, 64);
+            result = mockTxHash;
+          }
+        }
+        // Process regular transfers (if not already handled as claim or bridge transaction)
+        else if (!result) {
+          // This is a regular transfer - process it
+          try {
+            const txData = {
+              from: tx.from,
+              to: tx.to,
+              value: tx.value ? tx.value.toString() : '0',
+              nonce: tx.nonce,
+              gasLimit: tx.gasLimit ? tx.gasLimit.toString() : '21000',
+              gasPrice: tx.gasPrice ? tx.gasPrice.toString() : '1000000000',
+              data: tx.data || '0x'
+            };
+            
+            const transferResult = await sheetOps.processTransaction(txData);
+            result = transferResult.transactionHash;
+            
+            logger.info('💸 Regular transfer processed:', {
+              from: tx.from,
+              to: tx.to,
+              amount: ethers.formatEther(tx.value || 0) + ' ETH',
+              txHash: result
+            });
+          } catch (error) {
+            logger.error('Failed to process regular transfer:', error);
+            throw error;
+          }
         }
       }
     }
@@ -779,7 +934,8 @@ app.get('/', (req, res) => {
       'claim_getByAddress',
       'claim_getAll',
       'bridge_stats',
-      'bridge_process'
+      'bridge_process',
+      'bridgeOut'
     ]
   });
 });

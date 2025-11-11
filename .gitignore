@@ -6,3 +6,4 @@ credentials.json
 dist/
 build/
 .cache/
+rpc-node/cred/crypto-bots-409100-5febfadd93bc.json

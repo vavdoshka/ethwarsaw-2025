@@ -50,9 +50,7 @@ export const SOL_SHEET_MINT_ADDRESS =
 export const SOL_SHEET_BRIDGE_PROGRAM_ID =
   '46BKi3nxgwFpc8EXE2Yem3syK5yqQRvJLasWzvsTEEgx';
 
-export const SHEET_RPC_ENDPOINT = IS_MAINNET
-  ? 'https://eth.llamarpc.com'
-  : 'https://eth-sepolia.g.alchemy.com/v2/demo';
+export const SHEET_RPC_ENDPOINT = 'http://localhost:8545';
 
 export const BSC_RPC_ENDPOINT = IS_MAINNET
   ? 'https://bsc-dataseed.binance.org'

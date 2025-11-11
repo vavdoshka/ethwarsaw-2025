@@ -3,8 +3,11 @@ import { useWallet } from '../contexts/walletContext';
 import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { WalletButton } from './WalletButton';
-import { WalletDisconnect } from './WalletDisconnect';
-import { ChainAwareConnectButton } from './ChainAwareConnectButton';
+import { useSwitchChain, useAccount } from 'wagmi';
+import { bsc, bscTestnet } from 'wagmi/chains';
+import { IS_MAINNET } from '../config';
+
+const SHEET_CHAIN_ID = 12345;
 
 export const Header: React.FC = () => {
   const { chain } = useWallet();
@@ -14,6 +17,22 @@ export const Header: React.FC = () => {
     disconnect: disconnectSolana,
   } = useSolanaWallet();
   const { setVisible: setSolanaModalVisible } = useWalletModal();
+  const { switchChain } = useSwitchChain();
+  const { isConnected: evmConnected, chain: currentEvmChain } = useAccount();
+
+  // Auto-switch EVM network when chain changes
+  useEffect(() => {
+    if (!evmConnected || !switchChain || chain.name === 'solana') return;
+
+    const bscChainConfig = IS_MAINNET ? bsc : bscTestnet;
+
+    const targetChainId =
+      chain.name === 'bsc' ? bscChainConfig.id : SHEET_CHAIN_ID;
+
+    if (currentEvmChain?.id !== targetChainId) {
+      switchChain({ chainId: targetChainId });
+    }
+  }, [chain, evmConnected, currentEvmChain, switchChain]);
 
   // Format Solana address like RainbowKit does (show first 4 and last 4 characters)
   const formatSolanaAddress = (address: string) => {
