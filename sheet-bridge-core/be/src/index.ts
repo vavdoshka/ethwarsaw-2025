@@ -1,10 +1,10 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { EventParser, BorshCoder, Idl } from '@coral-xyz/anchor';
-import idl from '../target/idl/lock.json';
+import idl from '../../solana/target/idl/lock.json';
 import logger from './logger';
 import 'dotenv/config';
 import { JsonRpcProvider, Wallet, isAddress } from 'ethers';
-import { setupDatabase, insertSwap, closeDatabase } from './db';
+import { setupDatabase, insertBridgeEvent, closeDatabase } from './db';
 
 const SOLANA_RPC_URL = 'https://api.devnet.solana.com';
 const SHEET_RPC_URL = 'https://ethwarsaw-2025.onrender.com';
@@ -47,8 +47,8 @@ async function main() {
                         `transfer event cached, user: ${sender.toString()}, amount: ${amountStr}, recipient: ${recipient}`
                     );
 
-                    // Insert swap record into database
-                    insertSwap({
+                    // Save information about bridge event into DB
+                    insertBridgeEvent({
                         from_chain: 'solana',
                         from_address: sender.toString(),
                         from_amount: amountStr,
@@ -59,7 +59,7 @@ async function main() {
                         status: 'pending',
                     });
 
-                    sendSheetTransfer(ethWallet, recipient, amount, logs.signature);
+                    sendSheetTransfer(ethWallet, recipient, amount);
                 }
             }
         },

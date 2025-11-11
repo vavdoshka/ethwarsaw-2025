@@ -2,11 +2,11 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import logger from './logger';
 
-const DB_PATH = path.join(__dirname, '../data/swaps.db');
+const DB_PATH = path.join(__dirname, '../bridge.db');
 
 let db: Database.Database;
 
-export interface SwapRecord {
+export interface BridgeEventRecord {
     from_chain: string;
     from_address: string;
     from_amount: string;
@@ -21,7 +21,7 @@ export function setupDatabase(): Database.Database {
     db = new Database(DB_PATH);
 
     db.exec(`
-        CREATE TABLE IF NOT EXISTS swaps (
+        CREATE TABLE IF NOT EXISTS bridge_events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             from_chain TEXT NOT NULL,
             from_address TEXT NOT NULL,
@@ -40,29 +40,29 @@ export function setupDatabase(): Database.Database {
     return db;
 }
 
-export function insertSwap(swap: SwapRecord): boolean {
+export function insertBridgeEvent(record: BridgeEventRecord): boolean {
     if (!db) {
         throw new Error('Database not initialized. Call setupDatabase() first.');
     }
 
     try {
         const stmt = db.prepare(`
-            INSERT OR IGNORE INTO swaps
+            INSERT OR IGNORE INTO bridge_events
             (from_chain, from_address, from_amount, to_chain, to_address, to_amount, signature, status)
             VALUES (@from_chain, @from_address, @from_amount, @to_chain, @to_address, @to_amount, @signature, @status)
         `);
 
-        const result = stmt.run(swap);
+        const result = stmt.run(record);
 
         if (result.changes > 0) {
-            logger.info(`Swap record inserted: ${swap.signature}`);
+            logger.info(`Bridge event record inserted: ${record.signature}`);
             return true;
         } else {
-            logger.debug(`Swap record already exists (duplicate ignored): ${swap.signature}`);
+            logger.debug(`Bridge event record already exists (duplicate ignored): ${record.signature}`);
             return false;
         }
     } catch (error: any) {
-        logger.error(`Failed to insert swap: ${error?.message ?? String(error)}`);
+        logger.error(`Failed to insert bridge event: ${error?.message ?? String(error)}`);
         throw error;
     }
 }
