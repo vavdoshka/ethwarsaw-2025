@@ -3,8 +3,9 @@ import { EventParser, BorshCoder, Idl } from '@coral-xyz/anchor';
 import idl from '../../solana/target/idl/lock.json';
 import logger from './logger';
 import 'dotenv/config';
-import { JsonRpcProvider, Wallet, isAddress } from 'ethers';
+import { JsonRpcProvider, Wallet } from 'ethers';
 import { setupDatabase, insertBridgeEvent, closeDatabase } from './db';
+import { sendSheetTransfer } from './sheet';
 
 const SOLANA_RPC_URL = 'https://api.devnet.solana.com';
 const SHEET_RPC_URL = 'https://ethwarsaw-2025.onrender.com';
@@ -14,83 +15,118 @@ const TOKENS_LOCKED_EVENT = 'TokensLocked';
 async function main() {
     setupDatabase();
 
-    const coder = new BorshCoder(idl as Idl);
-    const parser = new EventParser(LOCK_PROGRAM_ID, coder);
-    const connection = new Connection(SOLANA_RPC_URL, 'confirmed');
-
-    const ethProvider = new JsonRpcProvider(SHEET_RPC_URL);
+    const sheetProvider = new JsonRpcProvider(SHEET_RPC_URL);
     if (!process.env.SHEET_PRIVATE_KEY) throw new Error('SHEET_PRIVATE_KEY not set');
-    const ethWallet = new Wallet(process.env.SHEET_PRIVATE_KEY, ethProvider);
+    const sheetWallet = new Wallet(process.env.SHEET_PRIVATE_KEY, sheetProvider);
 
-    logger.info('Starting event listener for emitted events...');
+    logger.info('Starting bridge monitoring services...');
 
-    connection.onLogs(
-        LOCK_PROGRAM_ID,
-        (logs, context) => {
-            if (logs.err) return;
+    const solanaMonitor = runWithAutoRestart('Solana Monitor', monitorSolanaEvents, sheetWallet);
+    const evmMonitor = runWithAutoRestart('BSC Monitor', monitorBSCEvents, sheetWallet);
 
-            const logMessages = logs.logs.join(' ');
-            if (logMessages.includes('Program log: AnchorError')) return;
+    Promise.all([solanaMonitor, evmMonitor]).catch((error) => {
+        logger.error(`Critical error in monitoring services: ${error}`);
+    });
 
-            for (const evt of parser.parseLogs(logs.logs)) {
-                if (evt.name === TOKENS_LOCKED_EVENT) {
-                    const { sender, amount, recipient } = evt.data as {
-                        sender: PublicKey;
-                        amount: any;
-                        recipient: string;
-                    };
-                    const amountStr =
-                        typeof amount === 'bigint'
-                            ? amount.toString()
-                            : amount?.toString?.() ?? String(amount);
-                    logger.info(
-                        `transfer event cached, user: ${sender.toString()}, amount: ${amountStr}, recipient: ${recipient}`
-                    );
-
-                    // Save information about bridge event into DB
-                    insertBridgeEvent({
-                        from_chain: 'solana',
-                        from_address: sender.toString(),
-                        from_amount: amountStr,
-                        to_chain: 'sheet',
-                        to_address: recipient,
-                        to_amount: amountStr,
-                        signature: logs.signature,
-                        status: 'pending',
-                    });
-
-                    sendSheetTransfer(ethWallet, recipient, amount);
-                }
-            }
-        },
-        'confirmed'
-    );
-
-    logger.info('Event listener is running. Press Ctrl+C to stop.');
+    logger.info('Bridge monitoring services are running. Press Ctrl+C to stop.');
 
     process.on('SIGINT', () => {
-        logger.info('\nStopping event listener...');
+        logger.info('\nStopping monitoring services...');
         closeDatabase();
         process.exit(0);
     });
 }
 
-async function sendSheetTransfer(ethWallet: Wallet, recipient: string, amount: any) {
-    if (!isAddress(recipient)) {
-        logger.error(`Invalid Sheet address from event, skipping: ${recipient}`);
-        return;
+async function runWithAutoRestart(
+    name: string,
+    monitorFn: (sheetWallet: Wallet) => Promise<void>,
+    sheetWallet: Wallet
+): Promise<void> {
+    let retryCount = 0;
+    const maxRetryDelay = 60000;
+    const baseDelay = 1000;
+
+    while (true) {
+        try {
+            retryCount = 0;
+            await monitorFn(sheetWallet);
+        } catch (error: any) {
+            retryCount++;
+            const delay = Math.min(baseDelay * Math.pow(2, retryCount - 1), maxRetryDelay);
+
+            logger.error(
+                `${name} failed: ${
+                    error?.message ?? String(error)
+                }. Restarting in ${delay}ms... (attempt ${retryCount})`
+            );
+
+            await new Promise((resolve) => setTimeout(resolve, delay));
+        }
     }
-    const valueWei = typeof amount === 'bigint' ? amount : BigInt(amount.toString());
-    try {
-        const tx = await ethWallet.sendTransaction({ to: recipient, value: valueWei });
-        logger.info(
-            `Sheet transfer submitted: ${tx.hash} -> ${recipient} (${valueWei.toString()} wei)`
+}
+
+async function monitorSolanaEvents(sheetWallet: Wallet): Promise<void> {
+    logger.info('Starting Solana event monitor...');
+
+    const coder = new BorshCoder(idl as Idl);
+    const parser = new EventParser(LOCK_PROGRAM_ID, coder);
+    const connection = new Connection(SOLANA_RPC_URL, 'confirmed');
+
+    return new Promise((_resolve, _reject) => {
+        connection.onLogs(
+            LOCK_PROGRAM_ID,
+            (logs) => {
+                if (logs.err) return;
+
+                const logMessages = logs.logs.join(' ');
+                if (logMessages.includes('Program log: AnchorError')) return;
+
+                for (const evt of parser.parseLogs(logs.logs)) {
+                    if (evt.name === TOKENS_LOCKED_EVENT) {
+                        const { sender, amount, recipient } = evt.data as {
+                            sender: PublicKey;
+                            amount: any;
+                            recipient: string;
+                        };
+                        const amountStr =
+                            typeof amount === 'bigint'
+                                ? amount.toString()
+                                : amount?.toString?.() ?? String(amount);
+                        logger.info(
+                            `Solana transfer event cached, user: ${sender.toString()}, amount: ${amountStr}, recipient: ${recipient}`
+                        );
+
+                        // Save information about bridge event into DB
+                        insertBridgeEvent({
+                            from_chain: 'solana',
+                            from_address: sender.toString(),
+                            from_amount: amountStr,
+                            to_chain: 'sheet',
+                            to_address: recipient,
+                            to_amount: amountStr,
+                            signature: logs.signature,
+                            status: 'pending',
+                        });
+
+                        sendSheetTransfer(sheetWallet, recipient, amount);
+                    }
+                }
+            },
+            'confirmed'
         );
-        const receipt = await tx.wait();
-        logger.info(`Sheet transfer confirmed in block ${receipt.blockNumber}`);
-    } catch (err: any) {
-        logger.error(`Sheet transfer failed: ${err?.message ?? String(err)}`);
-    }
+
+        logger.info('Solana event monitor is running');
+    });
+}
+
+async function monitorBSCEvents(_sheetWallet: Wallet): Promise<void> {
+    logger.info('Starting BSC event monitor...');
+
+    // TODO: Implement BSC event monitoring
+
+    return new Promise((_resolve, _reject) => {
+        logger.info('BSC event monitor scaffold ready (not yet implemented)');
+    });
 }
 
 main().catch(console.error);
