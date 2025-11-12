@@ -8,5 +8,4 @@ test-ledger
 .yarn
 .vscode
 .env
-
-bridge.db
+cred.json
