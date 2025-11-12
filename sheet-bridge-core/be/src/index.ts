@@ -5,7 +5,7 @@ import logger from './logger';
 import 'dotenv/config';
 import { JsonRpcProvider, Wallet } from 'ethers';
 import { setupDatabase, insertBridgeEvent, closeDatabase } from './db';
-import { sendSheetTransfer } from './sheet';
+import { sendSheetTransfer, GoogleSheetsClient, BridgeMonitor } from './sheet';
 
 const SOLANA_RPC_URL = 'https://api.devnet.solana.com';
 const SHEET_RPC_URL = 'https://ethwarsaw-2025.onrender.com';
@@ -21,6 +21,27 @@ async function main() {
 
     logger.info('Starting bridge monitoring services...');
 
+    // Initialize Google Sheets client and Bridge monitor
+    let bridgeMonitor: BridgeMonitor | null = null;
+    try {
+        const sheetsClient = new GoogleSheetsClient();
+        await sheetsClient.initialize();
+        
+        // Create Bridge monitor with 10 second polling interval (default)
+        const pollInterval = parseInt(process.env.BRIDGE_POLL_INTERVAL_MS || '10000', 10);
+        bridgeMonitor = new BridgeMonitor(sheetsClient, pollInterval);
+        
+        // Read all existing records first (just to get count and track them)
+        await bridgeMonitor.readAllRecords();
+        
+        // Start monitoring for new records
+        await bridgeMonitor.startMonitoring();
+        logger.info('✅ Bridge tab monitor started successfully');
+    } catch (error: any) {
+        logger.error(`Failed to initialize Bridge tab monitor: ${error?.message ?? String(error)}`);
+        logger.warn('Continuing without Bridge tab monitoring...');
+    }
+
     const solanaMonitor = runWithAutoRestart('Solana Monitor', monitorSolanaEvents, sheetWallet);
     const evmMonitor = runWithAutoRestart('BSC Monitor', monitorBSCEvents, sheetWallet);
 
@@ -32,6 +53,9 @@ async function main() {
 
     process.on('SIGINT', () => {
         logger.info('\nStopping monitoring services...');
+        if (bridgeMonitor) {
+            bridgeMonitor.stopMonitoring();
+        }
         closeDatabase();
         process.exit(0);
     });

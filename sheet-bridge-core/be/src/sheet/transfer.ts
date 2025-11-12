@@ -1,5 +1,5 @@
 import { Wallet, isAddress } from 'ethers';
-import logger from './logger';
+import logger from '../logger';
 
 export async function sendSheetTransfer(ethWallet: Wallet, recipient: string, amount: any) {
     if (!isAddress(recipient)) {
@@ -18,3 +18,4 @@ export async function sendSheetTransfer(ethWallet: Wallet, recipient: string, am
         logger.error(`Sheet transfer failed: ${err?.message ?? String(err)}`);
     }
 }
+
