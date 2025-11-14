@@ -2,15 +2,14 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
-// Mock ERC20 token for testing
 describe("TokenLock", function () {
   // Fixture to deploy contracts
   async function deployTokenLockFixture() {
     const [owner, user1, user2, recipient] = await ethers.getSigners();
 
-    // Deploy a mock ERC20 token for testing
-    const MockERC20 = await ethers.getContractFactory("MockERC20");
-    const mockToken = await MockERC20.deploy("Mock Token", "MTK", ethers.parseEther("1000000"));
+    // Deploy an ERC20 token for testing
+    const ERC20Token = await ethers.getContractFactory("ERC20Token");
+    const mockToken = await ERC20Token.deploy("Mock Token", "MTK", 18, ethers.parseEther("1000000"));
     await mockToken.waitForDeployment();
 
     const tokenAddress = await mockToken.getAddress();

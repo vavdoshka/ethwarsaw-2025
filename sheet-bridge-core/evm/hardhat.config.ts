@@ -5,6 +5,15 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
+function getAccounts() {
+  if (process.env.PRIVATE_KEY) {
+    return [process.env.PRIVATE_KEY];
+  } else if (process.env.MNEMONIC) {
+    return { mnemonic: process.env.MNEMONIC };
+  }
+  return [];
+}
+
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.20",
@@ -20,14 +29,14 @@ const config: HardhatUserConfig = {
     bsc: {
       url: process.env.BSC_RPC_URL || "https://bsc-dataseed1.binance.org",
       chainId: 56,
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getAccounts(),
       gasPrice: 3000000000, // 3 gwei
     },
     // BSC Testnet
     bscTestnet: {
       url: process.env.BSC_TESTNET_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545",
       chainId: 97,
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getAccounts(),
       gasPrice: 10000000000, // 10 gwei
     },
     // Hardhat local network
