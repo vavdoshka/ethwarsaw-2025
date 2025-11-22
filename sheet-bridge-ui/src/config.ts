@@ -54,4 +54,6 @@ export const SHEET_RPC_ENDPOINT = 'https://eth.llamarpc.com';
 
 export const BSC_RPC_ENDPOINT = 'https://bsc-dataseed.binance.org';
 export const BSC_SHEET_TOKEN_ADDRESS =
-  '0x0000000000000000000000000000000000000000'; // TODO: Replace with actual BSC SHEET token address
+  '0xe66E4213A373dECB6793240f69ADE43A6bB972bd';
+export const BSC_SHEET_BRIDGE_PROGRAM_ID =
+  '0xfD5A4Cee5d5C5b7b5E3B18b8401879361F58113b';

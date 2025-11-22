@@ -7,6 +7,7 @@ const DB_PATH = path.join(__dirname, '../bridge.db');
 let db: Database.Database;
 
 export interface BridgeEventRecord {
+    id?: number;
     from_chain: string;
     from_address: string;
     from_amount: string;
@@ -15,6 +16,7 @@ export interface BridgeEventRecord {
     to_amount: string;
     signature: string;
     status: string;
+    created_at?: string;
 }
 
 export function setupDatabase(): Database.Database {
@@ -72,6 +74,52 @@ export function getDatabase(): Database.Database {
         throw new Error('Database not initialized. Call setupDatabase() first.');
     }
     return db;
+}
+
+export function getPendingBridgeEvents(): BridgeEventRecord[] {
+    if (!db) {
+        throw new Error('Database not initialized. Call setupDatabase() first.');
+    }
+
+    try {
+        const stmt = db.prepare(`
+            SELECT * FROM bridge_events
+            WHERE status = 'pending'
+            ORDER BY created_at ASC
+        `);
+
+        return stmt.all() as BridgeEventRecord[];
+    } catch (error: any) {
+        logger.error(`Failed to get pending bridge events: ${error?.message ?? String(error)}`);
+        throw error;
+    }
+}
+
+export function updateBridgeEventStatus(id: number, status: string): boolean {
+    if (!db) {
+        throw new Error('Database not initialized. Call setupDatabase() first.');
+    }
+
+    try {
+        const stmt = db.prepare(`
+            UPDATE bridge_events
+            SET status = ?
+            WHERE id = ?
+        `);
+
+        const result = stmt.run(status, id);
+
+        if (result.changes > 0) {
+            logger.info(`Bridge event status updated: id=${id} -> ${status}`);
+            return true;
+        } else {
+            logger.warn(`No bridge event found with id: ${id}`);
+            return false;
+        }
+    } catch (error: any) {
+        logger.error(`Failed to update bridge event status: ${error?.message ?? String(error)}`);
+        throw error;
+    }
 }
 
 export function closeDatabase(): void {
