@@ -1,16 +1,23 @@
-import { Connection, PublicKey } from '@solana/web3.js';
+import { Connection, PublicKey, Keypair } from '@solana/web3.js';
 import { EventParser, BorshCoder, Idl } from '@coral-xyz/anchor';
 import idl from '../../solana/target/idl/lock.json';
 import logger from './logger';
 import 'dotenv/config';
-import { JsonRpcProvider, Wallet } from 'ethers';
-import { setupDatabase, insertBridgeEvent, closeDatabase } from './db';
-import { sendSheetTransfer } from './sheet';
-
-const SOLANA_RPC_URL = 'https://api.devnet.solana.com';
-const SHEET_RPC_URL = 'https://ethwarsaw-2025.onrender.com';
-const LOCK_PROGRAM_ID = new PublicKey('46BKi3nxgwFpc8EXE2Yem3syK5yqQRvJLasWzvsTEEgx');
-const TOKENS_LOCKED_EVENT = 'TokensLocked';
+import { JsonRpcProvider, Wallet, WebSocketProvider, Contract } from 'ethers';
+import { setupDatabase, insertBridgeEvent, closeDatabase, getPendingBridgeEvents, updateBridgeEventStatus } from './db';
+import { transferTokens } from './transfer';
+import tokenLockAbi from './tokenLockAbi.json';
+import {
+    SOLANA_RPC_URL,
+    SHEET_RPC_URL,
+    LOCK_PROGRAM_ID,
+    TOKENS_LOCKED_EVENT,
+    BSC_WSS_URL,
+    BSC_HTTP_URL,
+    BSC_TOKEN_LOCK_ADDRESS,
+    SOLANA_TOKEN_MINT,
+    TransferContext
+} from './config';
 
 async function main() {
     setupDatabase();
@@ -19,12 +26,31 @@ async function main() {
     if (!process.env.SHEET_PRIVATE_KEY) throw new Error('SHEET_PRIVATE_KEY not set');
     const sheetWallet = new Wallet(process.env.SHEET_PRIVATE_KEY, sheetProvider);
 
+    const bscProvider = new JsonRpcProvider(BSC_HTTP_URL);
+    if (!process.env.BSC_PRIVATE_KEY) throw new Error('BSC_PRIVATE_KEY not set');
+    const bscWallet = new Wallet(process.env.BSC_PRIVATE_KEY, bscProvider);
+
+    const solanaConnection = new Connection(SOLANA_RPC_URL, 'confirmed');
+    if (!process.env.SECRET_KEY) throw new Error('SECRET_KEY not set');
+    const secretKeyArray = JSON.parse(process.env.SECRET_KEY);
+    const solanaAuthority = Keypair.fromSecretKey(Uint8Array.from(secretKeyArray));
+
+    const transferContext: TransferContext = {
+        sheetWallet,
+        bscWallet,
+        bscTokenLockAddress: BSC_TOKEN_LOCK_ADDRESS,
+        solanaConnection,
+        solanaAuthority,
+        solanaTokenMint: SOLANA_TOKEN_MINT,
+    };
+
     logger.info('Starting bridge monitoring services...');
 
-    const solanaMonitor = runWithAutoRestart('Solana Monitor', monitorSolanaEvents, sheetWallet);
-    const evmMonitor = runWithAutoRestart('BSC Monitor', monitorBSCEvents, sheetWallet);
+    const solanaMonitor = runWithAutoRestart('Solana Monitor', () => monitorSolanaEvents());
+    const bscMonitor = runWithAutoRestart('BSC Monitor', () => monitorBSCEvents());
+    const transferWorker = runWithAutoRestart('Transfer Worker', () => processTransfers(transferContext));
 
-    Promise.all([solanaMonitor, evmMonitor]).catch((error) => {
+    Promise.all([solanaMonitor, bscMonitor, transferWorker]).catch((error) => {
         logger.error(`Critical error in monitoring services: ${error}`);
     });
 
@@ -39,8 +65,7 @@ async function main() {
 
 async function runWithAutoRestart(
     name: string,
-    monitorFn: (sheetWallet: Wallet) => Promise<void>,
-    sheetWallet: Wallet
+    monitorFn: () => Promise<void>
 ): Promise<void> {
     let retryCount = 0;
     const maxRetryDelay = 60000;
@@ -49,7 +74,7 @@ async function runWithAutoRestart(
     while (true) {
         try {
             retryCount = 0;
-            await monitorFn(sheetWallet);
+            await monitorFn();
         } catch (error: any) {
             retryCount++;
             const delay = Math.min(baseDelay * Math.pow(2, retryCount - 1), maxRetryDelay);
@@ -65,7 +90,7 @@ async function runWithAutoRestart(
     }
 }
 
-async function monitorSolanaEvents(sheetWallet: Wallet): Promise<void> {
+async function monitorSolanaEvents(): Promise<void> {
     logger.info('Starting Solana event monitor...');
 
     const coder = new BorshCoder(idl as Idl);
@@ -96,7 +121,6 @@ async function monitorSolanaEvents(sheetWallet: Wallet): Promise<void> {
                             `Solana transfer event cached, user: ${sender.toString()}, amount: ${amountStr}, recipient: ${recipient}`
                         );
 
-                        // Save information about bridge event into DB
                         insertBridgeEvent({
                             from_chain: 'solana',
                             from_address: sender.toString(),
@@ -107,8 +131,6 @@ async function monitorSolanaEvents(sheetWallet: Wallet): Promise<void> {
                             signature: logs.signature,
                             status: 'pending',
                         });
-
-                        sendSheetTransfer(sheetWallet, recipient, amount);
                     }
                 }
             },
@@ -119,13 +141,79 @@ async function monitorSolanaEvents(sheetWallet: Wallet): Promise<void> {
     });
 }
 
-async function monitorBSCEvents(_sheetWallet: Wallet): Promise<void> {
+async function monitorBSCEvents(): Promise<void> {
     logger.info('Starting BSC event monitor...');
 
-    // TODO: Implement BSC event monitoring
+    const provider = new WebSocketProvider(BSC_WSS_URL);
+    await provider.ready;
+    logger.info('BSC WebSocket connection established');
+
+    const contract = new Contract(BSC_TOKEN_LOCK_ADDRESS, tokenLockAbi, provider);
 
     return new Promise((_resolve, _reject) => {
-        logger.info('BSC event monitor scaffold ready (not yet implemented)');
+        contract.on('TokensLocked', async (sender, recipient, amount, event) => {
+            try {
+                const amountStr = amount.toString();
+                const blockNumber = event.log.blockNumber;
+                const transactionHash = event.log.transactionHash;
+
+                logger.info(
+                    `BSC transfer event cached, user: ${sender}, amount: ${amountStr}, recipient: ${recipient}, tx: ${transactionHash}, block: ${blockNumber}`
+                );
+
+                insertBridgeEvent({
+                    from_chain: 'bsc',
+                    from_address: sender,
+                    from_amount: amountStr,
+                    to_chain: 'sheet',
+                    to_address: recipient,
+                    to_amount: amountStr,
+                    signature: transactionHash,
+                    status: 'pending',
+                });
+            } catch (error: any) {
+                logger.error(`Error processing BSC TokensLocked event: ${error?.message ?? String(error)}`);
+            }
+        });
+
+        logger.info('BSC event monitor is running');
+    });
+}
+
+async function processTransfers(context: TransferContext): Promise<void> {
+    logger.info('Starting transfer worker...');
+
+    return new Promise((_resolve, _reject) => {
+        const processInterval = setInterval(async () => {
+            try {
+                const pendingEvents = getPendingBridgeEvents();
+
+                for (const event of pendingEvents) {
+                    if (!event.id) continue;
+
+                    try {
+                        const fromChain = event.from_chain.toLowerCase();
+                        const toChain = event.to_chain.toLowerCase();
+
+                        await transferTokens(fromChain, toChain, event.to_address, event.to_amount, context);
+                        updateBridgeEventStatus(event.id, 'processed');
+                    } catch (error: any) {
+                        logger.error(
+                            `Transfer failed for event id ${event.id}: ${error?.message ?? String(error)}`
+                        );
+                        updateBridgeEventStatus(event.id, 'failed');
+                    }
+                }
+            } catch (error: any) {
+                logger.error(`Error processing transfers: ${error?.message ?? String(error)}`);
+            }
+        }, 1000);
+
+        process.on('SIGINT', () => {
+            clearInterval(processInterval);
+        });
+
+        logger.info('Transfer worker is running');
     });
 }
 

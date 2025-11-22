@@ -24,7 +24,7 @@ const CONFIG = {
     metadata: {
         name: 'Sheet',
         symbol: 'SHEET',
-        uri: 'https://ilyatsupryk.github.io/images/sheet.png',
+        uri: '',
         sellerFeeBasisPoints: 0,
         creators: null,
         collection: null,
