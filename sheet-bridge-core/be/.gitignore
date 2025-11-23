@@ -8,3 +8,5 @@ test-ledger
 .yarn
 .vscode
 .env
+
+bridge.db

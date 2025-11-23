@@ -6,6 +6,12 @@ const DB_PATH = path.join(__dirname, '../bridge.db');
 
 let db: Database.Database;
 
+export enum BridgeEventStatus {
+    Pending = 'pending',
+    Processed = 'processed',
+    Failed = 'failed',
+}
+
 export interface BridgeEventRecord {
     id?: number;
     from_chain: string;
@@ -14,8 +20,11 @@ export interface BridgeEventRecord {
     to_chain: string;
     to_address: string;
     to_amount: string;
-    signature: string;
-    status: string;
+    lock_tx_hash: string;
+    transfer_tx_hash?: string | null;
+    transfer_at?: string | null;
+    error?: string | null;
+    status: BridgeEventStatus;
     created_at?: string;
 }
 
@@ -31,9 +40,12 @@ export function setupDatabase(): Database.Database {
             to_chain TEXT NOT NULL,
             to_address TEXT NOT NULL,
             to_amount TEXT NOT NULL,
-            signature TEXT NOT NULL,
+            lock_tx_hash TEXT NOT NULL,
+            transfer_tx_hash TEXT,
+            error TEXT,
             status TEXT NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            transfer_at DATETIME,
             UNIQUE(from_chain, from_address, from_amount, to_chain, to_address, to_amount)
         )
     `);
@@ -50,17 +62,22 @@ export function insertBridgeEvent(record: BridgeEventRecord): boolean {
     try {
         const stmt = db.prepare(`
             INSERT OR IGNORE INTO bridge_events
-            (from_chain, from_address, from_amount, to_chain, to_address, to_amount, signature, status)
-            VALUES (@from_chain, @from_address, @from_amount, @to_chain, @to_address, @to_amount, @signature, @status)
+            (from_chain, from_address, from_amount, to_chain, to_address, to_amount, lock_tx_hash, transfer_tx_hash, transfer_at, error, status)
+            VALUES (@from_chain, @from_address, @from_amount, @to_chain, @to_address, @to_amount, @lock_tx_hash, @transfer_tx_hash, @transfer_at, @error, @status)
         `);
 
-        const result = stmt.run(record);
+        const result = stmt.run({
+            ...record,
+            transfer_tx_hash: record.transfer_tx_hash ?? null,
+            transfer_at: record.transfer_at ?? null,
+            error: record.error ?? null,
+        });
 
         if (result.changes > 0) {
-            logger.info(`Bridge event record inserted: ${record.signature}`);
+            logger.info(`Bridge event record inserted: ${record.lock_tx_hash}`);
             return true;
         } else {
-            logger.debug(`Bridge event record already exists (duplicate ignored): ${record.signature}`);
+            logger.debug(`Bridge event record already exists (duplicate ignored): ${record.lock_tx_hash}`);
             return false;
         }
     } catch (error: any) {
@@ -84,30 +101,54 @@ export function getPendingBridgeEvents(): BridgeEventRecord[] {
     try {
         const stmt = db.prepare(`
             SELECT * FROM bridge_events
-            WHERE status = 'pending'
+            WHERE status = @status
             ORDER BY created_at ASC
         `);
 
-        return stmt.all() as BridgeEventRecord[];
+        return stmt.all({ status: BridgeEventStatus.Pending }) as BridgeEventRecord[];
     } catch (error: any) {
         logger.error(`Failed to get pending bridge events: ${error?.message ?? String(error)}`);
         throw error;
     }
 }
 
-export function updateBridgeEventStatus(id: number, status: string): boolean {
+export function updateBridgeEventStatus(
+    id: number,
+    status: BridgeEventStatus,
+    updates: Partial<Pick<BridgeEventRecord, 'transfer_tx_hash' | 'transfer_at' | 'error'>> = {}
+): boolean {
     if (!db) {
         throw new Error('Database not initialized. Call setupDatabase() first.');
     }
 
     try {
-        const stmt = db.prepare(`
-            UPDATE bridge_events
-            SET status = ?
-            WHERE id = ?
-        `);
+        const setClauses = ['status = @status'];
+        const params: Record<string, any> = { status, id };
 
-        const result = stmt.run(status, id);
+        if ('transfer_tx_hash' in updates) {
+            setClauses.push('transfer_tx_hash = @transfer_tx_hash');
+            params.transfer_tx_hash = updates.transfer_tx_hash ?? null;
+        }
+
+        if ('transfer_at' in updates) {
+            setClauses.push('transfer_at = @transfer_at');
+            params.transfer_at = updates.transfer_at ?? null;
+        }
+
+        if ('error' in updates) {
+            setClauses.push('error = @error');
+            params.error = updates.error ?? null;
+        }
+
+        const stmt = db.prepare(
+            `
+            UPDATE bridge_events
+            SET ${setClauses.join(', ')}
+            WHERE id = @id
+        `
+        );
+
+        const result = stmt.run(params);
 
         if (result.changes > 0) {
             logger.info(`Bridge event status updated: id=${id} -> ${status}`);

@@ -27,7 +27,7 @@ export async function transferTokens(
             to_address,
             to_amount
         );
-    } else if (toChain === 'sheet') {
+    } else if (['solana', 'bsc'].includes(fromChain) && toChain === 'sheet') {
         return await sendSheetTransfer(
             context.sheetWallet,
             to_address,
