@@ -1,34 +1,19 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useWallet } from '../contexts/walletContext';
 import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { WalletButton } from './WalletButton';
-import { useSwitchChain, useAccount } from 'wagmi';
-import { mainnet, sepolia, bsc, bscTestnet } from 'wagmi/chains';
-import { IS_MAINNET } from '../config';
+import { WalletDisconnect } from './WalletDisconnect';
+import { ChainAwareConnectButton } from './ChainAwareConnectButton';
 
 export const Header: React.FC = () => {
   const { chain } = useWallet();
-  const { publicKey, connected: solanaConnected } = useSolanaWallet();
+  const {
+    publicKey,
+    connected: solanaConnected,
+    disconnect: disconnectSolana,
+  } = useSolanaWallet();
   const { setVisible: setSolanaModalVisible } = useWalletModal();
-  const { switchChain } = useSwitchChain();
-  const { isConnected: evmConnected, chain: currentEvmChain } = useAccount();
-
-  // Auto-switch EVM network when chain changes
-  useEffect(() => {
-    if (!evmConnected || !switchChain || chain.name === 'solana') return;
-
-    const sheetChainConfig = IS_MAINNET ? mainnet : sepolia;
-    const bscChainConfig = IS_MAINNET ? bsc : bscTestnet;
-
-    const targetChainId =
-      chain.name === 'bsc' ? bscChainConfig.id : sheetChainConfig.id;
-
-    if (currentEvmChain?.id !== targetChainId) {
-      switchChain({ chainId: targetChainId });
-    }
-  }, [chain, evmConnected, currentEvmChain, switchChain]);
 
   // Format Solana address like RainbowKit does (show first 4 and last 4 characters)
   const formatSolanaAddress = (address: string) => {
@@ -38,6 +23,12 @@ export const Header: React.FC = () => {
 
   const handleSolanaClick = () => {
     setSolanaModalVisible(true);
+  };
+
+  const handleSolanaDisconnect = async () => {
+    if (disconnectSolana) {
+      await disconnectSolana();
+    }
   };
 
   return (
@@ -59,48 +50,20 @@ export const Header: React.FC = () => {
 
         <div className="flex items-stretch h-full">
           {chain.name === 'solana' ? (
-            <WalletButton
-              onClick={handleSolanaClick}
-              connected={solanaConnected}
-              address={
-                publicKey
-                  ? formatSolanaAddress(publicKey.toBase58())
-                  : undefined
-              }
-            />
+            solanaConnected && publicKey ? (
+              <WalletDisconnect
+                address={formatSolanaAddress(publicKey.toBase58())}
+                onDisconnect={handleSolanaDisconnect}
+              />
+            ) : (
+              <WalletButton
+                onClick={handleSolanaClick}
+                connected={false}
+                address={undefined}
+              />
+            )
           ) : (
-            <ConnectButton.Custom>
-              {({
-                account,
-                chain,
-                openAccountModal,
-                openConnectModal,
-                mounted,
-              }) => {
-                const ready = mounted;
-                const connected = ready && account && chain;
-
-                return (
-                  <div
-                    className="flex items-stretch h-full"
-                    {...(!ready && {
-                      'aria-hidden': true,
-                      style: {
-                        opacity: 0,
-                        pointerEvents: 'none',
-                        userSelect: 'none',
-                      },
-                    })}
-                  >
-                    <WalletButton
-                      onClick={connected ? openAccountModal : openConnectModal}
-                      connected={!!connected}
-                      address={account?.displayName}
-                    />
-                  </div>
-                );
-              }}
-            </ConnectButton.Custom>
+            <ChainAwareConnectButton />
           )}
         </div>
       </div>

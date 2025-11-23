@@ -40,7 +40,8 @@ const bscChainConfig = IS_MAINNET ? bsc : bscTestnet;
 const config = getDefaultConfig({
   appName: 'Sheet Bridge',
   projectId: '479c1dd316d4edfe4a4cce462bf1d26d',
-  chains: [sheetChainConfig, bscChainConfig],
+  // Put BSC first as it's the default chain users will see
+  chains: [bscChainConfig, sheetChainConfig],
   transports: {
     [sheetChainConfig.id]: http(SHEET_RPC_ENDPOINT),
     [bscChainConfig.id]: http(BSC_RPC_ENDPOINT),
@@ -65,7 +66,11 @@ function App() {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider modalSize="compact" theme={darkTheme()}>
+        <RainbowKitProvider
+          modalSize="compact"
+          theme={darkTheme()}
+          initialChain={bscChainConfig}
+        >
           <ConnectionProvider endpoint={SOL_RPC_ENDPOINT}>
             <SolanaWalletProvider wallets={wallets} autoConnect>
               <WalletModalProvider>
