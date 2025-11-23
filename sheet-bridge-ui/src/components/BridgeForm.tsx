@@ -7,7 +7,7 @@ import { isValidAmount } from '../utils/format';
 import { ArrowSwapIcon, SpinnerIcon } from './ui/icons';
 import { getSplTokenBalance, lockSplTokens } from '../api/sol';
 import { getSheetBalance } from '../api/sheet';
-import { getBscBalance } from '../api/bsc';
+import { getBscBalance, lockBscTokens } from '../api/bsc';
 
 export const BridgeForm: React.FC = () => {
   const { isChainConnected, getWalletByChain, setChain } = useWallet();
@@ -104,12 +104,30 @@ export const BridgeForm: React.FC = () => {
         setToAmount('');
         setDestinationAddress('');
         await fetchFromBalance();
+      } else if (fromChain.name === 'bsc') {
+        const wallet = getWalletByChain('bsc');
+
+        if (!wallet?.address) {
+          throw new Error('BSC wallet not connected');
+        }
+
+        const tx_hash = await lockBscTokens(fromAmount, destinationAddress);
+
+        console.log('Transaction successful:', tx_hash);
+        alert(`Tokens locked successfully! Signature: ${tx_hash}`);
+
+        setFromAmount('');
+        setToAmount('');
+        setDestinationAddress('');
+        await fetchFromBalance();
       } else {
         throw new Error('Only Solana to Sheet bridge is currently supported');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Bridge transaction failed:', error);
-      alert(`Transaction failed: ${error.message}`);
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Transaction failed: ${message}`);
     } finally {
       setIsLoading(false);
     }
