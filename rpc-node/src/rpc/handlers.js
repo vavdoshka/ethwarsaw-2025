@@ -79,16 +79,35 @@ class RPCHandlers {
         
       case 'bridgeOut':
         return await this.bridgeOut(params);
+      
+      case 'eth_requestAccounts':
+        // MetaMask uses this to get accounts - return empty array (accounts managed by MetaMask)
+        return [];
+        
+      case 'wallet_requestPermissions':
+        // MetaMask permission request - return empty permissions
+        return [];
         
       default:
+        // Log unsupported methods instead of throwing to see what MetaMask is requesting
+        console.warn(`⚠️  Unsupported RPC method requested: ${method}`, { params });
         throw new Error(`Method ${method} not supported`);
     }
   }
 
   async getBalance(params) {
     const [address, blockTag] = params;
+    console.log('🔍 eth_getBalance called:', { address, blockTag, params });
     const balance = await this.sheetOps.getBalance(address);
-    return '0x' + balance.toString(16);
+    const hexBalance = '0x' + balance.toString(16);
+    const { ethers } = require('ethers');
+    console.log('💰 Balance result:', { 
+      address, 
+      balance: balance.toString(), 
+      hexBalance,
+      balanceInEth: ethers.formatEther(balance)
+    });
+    return hexBalance;
   }
 
   async getTransactionCount(params) {
