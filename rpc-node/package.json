@@ -5,7 +5,9 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "test": "node test/run-tests.js",
+    "test:signature": "node test/run-tests.js"
   },
   "keywords": [
     "ethereum",

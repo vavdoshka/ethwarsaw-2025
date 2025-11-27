@@ -354,6 +354,67 @@ app.post('/', async (req, res) => {
         throw new Error(`Invalid transaction format: ${parseError.message}`);
       }
       
+      // Verify transaction signature using ecrecover
+      // In ethers v6, Transaction.from() automatically recovers the signer address from the signature
+      // The 'from' property is set by recovering the address, so if parsing succeeded, signature is valid
+      // However, we explicitly verify by recovering the address to ensure security
+      try {
+        // Verify signature components exist
+        if (!tx.signature || !tx.signature.r || !tx.signature.s || tx.signature.v === undefined) {
+          throw new Error('Transaction missing signature components');
+        }
+        
+        // In ethers v6, we can get the unsigned transaction hash
+        // The transaction hash is computed from the RLP-encoded unsigned transaction
+        // We need to reconstruct the unsigned transaction hash
+        const unsignedTx = {
+          to: tx.to,
+          value: tx.value,
+          data: tx.data || '0x',
+          gasLimit: tx.gasLimit,
+          gasPrice: tx.gasPrice || tx.maxFeePerGas || 0n,
+          nonce: tx.nonce,
+          chainId: tx.chainId
+        };
+        
+        // Create an unsigned transaction and get its hash
+        const unsignedTxObj = ethers.Transaction.from(unsignedTx);
+        // Get the serialized unsigned transaction (without signature)
+        const unsignedSerialized = unsignedTxObj.unsignedSerialized;
+        const txHash = ethers.keccak256(unsignedSerialized);
+        
+        // Recover the signer address from the signature using ecrecover
+        const recoveredAddress = ethers.recoverAddress(txHash, {
+          r: tx.signature.r,
+          s: tx.signature.s,
+          v: tx.signature.v
+        });
+        
+        // Verify the recovered address matches the transaction's from address
+        if (recoveredAddress.toLowerCase() !== tx.from.toLowerCase()) {
+          logger.error('❌ SIGNATURE VERIFICATION FAILED:', {
+            recoveredAddress: recoveredAddress.toLowerCase(),
+            txFrom: tx.from.toLowerCase(),
+            txHash: tx.hash
+          });
+          throw new Error('Invalid transaction signature: recovered address does not match sender');
+        }
+        
+        logger.info('✅ Signature verified via ecrecover:', {
+          from: tx.from,
+          recoveredAddress: recoveredAddress,
+          txHash: tx.hash
+        });
+      } catch (sigError) {
+        // If signature verification fails, reject the transaction
+        logger.error('❌ Signature verification error:', {
+          error: sigError.message,
+          from: tx.from,
+          txHash: tx.hash
+        });
+        throw new Error(`Transaction signature verification failed: ${sigError.message}`);
+      }
+      
       const txTo = tx.to ? tx.to.toLowerCase() : null;
       const txData = tx.data || '';
       
@@ -1001,6 +1062,14 @@ async function start() {
   });
 }
 
+// Allow tests to configure a lightweight environment without touching Google Sheets
+function setTestEnvironment({ rpcHandler: rpcHandlerOverride, sheetOps: sheetOpsOverride, validator: validatorOverride } = {}) {
+  rpcHandler = rpcHandlerOverride || rpcHandler || { handleRequest: async () => null };
+  sheetOps = sheetOpsOverride || sheetOps || null;
+  validator = validatorOverride || validator || new TransactionValidator();
+  isInitialized = true;
+}
+
 process.on('SIGINT', () => {
   logger.info('Shutting down SheetChain RPC Node...');
   process.exit(0);
@@ -1011,7 +1080,21 @@ process.on('unhandledRejection', (error) => {
   process.exit(1);
 });
 
-start();
+// Only auto-start the server when not running tests
+if (process.env.NODE_ENV !== 'test') {
+  start();
+}
+
+module.exports = {
+  app,
+  start,
+  initialize,
+  setTestEnvironment,
+  registerContractHandler,
+  getContractHandler,
+  BRIDGE_CONTRACT_ADDRESS,
+  AIRDROP_CONTRACT_ADDRESS
+};
 
 const abi = `interface ISheetCoin  {
     function initialize() external;

@@ -120,6 +120,9 @@ class RPCHandlers {
     const [signedTx] = params;
     const tx = ethers.Transaction.from(signedTx);
     
+    // Note: Signature verification is handled in server.js for eth_sendRawTransaction
+    // This method is kept for compatibility but the main verification happens upstream
+    
     const txData = {
       from: tx.from,
       to: tx.to,
