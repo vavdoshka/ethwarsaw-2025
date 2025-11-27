@@ -101,6 +101,15 @@ initializeContractHandlers();
 app.use(cors());
 app.use(bodyParser.json());
 
+// Add cache-control headers to prevent MetaMask from caching balance responses
+app.use((req, res, next) => {
+  // Prevent caching of RPC responses, especially balance queries
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
+
 // Add error handling for JSON parsing
 app.use((error, req, res, next) => {
   if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
@@ -136,7 +145,15 @@ app.use((req, res, next) => {
   const requestId = Math.random().toString(36).substr(2, 9);
   const isMetaMask = isMetaMaskRequest(req);
   
-  // Log incoming request details
+  // Log incoming request body for debugging
+  if (req.body && req.body.method) {
+    logger.info('🔍 RAW REQUEST BODY:', {
+      method: req.body.method,
+      params: req.body.params,
+      id: req.body.id,
+      jsonrpc: req.body.jsonrpc
+    });
+  }
 
   // Override res.json to log response details
   const originalJson = res.json;
@@ -239,6 +256,17 @@ app.post('/', async (req, res) => {
   
   // Log all RPC requests for debugging (especially MetaMask validation calls)
   logger.info('📥 RPC Request:', { method, params: params ? JSON.stringify(params).substring(0, 200) : null, id });
+  
+  // Special logging for balance requests
+  if (method === 'eth_getBalance') {
+    logger.info('💰 BALANCE REQUEST:', { 
+      method, 
+      address: params && params[0] ? params[0] : 'missing',
+      blockTag: params && params[1] ? params[1] : 'missing',
+      fullParams: params,
+      id 
+    });
+  }
   
   if (jsonrpc !== '2.0') {
     return res.json({
@@ -761,6 +789,21 @@ app.post('/', async (req, res) => {
             throw error;
           }
         }
+      }
+    }
+    
+    // Ensure result is properly formatted for balance responses
+    if (method === 'eth_getBalance' && result) {
+      // Verify the balance response is a valid hex string
+      if (typeof result === 'string' && result.startsWith('0x')) {
+        logger.info('✅ Sending balance response:', {
+          method,
+          address: params && params[0] ? params[0] : 'unknown',
+          result,
+          resultLength: result.length
+        });
+      } else {
+        logger.error('❌ Invalid balance response format:', { result, type: typeof result });
       }
     }
     
