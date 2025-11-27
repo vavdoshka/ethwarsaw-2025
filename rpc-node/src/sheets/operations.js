@@ -163,6 +163,9 @@ class SheetOperations {
 
         if (!txRow) return null;
 
+        const statusText = (txRow[6] || '').toString();
+        const isSuccess = statusText.toLowerCase().startsWith('success');
+
         return {
             hash: txRow[1],
             from: txRow[2],
@@ -171,7 +174,7 @@ class SheetOperations {
             nonce: '0x' + parseInt(txRow[5]).toString(16),
             blockNumber: '0x' + parseInt(txRow[7]).toString(16),
             gasUsed: '0x' + BigInt(txRow[8] || 21000).toString(16),
-            status: txRow[6] === 'Success' ? '0x1' : '0x0',
+            status: isSuccess ? '0x1' : '0x0',
             btcPrice: txRow[9] || '0',
             ethPrice: txRow[10] || '0'
         };
@@ -451,6 +454,94 @@ class SheetOperations {
             destChainId: destChainId.toString(),
             bridgeAccount: bridgeAccountAddress,
             bridgeAccountBalance: (bridgeBalance + bridgeAmount).toString(),
+            bridgeAccountHasPrivateKey: this.bridgeAccount !== null
+        };
+    }
+
+    /**
+     * Transfer funds from the bridge account on SheetChain to a recipient.
+     * This is used when funds have been received on a different chain and
+     * need to be released to a user on SheetChain.
+     *
+     * @param recipientAddress - user address on SheetChain
+     * @param amount - amount in wei (BigInt or string)
+     * @param originalTxHash - optional external tx hash to reuse for bookkeeping
+     */
+    async bridgeTransfer(recipientAddress, amount, originalTxHash) {
+        const bridgeAccountAddress = this.getBridgeAccountAddress();
+        const bridgeAmount = BigInt(amount);
+
+        const fromAddress = bridgeAccountAddress.toLowerCase();
+        const toAddress = recipientAddress.toLowerCase();
+
+        // Get current balances
+        const bridgeBalance = await this.getBalance(fromAddress);
+        const recipientBalance = await this.getBalance(toAddress);
+
+        // Validate sufficient balance on bridge account
+        if (bridgeBalance < bridgeAmount) {
+            throw new Error(`Bridge account has insufficient balance. Required: ${bridgeAmount}, Available: ${bridgeBalance}`);
+        }
+
+        // Nonces are not modified for internal accounting operations
+        const bridgeNonce = await this.getNonce(fromAddress);
+        const recipientNonce = await this.getNonce(toAddress);
+
+        await this.updateBalance(fromAddress, bridgeBalance - bridgeAmount, bridgeNonce);
+        await this.updateBalance(toAddress, recipientBalance + bridgeAmount, recipientNonce);
+
+        // Generate transaction hash (or reuse provided one)
+        const txHash = originalTxHash || ethers.keccak256(
+            ethers.toUtf8Bytes(JSON.stringify({
+                from: fromAddress,
+                to: toAddress,
+                amount: bridgeAmount.toString(),
+                direction: 'inbound',
+                timestamp: Date.now()
+            }))
+        );
+
+        // Get block number
+        const blockNumber = await this.getLatestBlockNumber() + 1;
+
+        // Record bridge transfer in Bridge sheet (reuse same structure)
+        await this.client.appendRow('Bridge', [
+            new Date().toISOString(),
+            txHash,
+            fromAddress,
+            bridgeAmount.toString(),
+            toAddress,
+            '0', // source chain id or placeholder
+            'Success',
+            blockNumber.toString()
+        ]);
+
+        // Also record a virtual internal transfer in Transactions sheet
+        // from the bridge contract virtual address to the recipient
+        const cryptoPrices = await this.fetchCryptoPrices();
+        const virtualBridgeAddress = '0x0000000000000000000000000000000000000003';
+        await this.client.appendRow('Transactions', [
+            new Date().toISOString(),
+            txHash,
+            virtualBridgeAddress,
+            toAddress,
+            bridgeAmount.toString(),
+            bridgeNonce.toString(),
+            'Success (internal bridge)',
+            blockNumber.toString(),
+            '0', // no gas charged for internal bookkeeping transfer
+            cryptoPrices.btcPrice.toString(),
+            cryptoPrices.ethPrice.toString()
+        ]);
+
+        return {
+            transactionHash: txHash,
+            blockNumber,
+            from: fromAddress,
+            to: toAddress,
+            amount: bridgeAmount.toString(),
+            bridgeAccount: bridgeAccountAddress,
+            bridgeAccountBalance: (bridgeBalance - bridgeAmount).toString(),
             bridgeAccountHasPrivateKey: this.bridgeAccount !== null
         };
     }

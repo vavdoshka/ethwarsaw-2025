@@ -143,6 +143,45 @@ class RPCHandlers {
     if (!tx.from) {
       throw new Error('From address is required');
     }
+
+    // Handle bridgeTransfer calls sent as eth_sendTransaction (e.g. from wallets)
+    // by decoding the call data and delegating to SheetOperations.bridgeTransfer.
+    if (tx.to && tx.data) {
+      const toLower = tx.to.toLowerCase();
+      const data = tx.data;
+      const BRIDGE_CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000003';
+
+      if (toLower === BRIDGE_CONTRACT_ADDRESS.toLowerCase()) {
+        const bridgeTransferSelector = ethers.id('bridgeTransfer(address,uint256)').slice(0, 10);
+
+        if (data.startsWith(bridgeTransferSelector)) {
+          const BRIDGE_OPERATOR_ADDRESS = (process.env.BRIDGE_OPERATOR_ADDRESS || '0xfac92ecd3e2be3cb26c31dbf34948596c7159a18').toLowerCase();
+
+          const caller = tx.from.toLowerCase();
+          if (caller !== BRIDGE_OPERATOR_ADDRESS) {
+            throw new Error('Unauthorized bridgeTransfer caller');
+          }
+
+          const iface = new ethers.Interface([
+            'function bridgeTransfer(address recipient, uint256 amount)'
+          ]);
+
+          let recipient, amount;
+          try {
+            const decoded = iface.decodeFunctionData('bridgeTransfer', data);
+            recipient = decoded[0];
+            amount = decoded[1];
+          } catch (error) {
+            throw new Error(`Failed to decode bridgeTransfer parameters: ${error.message}`);
+          }
+
+          // No canonical tx hash here (eth_sendTransaction), so let SheetOps
+          // generate one for bookkeeping.
+          const transferResult = await this.sheetOps.bridgeTransfer(recipient, amount);
+          return transferResult.transactionHash;
+        }
+      }
+    }
     
     if (tx.nonce === undefined) {
       tx.nonce = await this.sheetOps.getNonce(tx.from);

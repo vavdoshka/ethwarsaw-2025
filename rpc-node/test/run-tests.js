@@ -13,6 +13,7 @@ const { runTests } = require('./test-helpers');
 // Import all test files (this registers the tests)
 require('./signature-verification.test.js');
 require('./rpc-server-signature.test.js');
+require('./bridge-transfer.test.js');
 
 // Run all tests after a short delay to ensure all tests are registered
 setTimeout(() => {
