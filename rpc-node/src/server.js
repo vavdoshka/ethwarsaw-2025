@@ -78,6 +78,61 @@ function initializeContractHandlers() {
 const BRIDGE_CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000003';
 const AIRDROP_CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000001';
 
+// Bridge operator address (on external chain) allowed to release
+// funds from the bridge contract to users on SheetChain.
+// Default is the hard-coded address, but it can be overridden via env.
+let BRIDGE_OPERATOR_ADDRESS = (process.env.BRIDGE_OPERATOR_ADDRESS || '0xfac92ecd3e2be3cb26c31dbf34948596c7159a18').toLowerCase();
+
+async function handleBridgeTransferTransaction(tx) {
+  // Only the bridge operator is allowed to trigger releases
+  const caller = tx.from.toLowerCase();
+  if (caller !== BRIDGE_OPERATOR_ADDRESS.toLowerCase()) {
+    logger.error('Unauthorized bridgeTransfer caller', {
+      caller,
+      expected: BRIDGE_OPERATOR_ADDRESS.toLowerCase()
+    });
+    throw new Error('Unauthorized bridgeTransfer caller');
+  }
+
+  const bridgeTransferSelector = ethers.id('bridgeTransfer(address,uint256)').slice(0, 10);
+  const iface = new ethers.Interface([
+    'function bridgeTransfer(address recipient, uint256 amount)'
+  ]);
+
+  let recipient, amount;
+  try {
+    const decoded = iface.decodeFunctionData('bridgeTransfer', tx.data);
+    recipient = decoded[0];
+    amount = BigInt(decoded[1]);
+
+    logger.info('🌉 BridgeTransfer decoded:', {
+      operator: caller,
+      bridgeAccount: sheetOps ? sheetOps.getBridgeAccountAddress() : null,
+      recipient,
+      amount: ethers.formatEther(amount) + ' ETH'
+    });
+  } catch (decodeError) {
+    logger.error('Failed to decode bridgeTransfer parameters:', {
+      error: decodeError.message,
+      data: tx.data,
+      selector: bridgeTransferSelector
+    });
+    throw new Error(`Failed to decode bridgeTransfer parameters: ${decodeError.message}`);
+  }
+
+  if (!sheetOps) {
+    throw new Error('Sheet operations not initialized for bridgeTransfer');
+  }
+
+  // Use the outer transaction hash for bookkeeping so the
+  // internal virtual transfer shares the same tx id.
+  const transferResult = await sheetOps.bridgeTransfer(recipient, amount, tx.hash);
+
+  logger.info('✅ BridgeTransfer processed:', transferResult);
+
+  return transferResult;
+}
+
 const app = express();
 const PORT = process.env.PORT || 8545;
 
@@ -354,42 +409,22 @@ app.post('/', async (req, res) => {
         throw new Error(`Invalid transaction format: ${parseError.message}`);
       }
       
-      // Verify transaction signature using ecrecover
-      // In ethers v6, Transaction.from() automatically recovers the signer address from the signature
-      // The 'from' property is set by recovering the address, so if parsing succeeded, signature is valid
-      // However, we explicitly verify by recovering the address to ensure security
+      // Verify transaction signature using the hash computed by ethers
+      // Transaction.from() recovers the signer and populates tx.from for us.
       try {
         // Verify signature components exist
         if (!tx.signature || !tx.signature.r || !tx.signature.s || tx.signature.v === undefined) {
           throw new Error('Transaction missing signature components');
         }
-        
-        // In ethers v6, we can get the unsigned transaction hash
-        // The transaction hash is computed from the RLP-encoded unsigned transaction
-        // We need to reconstruct the unsigned transaction hash
-        const unsignedTx = {
-          to: tx.to,
-          value: tx.value,
-          data: tx.data || '0x',
-          gasLimit: tx.gasLimit,
-          gasPrice: tx.gasPrice || tx.maxFeePerGas || 0n,
-          nonce: tx.nonce,
-          chainId: tx.chainId
-        };
-        
-        // Create an unsigned transaction and get its hash
-        const unsignedTxObj = ethers.Transaction.from(unsignedTx);
-        // Get the serialized unsigned transaction (without signature)
-        const unsignedSerialized = unsignedTxObj.unsignedSerialized;
-        const txHash = ethers.keccak256(unsignedSerialized);
-        
-        // Recover the signer address from the signature using ecrecover
-        const recoveredAddress = ethers.recoverAddress(txHash, {
-          r: tx.signature.r,
-          s: tx.signature.s,
-          v: tx.signature.v
-        });
-        
+
+        // Recover the signer address from the unsigned transaction hash and signature.
+        // unsignedHash is the digest that was actually signed (handles legacy & EIP-1559).
+        const unsignedHash = tx.unsignedHash;
+        if (!unsignedHash) {
+          throw new Error('Unable to compute unsigned transaction hash for verification');
+        }
+        const recoveredAddress = ethers.recoverAddress(unsignedHash, tx.signature);
+
         // Verify the recovered address matches the transaction's from address
         if (recoveredAddress.toLowerCase() !== tx.from.toLowerCase()) {
           logger.error('❌ SIGNATURE VERIFICATION FAILED:', {
@@ -512,8 +547,9 @@ app.post('/', async (req, res) => {
       // toAddress is a string that can be either Ethereum address (0x...) or Solana address (base58)
       else if (txTo === BRIDGE_CONTRACT_ADDRESS.toLowerCase() && txData) {
         const bridgeOutSelector = ethers.id('bridgeOut(string,uint256)').slice(0, 10);
+        const bridgeTransferSelector = ethers.id('bridgeTransfer(address,uint256)').slice(0, 10);
         
-        // Check for new bridgeOut transactions (string, uint256)
+        // New bridgeOut transactions (SheetChain -> other chains)
         if (txData.startsWith(bridgeOutSelector)) {
           try {
             // Decode bridgeOut parameters using ethers.js ABI decoder
@@ -580,6 +616,16 @@ app.post('/', async (req, res) => {
             logger.info('✅ BridgeOut processed:', bridgeResult);
           } catch (bridgeError) {
             logger.error('Failed to process bridgeOut transaction:', bridgeError);
+            throw bridgeError;
+          }
+        }
+        // New bridgeTransfer transactions (other chains -> SheetChain)
+        else if (txData.startsWith(bridgeTransferSelector)) {
+          try {
+            const transferResult = await handleBridgeTransferTransaction(tx);
+            result = transferResult.transactionHash;
+          } catch (bridgeError) {
+            logger.error('Failed to process bridgeTransfer transaction:', bridgeError);
             throw bridgeError;
           }
         }
@@ -1063,10 +1109,13 @@ async function start() {
 }
 
 // Allow tests to configure a lightweight environment without touching Google Sheets
-function setTestEnvironment({ rpcHandler: rpcHandlerOverride, sheetOps: sheetOpsOverride, validator: validatorOverride } = {}) {
+function setTestEnvironment({ rpcHandler: rpcHandlerOverride, sheetOps: sheetOpsOverride, validator: validatorOverride, bridgeOperatorAddress } = {}) {
   rpcHandler = rpcHandlerOverride || rpcHandler || { handleRequest: async () => null };
   sheetOps = sheetOpsOverride || sheetOps || null;
   validator = validatorOverride || validator || new TransactionValidator();
+  if (bridgeOperatorAddress) {
+    BRIDGE_OPERATOR_ADDRESS = bridgeOperatorAddress.toLowerCase();
+  }
   isInitialized = true;
 }
 
@@ -1093,7 +1142,9 @@ module.exports = {
   registerContractHandler,
   getContractHandler,
   BRIDGE_CONTRACT_ADDRESS,
-  AIRDROP_CONTRACT_ADDRESS
+  AIRDROP_CONTRACT_ADDRESS,
+  BRIDGE_OPERATOR_ADDRESS,
+  handleBridgeTransferTransaction
 };
 
 const abi = `interface ISheetCoin  {
