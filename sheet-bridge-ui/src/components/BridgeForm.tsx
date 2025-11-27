@@ -3,11 +3,11 @@ import { TokenChainSelector } from './TokenChainSelector';
 import { useWallet } from '../contexts/walletContext';
 import { useWalletClient, useAccount } from 'wagmi';
 import type { Token } from '../types/index';
-import { CHAINS } from '../config';
+import { CHAINS, BRIDGE_OPERATOR_ADDRESS } from '../config';
 import { isValidAmount, isValidAddress } from '../utils/format';
 import { ArrowSwapIcon, SpinnerIcon } from './ui/icons';
 import { getSplTokenBalance, lockSplTokens } from '../api/sol';
-import { getSheetBalance, bridgeOut } from '../api/sheet';
+import { getSheetBalance, bridgeOut, bridgeTransfer } from '../api/sheet';
 import { getBscBalance } from '../api/bsc';
 import { switchToSheetChain } from '../utils/metamask';
 
@@ -31,11 +31,22 @@ export const BridgeForm: React.FC = () => {
   const [fromBalance, setFromBalance] = useState('0');
   const [toBalance, setToBalance] = useState('0');
 
+  // Debug bridgeTransfer inputs
+  const [debugRecipient, setDebugRecipient] = useState('');
+  const [debugAmount, setDebugAmount] = useState('');
+  const [debugIsLoading, setDebugIsLoading] = useState(false);
+
   // Track wallet addresses to detect connection changes
   const fromWallet = getWalletByChain(fromChain.name);
   const toWallet = getWalletByChain(toChain.name);
   const fromWalletAddress = fromWallet?.address;
   const toWalletAddress = toWallet?.address;
+
+  // Treat the connected SheetChain EVM wallet as the potential bridge operator
+  const sheetWallet = getWalletByChain('sheet chain');
+  const isBridgeOperatorConnected =
+    !!sheetWallet &&
+    sheetWallet.address.toLowerCase() === BRIDGE_OPERATOR_ADDRESS.toLowerCase();
 
   useEffect(() => {
     setChain(fromChain);
@@ -290,6 +301,49 @@ export const BridgeForm: React.FC = () => {
     }
   }, [toChain, toWalletAddress, fetchToBalance]);
 
+  const handleDebugBridgeTransfer = async () => {
+    try {
+      setDebugIsLoading(true);
+
+      if (!isBridgeOperatorConnected || !sheetWallet?.address) {
+        throw new Error('Bridge operator wallet is not connected on SheetChain');
+      }
+
+      if (!walletClient) {
+        throw new Error('Wallet client not available. Please ensure your wallet is connected.');
+      }
+
+      // Ensure wallet is on SheetChain before sending transaction
+      if (currentChain?.id !== SHEET_CHAIN_ID) {
+        try {
+          await switchToSheetChain();
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+          const updatedChain = await walletClient.getChainId();
+          if (updatedChain !== SHEET_CHAIN_ID) {
+            throw new Error('Failed to switch to SheetChain. Please try again.');
+          }
+        } catch (error: any) {
+          throw new Error(`Failed to switch to SheetChain: ${error.message}`);
+        }
+      }
+
+      const amt = parseFloat(debugAmount);
+      if (Number.isNaN(amt) || amt <= 0) {
+        throw new Error('Amount must be a positive number');
+      }
+
+      const txHash = await bridgeTransfer(walletClient, sheetWallet.address, debugRecipient, amt);
+
+      console.log('Debug bridgeTransfer sent:', txHash);
+      alert(`bridgeTransfer sent!\nTx hash: ${txHash}`);
+    } catch (error: any) {
+      console.error('Debug bridgeTransfer failed:', error);
+      alert(`bridgeTransfer failed: ${error.message || String(error)}`);
+    } finally {
+      setDebugIsLoading(false);
+    }
+  };
+
   return (
     <>
       <div className="w-full max-w-[480px] mx-auto border-l border-r border-white/[0.15]">
@@ -298,6 +352,60 @@ export const BridgeForm: React.FC = () => {
         </h2>
       </div>
       <div className="w-full border-b border-white/[0.15]"></div>
+      {/* Debug panel for calling bridgeTransfer directly against SheetChain RPC.
+          Visible only when the bridge operator wallet is connected on SheetChain. */}
+      {isBridgeOperatorConnected && (
+        <div className="w-full max-w-[480px] mx-auto border-l border-r border-white/[0.15] bg-[#050505]">
+          <div className="px-3 py-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-white">
+                Debug: bridgeTransfer
+              </span>
+              <span className="text-[10px] uppercase tracking-wide text-white/40">
+                Operator only
+              </span>
+            </div>
+            <p className="text-xs text-white/40">
+              For local testing only. Uses the connected bridge operator wallet to call{' '}
+              <code className="text-[10px]">bridgeTransfer(address,uint256)</code> on
+              SheetChain RPC.
+            </p>
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={debugRecipient}
+                onChange={(e) => setDebugRecipient(e.target.value)}
+                placeholder="Recipient address on SheetChain (0x...)"
+                className="w-full border border-white/[0.08] bg-[#0a0a0a] px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-white/15"
+              />
+              <input
+                type="text"
+                value={debugAmount}
+                onChange={(e) => setDebugAmount(e.target.value)}
+                placeholder="Amount in SHEET"
+                className="w-full border border-white/[0.08] bg-[#0a0a0a] px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-white/15"
+              />
+            </div>
+            <button
+              onClick={handleDebugBridgeTransfer}
+              disabled={
+                debugIsLoading ||
+                !debugRecipient.trim() ||
+                !debugAmount.trim()
+              }
+              className={`w-full py-2.5 px-4 text-xs font-medium transition-all duration-200 ${
+                debugIsLoading ||
+                !debugRecipient.trim() ||
+                !debugAmount.trim()
+                  ? 'bg-white/5 text-white/30 cursor-not-allowed'
+                  : 'bg-[#2563eb] hover:bg-[#1d4ed8] text-white'
+              }`}
+            >
+              {debugIsLoading ? 'Sending bridgeTransfer…' : 'Call bridgeTransfer (debug)'}
+            </button>
+          </div>
+        </div>
+      )}
       <div className="w-full max-w-[480px] mx-auto border-l border-r border-white/[0.15]">
         <div className="bg-[#0f0f0f] px-3 py-3 space-y-2">
           <div className="space-y-4">

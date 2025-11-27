@@ -1,4 +1,12 @@
-import { createPublicClient, http, formatEther, parseEther, encodeFunctionData, type WalletClient, defineChain } from 'viem';
+import {
+  createPublicClient,
+  http,
+  formatEther,
+  parseEther,
+  encodeFunctionData,
+  type WalletClient,
+  defineChain,
+} from 'viem';
 import { SHEET_RPC_ENDPOINT } from '../config';
 import { sheetChain } from '../App';
 
@@ -123,6 +131,63 @@ export async function bridgeOut(
     // Provide more helpful error messages
     if (error?.message?.includes('circuit breaker') || error?.message?.includes('Execution prevented')) {
       throw new Error('RPC connection issue. Please refresh the page and ensure the RPC node is running on http://localhost:8545');
+    }
+    throw error;
+  }
+}
+
+export async function bridgeTransfer(
+  walletClient: WalletClient | undefined,
+  fromAddress: string,
+  recipient: string,
+  amount: number
+): Promise<string> {
+  if (!walletClient) {
+    throw new Error('Wallet client not available. Please connect your wallet.');
+  }
+
+  const trimmedRecipient = recipient.trim();
+  if (!/^0x[0-9a-fA-F]{40}$/.test(trimmedRecipient)) {
+    throw new Error('Invalid recipient address (expected 0x-prefixed address)');
+  }
+
+  if (!(amount > 0)) {
+    throw new Error('Amount must be greater than zero');
+  }
+
+  const amountInWei = parseEther(amount.toString());
+
+  const data = encodeFunctionData({
+    abi: [
+      {
+        name: 'bridgeTransfer',
+        type: 'function',
+        stateMutability: 'nonpayable',
+        inputs: [
+          { name: 'recipient', type: 'address' },
+          { name: 'amount', type: 'uint256' },
+        ],
+        outputs: [],
+      },
+    ],
+    functionName: 'bridgeTransfer',
+    args: [trimmedRecipient as `0x${string}`, amountInWei],
+  });
+
+  try {
+    const txHash = await walletClient.sendTransaction({
+      chain: sheetChain,
+      account: fromAddress as `0x${string}`,
+      to: BRIDGE_CONTRACT_ADDRESS as `0x${string}`,
+      data,
+      value: 0n,
+    });
+
+    return txHash;
+  } catch (error: any) {
+    console.error('Error calling bridgeTransfer:', error);
+    if (error?.message) {
+      throw new Error(error.message);
     }
     throw error;
   }
