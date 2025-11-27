@@ -56,6 +56,9 @@ export const BSC_RPC_ENDPOINT = IS_MAINNET
   ? 'https://bsc-dataseed.binance.org'
   : 'https://data-seed-prebsc-1-s1.binance.org:8545';
 export const BSC_SHEET_TOKEN_ADDRESS =
-  '0xe66E4213A373dECB6793240f69ADE43A6bB972bd';
-export const BSC_SHEET_BRIDGE_PROGRAM_ID =
-  '0xfD5A4Cee5d5C5b7b5E3B18b8401879361F58113b';
+  '0x0000000000000000000000000000000000000000'; // TODO: Replace with actual BSC SHEET token address
+
+// Bridge operator address (must match rpc-node BRIDGE_OPERATOR_ADDRESS)
+export const BRIDGE_OPERATOR_ADDRESS =
+  (import.meta.env.VITE_BRIDGE_OPERATOR_ADDRESS as string | undefined)?.toLowerCase() ??
+  '0xfac92ecd3e2be3cb26c31dbf34948596c7159a18';
