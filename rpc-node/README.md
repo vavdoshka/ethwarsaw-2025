@@ -142,7 +142,7 @@ const tx = await wallet.sendTransaction({
 - No smart contract support (returns empty for contract calls)
 - No event logs or filters
 - Simplified gas model
-- No signature verification (accepts any signed transaction)
+- ✅ Signature verification using ecrecover (verifies transaction signatures)
 
 ## Troubleshooting
 
