@@ -1,5 +1,6 @@
 import { GoogleSheetsClient, BridgeRecord } from './client';
 import logger from '../logger';
+import { insertBridgeEvent, BridgeEventStatus } from '../db';
 
 export class BridgeMonitor {
     private sheetsClient: GoogleSheetsClient;
@@ -63,8 +64,8 @@ export class BridgeMonitor {
                 if (newRecords.length > 0) {
                     logger.info(`\n🆕 Detected ${newRecords.length} new record(s) in Bridge tab:`);
                     
-                    newRecords.forEach((record, index) => {
-                        logger.info(`\n--- New Bridge Record #${index + 1} (Row ${record.rowIndex}) ---`);
+                    for (const record of newRecords) {
+                        logger.info(`\n--- New Bridge Record (Row ${record.rowIndex}) ---`);
                         logger.info(`Timestamp: ${record.timestamp}`);
                         logger.info(`TxHash: ${record.txHash}`);
                         logger.info(`From: ${record.from}`);
@@ -73,7 +74,47 @@ export class BridgeMonitor {
                         logger.info(`Dest Chain ID: ${record.destChainId}`);
                         logger.info(`Status: ${record.status}`);
                         logger.info(`Block Number: ${record.blockNumber}`);
-                    });
+                        
+                        // Only process records with "Success" status
+                        if (record.status?.toLowerCase() !== 'success') {
+                            logger.info(`⏭️  Skipping record with status: ${record.status}`);
+                            continue;
+                        }
+                        
+                        // Map chain IDs: 0=sheet, 1=solana, 2=bsc
+                        const destChainId = parseInt(record.destChainId || '0', 10);
+                        let toChain: string;
+                        if (destChainId === 1) {
+                            toChain = 'solana';
+                        } else if (destChainId === 2) {
+                            toChain = 'bsc';
+                        } else {
+                            logger.warn(`⚠️  Unknown destination chain ID: ${destChainId}, skipping`);
+                            continue;
+                        }
+                        
+                        // Insert into database for processing
+                        try {
+                            const inserted = insertBridgeEvent({
+                                from_chain: 'sheet',
+                                from_address: record.from || '',
+                                from_amount: record.amount || '0',
+                                to_chain: toChain,
+                                to_address: record.toAddress || '',
+                                to_amount: record.amount || '0',
+                                lock_tx_hash: record.txHash || '',
+                                status: BridgeEventStatus.Pending,
+                            });
+                            
+                            if (inserted) {
+                                logger.info(`✅ Inserted bridge event: sheet -> ${toChain} (${record.amount} to ${record.toAddress})`);
+                            } else {
+                                logger.info(`ℹ️  Bridge event already exists (duplicate): ${record.txHash}`);
+                            }
+                        } catch (error: any) {
+                            logger.error(`❌ Failed to insert bridge event: ${error?.message ?? String(error)}`);
+                        }
+                    }
                 }
             } catch (error: any) {
                 logger.error('Error during Bridge tab polling:', error);

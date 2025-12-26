@@ -3,14 +3,13 @@ import { EventParser, BorshCoder, Idl } from '@coral-xyz/anchor';
 import idl from '../../solana/target/idl/lock.json';
 import logger from './logger';
 import 'dotenv/config';
-import { JsonRpcProvider, Wallet } from 'ethers';
-import { setupDatabase, insertBridgeEvent, closeDatabase } from './db';
-import { sendSheetTransfer, GoogleSheetsClient, BridgeMonitor } from './sheet';
-
-const SOLANA_RPC_URL = 'https://api.devnet.solana.com';
-const SHEET_RPC_URL = 'https://ethwarsaw-2025.onrender.com';
-const LOCK_PROGRAM_ID = new PublicKey('46BKi3nxgwFpc8EXE2Yem3syK5yqQRvJLasWzvsTEEgx');
-const TOKENS_LOCKED_EVENT = 'TokensLocked';
+import { JsonRpcProvider, Wallet, WebSocketProvider, Contract } from 'ethers';
+import { setupDatabase, insertBridgeEvent, closeDatabase, BridgeEventStatus, getPendingBridgeEvents, updateBridgeEventStatus } from './db';
+import { GoogleSheetsClient, BridgeMonitor } from './sheet';
+import { createWalletFromSecret, runWithAutoRestart } from './utils';
+import { BSC_HTTP_URL, BSC_WSS_URL, BSC_TOKEN_LOCK_ADDRESS, SOLANA_TOKEN_MINT, TransferContext, SOLANA_RPC_URL, LOCK_PROGRAM_ID, TOKENS_LOCKED_EVENT, SHEET_RPC_URL } from './config';
+import { transferTokens } from './transfer';
+import tokenLockAbi from './tokenLockAbi.json';
 
 async function main() {
     setupDatabase();
@@ -23,10 +22,23 @@ async function main() {
     if (!process.env.BSC_PRIVATE_KEY) throw new Error('BSC_PRIVATE_KEY not set');
     const bscWallet = createWalletFromSecret(process.env.BSC_PRIVATE_KEY, bscProvider);
 
-    const solanaConnection = new Connection(SOLANA_RPC_URL, 'confirmed');
-    if (!process.env.SOLANA_SECRET_KEY) throw new Error('SOLANA_SECRET_KEY not set');
-    const secretKeyArray = JSON.parse(process.env.SOLANA_SECRET_KEY);
-    const solanaAuthority = Keypair.fromSecretKey(Uint8Array.from(secretKeyArray));
+    // Solana is optional - only initialize if SOLANA_SECRET_KEY is provided
+    let solanaConnection: Connection | undefined;
+    let solanaAuthority: Keypair | undefined;
+    const hasSolana = !!process.env.SOLANA_SECRET_KEY;
+    
+    if (hasSolana) {
+        try {
+            solanaConnection = new Connection(SOLANA_RPC_URL, 'confirmed');
+            const secretKeyArray = JSON.parse(process.env.SOLANA_SECRET_KEY);
+            solanaAuthority = Keypair.fromSecretKey(Uint8Array.from(secretKeyArray));
+            logger.info('✅ Solana configuration loaded');
+        } catch (error: any) {
+            logger.warn(`Failed to initialize Solana: ${error?.message ?? String(error)}. Continuing without Solana support.`);
+        }
+    } else {
+        logger.info('ℹ️  SOLANA_SECRET_KEY not set - Solana features disabled');
+    }
 
     const transferContext: TransferContext = {
         sheetWallet,
@@ -34,7 +46,7 @@ async function main() {
         bscTokenLockAddress: BSC_TOKEN_LOCK_ADDRESS,
         solanaConnection,
         solanaAuthority,
-        solanaTokenMint: SOLANA_TOKEN_MINT,
+        solanaTokenMint: hasSolana ? SOLANA_TOKEN_MINT : undefined,
     };
 
     logger.info('Starting bridge monitoring services...');
@@ -60,10 +72,21 @@ async function main() {
         logger.warn('Continuing without Bridge tab monitoring...');
     }
 
-    const solanaMonitor = runWithAutoRestart('Solana Monitor', monitorSolanaEvents, sheetWallet);
-    const evmMonitor = runWithAutoRestart('BSC Monitor', monitorBSCEvents, sheetWallet);
+    const bscMonitor = runWithAutoRestart('BSC Monitor', monitorBSCEvents);
+    const transferWorker = processTransfers(transferContext);
+    
+    const promises: Promise<void>[] = [bscMonitor, transferWorker];
+    
+    // Only start Solana monitor if Solana is configured
+    if (hasSolana && solanaConnection && solanaAuthority) {
+        const solanaMonitor = runWithAutoRestart('Solana Monitor', monitorSolanaEvents);
+        promises.push(solanaMonitor);
+        logger.info('✅ Solana monitor started');
+    } else {
+        logger.info('ℹ️  Solana monitor skipped (Solana not configured)');
+    }
 
-    Promise.all([solanaMonitor, bscMonitor, /*sheetMonitor,*/ transferWorker]).catch((error) => {
+    Promise.all(promises).catch((error) => {
         logger.error(`Critical error in monitoring services: ${error}`);
     });
 

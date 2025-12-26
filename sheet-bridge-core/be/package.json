@@ -7,6 +7,7 @@
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",
     "@solana/spl-token": "^0.4.14",
+    "@solana/web3.js": "^1.95.5",
     "better-sqlite3": "^12.4.1",
     "googleapis": "^144.0.0",
     "winston": "^3.18.3"

@@ -13,6 +13,9 @@ export async function transferTokens(
     context: TransferContext,
 ): Promise<string> {
     if (fromChain === 'sheet' && toChain === 'solana') {
+        if (!context.solanaConnection || !context.solanaAuthority || !context.solanaTokenMint) {
+            throw new Error('Solana is not configured. Cannot process sheet -> solana transfers.');
+        }
         return await sendSolanaTransfer(
             context.solanaConnection,
             context.solanaAuthority,
