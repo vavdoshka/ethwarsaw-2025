@@ -7,3 +7,5 @@ dist/
 build/
 .cache/
 rpc-node/cred/crypto-bots-409100-5febfadd93bc.json
+**/cred.json
+sheet-bridge-core/be/cred.json
