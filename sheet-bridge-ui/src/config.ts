@@ -46,7 +46,7 @@ export const IS_MAINNET = false;
 
 export const SOL_RPC_ENDPOINT = 'https://api.devnet.solana.com';
 export const SOL_SHEET_MINT_ADDRESS =
-  'CpsKSnkJXrgxUXjJjqLR9tn3QM9RrVASHjA8LW97XHo3';
+  'Qp8iRNXcL8bjsARWeUwpyQF8ztPLwo1gd8PM3xjrfZz';
 export const SOL_SHEET_BRIDGE_PROGRAM_ID =
   '46BKi3nxgwFpc8EXE2Yem3syK5yqQRvJLasWzvsTEEgx';
 
