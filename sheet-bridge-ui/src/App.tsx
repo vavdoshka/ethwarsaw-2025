@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { Toaster } from 'react-hot-toast';
 import { WagmiProvider, http } from 'wagmi';
 import { defineChain } from 'viem';
 import { bsc, bscTestnet } from 'wagmi/chains';
@@ -108,6 +109,29 @@ function App() {
                     </main>
 
                     <Footer />
+                    <Toaster
+                      position="top-right"
+                      toastOptions={{
+                        duration: 5000,
+                        style: {
+                          background: '#1a1a1a',
+                          color: '#fff',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                        },
+                        success: {
+                          iconTheme: {
+                            primary: '#4ade80',
+                            secondary: '#fff',
+                          },
+                        },
+                        error: {
+                          iconTheme: {
+                            primary: '#ef4444',
+                            secondary: '#fff',
+                          },
+                        },
+                      }}
+                    />
                   </div>
                 </WalletProvider>
               </WalletModalProvider>

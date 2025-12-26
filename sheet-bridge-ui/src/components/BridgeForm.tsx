@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import { TokenChainSelector } from './TokenChainSelector';
 import { useWallet } from '../contexts/walletContext';
 import { useWalletClient, useAccount } from 'wagmi';
 import type { Token } from '../types/index';
-import { CHAINS, BRIDGE_OPERATOR_ADDRESS } from '../config';
+import { CHAINS, BRIDGE_OPERATOR_ADDRESS, IS_MAINNET } from '../config';
 import { isValidAmount, isValidAddress } from '../utils/format';
 import { ArrowSwapIcon, SpinnerIcon } from './ui/icons';
 import { getSplTokenBalance, lockSplTokens } from '../api/sol';
@@ -133,6 +134,8 @@ export const BridgeForm: React.FC = () => {
           throw new Error('Solana wallet not connected');
         }
 
+        const toastId = toast.loading('Sending Solana transaction...');
+        
         const signature = await lockSplTokens(
           wallet.walletAdapter,
           parseFloat(fromAmount),
@@ -140,7 +143,27 @@ export const BridgeForm: React.FC = () => {
         );
 
         console.log('Transaction successful:', signature);
-        alert(`Tokens locked successfully! Signature: ${signature}`);
+        
+        const solanaExplorerUrl = IS_MAINNET 
+          ? `https://explorer.solana.com/tx/${signature}`
+          : `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
+
+        toast.success(
+          () => (
+            <div>
+              <div className="font-semibold">Solana transaction sent!</div>
+              <a
+                href={solanaExplorerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 underline text-sm"
+              >
+                View on Explorer
+              </a>
+            </div>
+          ),
+          { id: toastId }
+        );
 
         setFromAmount('');
         setToAmount('');
@@ -200,6 +223,9 @@ export const BridgeForm: React.FC = () => {
           destChainId: solanaChainId,
         });
 
+        // Show initial toast for Sheet transaction
+        const sheetTxToastId = toast.loading('Sending Sheet Chain transaction...');
+
         const txHash = await bridgeOut(
           walletClient,
           connectedWallet.address,
@@ -209,7 +235,28 @@ export const BridgeForm: React.FC = () => {
         );
 
         console.log('Bridge transaction successful:', txHash);
-        alert(`Bridge transaction successful! Transaction Hash: ${txHash}`);
+        
+        toast.success(
+          () => (
+            <div>
+              <div className="font-semibold">Sheet Chain transaction sent!</div>
+              <div className="text-sm text-gray-400 mt-1">Tx: {txHash.slice(0, 10)}...{txHash.slice(-8)}</div>
+              <div className="text-xs text-gray-500 mt-2">Waiting for Solana transfer...</div>
+            </div>
+          ),
+          { id: sheetTxToastId, duration: 10000 }
+        );
+
+        // Show toast for Solana transaction (will be processed by backend)
+        toast.loading(
+          () => (
+            <div>
+              <div className="font-semibold">Processing Solana transfer...</div>
+              <div className="text-sm text-gray-400 mt-1">The bridge will process your transfer shortly</div>
+            </div>
+          ),
+          { duration: 15000 }
+        );
 
         setFromAmount('');
         setToAmount('');
@@ -223,7 +270,7 @@ export const BridgeForm: React.FC = () => {
       console.error('Bridge transaction failed:', error);
       const message =
         error instanceof Error ? error.message : 'Unknown error occurred';
-      alert(`Transaction failed: ${message}`);
+      toast.error(`Transaction failed: ${message}`);
     } finally {
       setIsLoading(false);
     }
@@ -332,13 +379,24 @@ export const BridgeForm: React.FC = () => {
         throw new Error('Amount must be a positive number');
       }
 
+      const toastId = toast.loading('Sending bridgeTransfer transaction...');
+      
       const txHash = await bridgeTransfer(walletClient, sheetWallet.address, debugRecipient, amt);
 
       console.log('Debug bridgeTransfer sent:', txHash);
-      alert(`bridgeTransfer sent!\nTx hash: ${txHash}`);
+      
+      toast.success(
+        () => (
+          <div>
+            <div className="font-semibold">bridgeTransfer sent!</div>
+            <div className="text-sm text-gray-400 mt-1">Tx: {txHash.slice(0, 10)}...{txHash.slice(-8)}</div>
+          </div>
+        ),
+        { id: toastId }
+      );
     } catch (error: any) {
       console.error('Debug bridgeTransfer failed:', error);
-      alert(`bridgeTransfer failed: ${error.message || String(error)}`);
+      toast.error(`bridgeTransfer failed: ${error.message || String(error)}`);
     } finally {
       setDebugIsLoading(false);
     }
