@@ -4,7 +4,7 @@ import idl from '../../solana/target/idl/lock.json';
 import logger from './logger';
 import 'dotenv/config';
 import { JsonRpcProvider, Wallet, WebSocketProvider, Contract } from 'ethers';
-import { setupDatabase, insertBridgeEvent, closeDatabase, BridgeEventStatus, getPendingBridgeEvents, updateBridgeEventStatus } from './db';
+import { setupDatabase, insertBridgeEvent, closeDatabase, BridgeEventStatus, getPendingBridgeEvents, updateBridgeEventStatus, markEventAsProcessing } from './db';
 import { GoogleSheetsClient, BridgeMonitor } from './sheet';
 import { createWalletFromSecret, runWithAutoRestart } from './utils';
 import { BSC_HTTP_URL, BSC_WSS_URL, BSC_TOKEN_LOCK_ADDRESS, SOLANA_TOKEN_MINT, TransferContext, SOLANA_RPC_URL, LOCK_PROGRAM_ID, TOKENS_LOCKED_EVENT, SHEET_RPC_URL } from './config';
@@ -22,22 +22,46 @@ async function main() {
     if (!process.env.BSC_PRIVATE_KEY) throw new Error('BSC_PRIVATE_KEY not set');
     const bscWallet = createWalletFromSecret(process.env.BSC_PRIVATE_KEY, bscProvider);
 
-    // Solana is optional - only initialize if SOLANA_SECRET_KEY is provided
+    // Solana is optional - only initialize if SOLANA_SECRET_KEY or SECRET_KEY is provided
     let solanaConnection: Connection | undefined;
     let solanaAuthority: Keypair | undefined;
-    const hasSolana = !!process.env.SOLANA_SECRET_KEY;
+    const solanaSecretKey = process.env.SOLANA_SECRET_KEY || process.env.SECRET_KEY;
+    const hasSolana = !!solanaSecretKey;
     
     if (hasSolana) {
         try {
             solanaConnection = new Connection(SOLANA_RPC_URL, 'confirmed');
-            const secretKeyArray = JSON.parse(process.env.SOLANA_SECRET_KEY);
+            const secretKeyArray = JSON.parse(solanaSecretKey);
             solanaAuthority = Keypair.fromSecretKey(Uint8Array.from(secretKeyArray));
+            
             logger.info('✅ Solana configuration loaded');
+            logger.info(`   Solana RPC URL: ${SOLANA_RPC_URL}`);
+            logger.info(`   Solana Authority Address: ${solanaAuthority.publicKey.toBase58()}`);
+            logger.info(`   Program ID: ${LOCK_PROGRAM_ID.toBase58()}`);
+            logger.info(`   Token Mint: ${SOLANA_TOKEN_MINT.toBase58()}`);
+            
+            // Derive and log PDAs
+            const [lockAccountPda] = PublicKey.findProgramAddressSync(
+                [Buffer.from('lock'), SOLANA_TOKEN_MINT.toBuffer()],
+                LOCK_PROGRAM_ID
+            );
+            const [vaultAuthorityPda] = PublicKey.findProgramAddressSync(
+                [Buffer.from('vault'), lockAccountPda.toBuffer()],
+                LOCK_PROGRAM_ID
+            );
+            logger.info(`   Lock Account PDA: ${lockAccountPda.toBase58()}`);
+            logger.info(`   Vault Authority PDA: ${vaultAuthorityPda.toBase58()}`);
+            
+            // Check connection
+            const version = await solanaConnection.getVersion();
+            logger.info(`   Solana RPC Version: ${version['solana-core']}`);
+            
         } catch (error: any) {
-            logger.warn(`Failed to initialize Solana: ${error?.message ?? String(error)}. Continuing without Solana support.`);
+            logger.error(`❌ Failed to initialize Solana: ${error?.message ?? String(error)}`);
+            logger.warn('   Continuing without Solana support...');
         }
     } else {
-        logger.info('ℹ️  SOLANA_SECRET_KEY not set - Solana features disabled');
+        logger.info('ℹ️  SOLANA_SECRET_KEY/SECRET_KEY not set - Solana features disabled');
     }
 
     const transferContext: TransferContext = {
@@ -208,6 +232,12 @@ async function processTransfers(context: TransferContext): Promise<void> {
                 for (const event of pendingEvents) {
                     if (!event.id) continue;
 
+                    // Atomically mark as processing to prevent concurrent processing
+                    if (!markEventAsProcessing(event.id)) {
+                        logger.debug(`Event ${event.id} is already being processed, skipping...`);
+                        continue;
+                    }
+
                     try {
                         const fromChain = event.from_chain.toLowerCase();
                         const toChain = event.to_chain.toLowerCase();
@@ -226,12 +256,24 @@ async function processTransfers(context: TransferContext): Promise<void> {
                             error: null,
                         });
                     } catch (error: any) {
+                        const errorMsg = error?.message ?? String(error);
                         logger.error(
-                            `Transfer failed for event id ${event.id}: ${error?.message ?? String(error)}`
+                            `Transfer failed for event id ${event.id}: ${errorMsg}`
                         );
+                        
+                        // Check if error is "AlreadyProcessed" - this might mean the transaction actually succeeded
+                        // In this case, we should check if we can verify the transaction
+                        if (errorMsg.includes('AlreadyProcessed')) {
+                            logger.warn(
+                                `Event ${event.id} got "AlreadyProcessed" error. ` +
+                                `This might mean the transaction was already sent. ` +
+                                `Marking as failed but transaction may have succeeded.`
+                            );
+                        }
+                        
                         updateBridgeEventStatus(event.id, BridgeEventStatus.Failed, {
                             transfer_at: new Date().toISOString(),
-                            error: error?.message ?? String(error),
+                            error: errorMsg,
                         });
                     }
                 }

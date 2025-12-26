@@ -8,6 +8,7 @@ let db: Database.Database;
 
 export enum BridgeEventStatus {
     Pending = 'pending',
+    Processing = 'processing',
     Processed = 'processed',
     Failed = 'failed',
 }
@@ -103,11 +104,38 @@ export function getPendingBridgeEvents(): BridgeEventRecord[] {
             SELECT * FROM bridge_events
             WHERE status = @status
             ORDER BY created_at ASC
+            LIMIT 10
         `);
 
         return stmt.all({ status: BridgeEventStatus.Pending }) as BridgeEventRecord[];
     } catch (error: any) {
         logger.error(`Failed to get pending bridge events: ${error?.message ?? String(error)}`);
+        throw error;
+    }
+}
+
+export function markEventAsProcessing(id: number): boolean {
+    if (!db) {
+        throw new Error('Database not initialized. Call setupDatabase() first.');
+    }
+
+    try {
+        // Atomically update status to processing only if it's still pending
+        const stmt = db.prepare(`
+            UPDATE bridge_events
+            SET status = @processingStatus
+            WHERE id = @id AND status = @pendingStatus
+        `);
+
+        const result = stmt.run({ 
+            id,
+            pendingStatus: BridgeEventStatus.Pending,
+            processingStatus: BridgeEventStatus.Processing
+        });
+
+        return result.changes > 0;
+    } catch (error: any) {
+        logger.error(`Failed to mark event as processing: ${error?.message ?? String(error)}`);
         throw error;
     }
 }

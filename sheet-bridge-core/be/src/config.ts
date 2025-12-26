@@ -5,7 +5,7 @@ export const SOLANA_RPC_URL = 'https://api.devnet.solana.com';
 export const SHEET_RPC_URL = 'https://ethwarsaw-2025.onrender.com';
 export const LOCK_PROGRAM_ID = new PublicKey('46BKi3nxgwFpc8EXE2Yem3syK5yqQRvJLasWzvsTEEgx');
 export const TOKENS_LOCKED_EVENT = 'TokensLocked';
-export const SOLANA_TOKEN_MINT = new PublicKey('CpsKSnkJXrgxUXjJjqLR9tn3QM9RrVASHjA8LW97XHo3');
+export const SOLANA_TOKEN_MINT = new PublicKey('Qp8iRNXcL8bjsARWeUwpyQF8ztPLwo1gd8PM3xjrfZz');
 
 export const BSC_WSS_URL = 'wss://bsc-testnet-rpc.publicnode.com';
 export const BSC_HTTP_URL = 'https://data-seed-prebsc-1-s1.binance.org:8545';
