@@ -57,6 +57,8 @@ export const BSC_RPC_ENDPOINT = IS_MAINNET
   : 'https://data-seed-prebsc-1-s1.binance.org:8545';
 export const BSC_SHEET_TOKEN_ADDRESS =
   '0x0000000000000000000000000000000000000000'; // TODO: Replace with actual BSC SHEET token address
+export const BSC_SHEET_BRIDGE_PROGRAM_ID =
+  '0xfD5A4Cee5d5C5b7b5E3B18b8401879361F58113b'; // BSC Token Lock contract address
 
 // Bridge operator address (must match rpc-node BRIDGE_OPERATOR_ADDRESS)
 export const BRIDGE_OPERATOR_ADDRESS =

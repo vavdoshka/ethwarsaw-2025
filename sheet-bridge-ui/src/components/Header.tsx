@@ -1,22 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useWallet } from '../contexts/walletContext';
-import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react';
-import { useWalletModal } from '@solana/wallet-adapter-react-ui';
-import { WalletButton } from './WalletButton';
 import { useSwitchChain, useAccount } from 'wagmi';
 import { bsc, bscTestnet } from 'wagmi/chains';
 import { IS_MAINNET } from '../config';
+import { MultiWalletDisplay } from './MultiWalletDisplay';
 
 const SHEET_CHAIN_ID = 12345;
 
 export const Header: React.FC = () => {
   const { chain } = useWallet();
-  const {
-    publicKey,
-    connected: solanaConnected,
-    disconnect: disconnectSolana,
-  } = useSolanaWallet();
-  const { setVisible: setSolanaModalVisible } = useWalletModal();
   const { switchChain } = useSwitchChain();
   const { isConnected: evmConnected, chain: currentEvmChain } = useAccount();
 
@@ -33,22 +25,6 @@ export const Header: React.FC = () => {
       switchChain({ chainId: targetChainId });
     }
   }, [chain, evmConnected, currentEvmChain, switchChain]);
-
-  // Format Solana address like RainbowKit does (show first 4 and last 4 characters)
-  const formatSolanaAddress = (address: string) => {
-    if (!address) return '';
-    return `${address.slice(0, 4)}...${address.slice(-4)}`;
-  };
-
-  const handleSolanaClick = () => {
-    setSolanaModalVisible(true);
-  };
-
-  const handleSolanaDisconnect = async () => {
-    if (disconnectSolana) {
-      await disconnectSolana();
-    }
-  };
 
   return (
     <header className="w-full bg-[#050505] border-b border-white/[0.15]">
@@ -68,22 +44,7 @@ export const Header: React.FC = () => {
         </div>
 
         <div className="flex items-stretch h-full">
-          {chain.name === 'solana' ? (
-            solanaConnected && publicKey ? (
-              <WalletDisconnect
-                address={formatSolanaAddress(publicKey.toBase58())}
-                onDisconnect={handleSolanaDisconnect}
-              />
-            ) : (
-              <WalletButton
-                onClick={handleSolanaClick}
-                connected={false}
-                address={undefined}
-              />
-            )
-          ) : (
-            <ChainAwareConnectButton />
-          )}
+          <MultiWalletDisplay />
         </div>
       </div>
     </header>
