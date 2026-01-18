@@ -6,9 +6,9 @@ import { getMint, getAssociatedTokenAddress, getAccount } from '@solana/spl-toke
 const CONFIG = {
     rpcUrl: process.env.RPC_URL || 'https://api.devnet.solana.com',
     programId: '46BKi3nxgwFpc8EXE2Yem3syK5yqQRvJLasWzvsTEEgx',
-    mintAddress: 'Qp8iRNXcL8bjsARWeUwpyQF8ztPLwo1gd8PM3xjrfZz',
-    expectedLockPDA: '7nnhVw7XhdWQdrw3qq4ypTjJ8ZuXw7WW15v3duvKGwZN',
-    expectedVaultAuthorityPDA: '5DD2pAivrWCGTi4sabkahQe3FrjtKC8T5odN3HrEU8f4',
+    mintAddress: '4opADvbtoEaXryZH5UoEpVXERDJoRMZoXy8yMsogsc2S',
+    expectedLockPDA: '7wZtfm3m7Bk6ypCTiGvtFsy6xiD7yZoJUXbytjnWtHTk',
+    expectedVaultAuthorityPDA: '6SXfRtsjQMsTywB9etxASWuSgRsGhKboAmabPERCQk2A',
 };
 
 function getKeypairFromEnv(): Keypair {

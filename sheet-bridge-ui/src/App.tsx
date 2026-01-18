@@ -79,6 +79,8 @@ const queryClient = new QueryClient();
 
 function App() {
   // Configure all available Solana wallets
+  // Note: Wallet adapters use the ConnectionProvider's endpoint (devnet)
+  // Users must manually switch their wallet extension (Phantom/Solflare) to devnet
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),

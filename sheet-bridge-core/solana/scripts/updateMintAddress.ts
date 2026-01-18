@@ -1,11 +1,36 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-const OLD_MINT = 'CpsKSnkJXrgxUXjJjqLR9tn3QM9RrVASHjA8LW97XHo3';
-const NEW_MINT = process.argv[2];
+// Current mint address (default - will be replaced if old mint is provided)
+const CURRENT_MINT = 'Qp8iRNXcL8bjsARWeUwpyQF8ztPLwo1gd8PM3xjrfZz';
 
-if (!NEW_MINT) {
-    console.error('Usage: ts-node scripts/updateMintAddress.ts <new-mint-address>');
+// Parse arguments: [old-mint] <new-mint>
+// If only one arg provided, use current mint as old, arg as new
+// If two args provided, use first as old, second as new
+let OLD_MINT: string;
+let NEW_MINT: string;
+
+if (process.argv.length === 3) {
+    // Only new mint provided - use current mint as old
+    OLD_MINT = CURRENT_MINT;
+    NEW_MINT = process.argv[2];
+} else if (process.argv.length === 4) {
+    // Both old and new provided
+    OLD_MINT = process.argv[2];
+    NEW_MINT = process.argv[3];
+} else {
+    console.error('Usage: ts-node scripts/updateMintAddress.ts [old-mint-address] <new-mint-address>');
+    console.error('');
+    console.error('Examples:');
+    console.error('  ts-node scripts/updateMintAddress.ts <new-mint-address>');
+    console.error('  ts-node scripts/updateMintAddress.ts <old-mint> <new-mint>');
+    process.exit(1);
+}
+
+if (!NEW_MINT || NEW_MINT === OLD_MINT) {
+    console.error('❌ Error: New mint address must be different from old mint address');
+    console.error(`   Old: ${OLD_MINT}`);
+    console.error(`   New: ${NEW_MINT}`);
     process.exit(1);
 }
 
@@ -15,6 +40,7 @@ const filesToUpdate = [
     'scripts/checkAuthorityBalance.ts',
     'scripts/mintToAuthority.ts',
     'scripts/initializeLock.ts',
+    'scripts/verifyConfig.ts',
     '../be/src/config.ts',
     '../../sheet-bridge-ui/src/config.ts',
 ];

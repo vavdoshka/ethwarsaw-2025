@@ -28,7 +28,7 @@ SECRET_KEY=your_bs58_encoded_secret_key
 The program ID is already configured:
 - **Program ID**: `46BKi3nxgwFpc8EXE2Yem3syK5yqQRvJLasWzvsTEEgx`
 - **Network**: Devnet
-- **Mint Address**: `CpsKSnkJXrgxUXjJjqLR9tn3QM9RrVASHjA8LW97XHo3`
+- **Mint Address**: `Qp8iRNXcL8bjsARWeUwpyQF8ztPLwo1gd8PM3xjrfZz`
 
 ## Deployment Steps
 

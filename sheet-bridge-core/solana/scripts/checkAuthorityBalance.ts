@@ -5,7 +5,7 @@ import { getAssociatedTokenAddress, getAccount, getMint } from '@solana/spl-toke
 
 const CONFIG = {
     rpcUrl: process.env.RPC_URL || 'https://api.devnet.solana.com',
-    mintAddress: 'Qp8iRNXcL8bjsARWeUwpyQF8ztPLwo1gd8PM3xjrfZz',
+    mintAddress: '4opADvbtoEaXryZH5UoEpVXERDJoRMZoXy8yMsogsc2S',
 };
 
 function getPayerFromEnv(): Keypair {

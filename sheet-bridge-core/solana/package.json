@@ -16,6 +16,8 @@
     "update-mint-address": "ts-node scripts/updateMintAddress.ts",
     "verify-config": "ts-node scripts/verifyConfig.ts",
     "test-transfer": "ts-node scripts/testTransfer.ts",
+    "send-sol": "ts-node scripts/sendSol.ts",
+    "check-user-tokens": "ts-node scripts/checkUserTokens.ts",
     "generate-keypair": "ts-node scripts/generateKeypair.ts",
     "check-balance": "ts-node scripts/checkAuthorityBalance.ts"
   },
