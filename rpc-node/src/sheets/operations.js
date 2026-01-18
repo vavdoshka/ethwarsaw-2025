@@ -44,8 +44,10 @@ class SheetOperations {
 
     async getBalance(address) {
         address = address.toLowerCase();
-        // const cacheKey = `balance_${address}`;
+        const cacheKey = `balance_${address}`;
 
+        // Always read from Google Sheets to ensure we get the latest balance
+        // Cache is disabled to prevent stale balance reads
         // if (this.cacheEnabled) {
         //   const cached = this.cache.get(cacheKey);
         //   if (cached !== undefined) return cached;
@@ -76,25 +78,77 @@ class SheetOperations {
     async updateBalance(address, newBalance, newNonce) {
         address = address.toLowerCase();
 
-        const rows = await this.client.readRange('Balances!A:C');
-        let rowIndex = rows.findIndex(row => row[0] && row[0].toLowerCase() === address);
+        console.log('📝 updateBalance called:', {
+            address: address,
+            newBalance: newBalance.toString(),
+            newBalanceEth: ethers.formatEther(newBalance),
+            newNonce: newNonce.toString(),
+            timestamp: new Date().toISOString()
+        });
 
-        if (rowIndex === -1) {
-            await this.client.appendRow('Balances', [address, newBalance.toString(), newNonce.toString()]);
-        } else {
-            await this.client.updateRange(
-                `Balances!A${rowIndex + 1}:C${rowIndex + 1}`,
-                [[address, newBalance.toString(), newNonce.toString()]]
-            );
-        }
+        try {
+            const rows = await this.client.readRange('Balances!A:C');
+            let rowIndex = rows.findIndex(row => row[0] && row[0].toLowerCase() === address);
 
-        if (this.cacheEnabled) {
-            this.cache.del(`balance_${address}`);
-            this.cache.del(`nonce_${address}`);
+            if (rowIndex === -1) {
+                console.log('➕ Creating new balance row for address:', address);
+                await this.client.appendRow('Balances', [address, newBalance.toString(), newNonce.toString()]);
+                console.log('✅ New balance row created successfully');
+            } else {
+                const oldBalance = rows[rowIndex][1] ? BigInt(rows[rowIndex][1]) : BigInt(0);
+                console.log('🔄 Updating existing balance row:', {
+                    rowIndex: rowIndex + 1,
+                    oldBalance: oldBalance.toString(),
+                    oldBalanceEth: ethers.formatEther(oldBalance),
+                    newBalance: newBalance.toString(),
+                    newBalanceEth: ethers.formatEther(newBalance),
+                    change: (newBalance - oldBalance).toString(),
+                    changeEth: ethers.formatEther(newBalance - oldBalance)
+                });
+                
+                await this.client.updateRange(
+                    `Balances!A${rowIndex + 1}:C${rowIndex + 1}`,
+                    [[address, newBalance.toString(), newNonce.toString()]]
+                );
+                
+                // Verify the update by reading back
+                const verifyRows = await this.client.readRange(`Balances!A${rowIndex + 1}:C${rowIndex + 1}`);
+                const verifyBalance = verifyRows[0] && verifyRows[0][1] ? BigInt(verifyRows[0][1]) : null;
+                
+                if (verifyBalance && verifyBalance.toString() === newBalance.toString()) {
+                    console.log('✅ Balance update verified successfully:', {
+                        address: address,
+                        verifiedBalance: verifyBalance.toString(),
+                        verifiedBalanceEth: ethers.formatEther(verifyBalance)
+                    });
+                } else {
+                    console.error('❌ Balance update verification failed:', {
+                        address: address,
+                        expected: newBalance.toString(),
+                        got: verifyBalance ? verifyBalance.toString() : 'null',
+                        rowData: verifyRows[0]
+                    });
+                }
+            }
+
+            if (this.cacheEnabled) {
+                this.cache.del(`balance_${address}`);
+                this.cache.del(`nonce_${address}`);
+                console.log('🗑️  Cache cleared for address:', address);
+            }
+        } catch (error) {
+            console.error('❌ Error in updateBalance:', {
+                address: address,
+                newBalance: newBalance.toString(),
+                error: error.message,
+                stack: error.stack,
+                timestamp: new Date().toISOString()
+            });
+            throw error;
         }
     }
 
-    async processTransaction(tx) {
+    async processTransaction(tx, providedTxHash = null) {
         const from = tx.from.toLowerCase();
         const to = tx.to ? tx.to.toLowerCase() : null;
         const value = BigInt(tx.value || 0);
@@ -109,7 +163,9 @@ class SheetOperations {
             throw new Error(`Insufficient balance. Required: ${totalCost}, Available: ${fromBalance}`);
         }
 
-        const txHash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify({
+        // Use provided transaction hash if available (from signed transaction),
+        // otherwise generate one (for backward compatibility)
+        const txHash = providedTxHash || ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify({
             from,
             to,
             value: value.toString(),
@@ -471,24 +527,101 @@ class SheetOperations {
         const bridgeAccountAddress = this.getBridgeAccountAddress();
         const bridgeAmount = BigInt(amount);
 
+        // Normalize addresses to lowercase for consistent matching
         const fromAddress = bridgeAccountAddress.toLowerCase();
         const toAddress = recipientAddress.toLowerCase();
+        
+        console.log('🌉 bridgeTransfer called:', {
+            bridgeAccount: bridgeAccountAddress,
+            bridgeAccountLower: fromAddress,
+            recipient: recipientAddress,
+            recipientLower: toAddress,
+            amount: bridgeAmount.toString(),
+            amountEth: ethers.formatEther(bridgeAmount),
+            originalTxHash: originalTxHash
+        });
+
+        console.log('🌉 bridgeTransfer called:', {
+            bridgeAccount: bridgeAccountAddress,
+            recipient: recipientAddress,
+            amount: bridgeAmount.toString(),
+            amountEth: ethers.formatEther(bridgeAmount),
+            originalTxHash: originalTxHash
+        });
 
         // Get current balances
         const bridgeBalance = await this.getBalance(fromAddress);
         const recipientBalance = await this.getBalance(toAddress);
 
+        console.log('💰 Current balances:', {
+            bridgeAccount: bridgeAccountAddress,
+            bridgeBalance: bridgeBalance.toString() + ' wei',
+            recipient: recipientAddress,
+            recipientBalance: recipientBalance.toString() + ' wei',
+            transferAmount: bridgeAmount.toString() + ' wei'
+        });
+
         // Validate sufficient balance on bridge account
         if (bridgeBalance < bridgeAmount) {
+            console.error('❌ Insufficient bridge balance:', {
+                required: bridgeAmount.toString(),
+                available: bridgeBalance.toString(),
+                shortfall: (bridgeAmount - bridgeBalance).toString()
+            });
             throw new Error(`Bridge account has insufficient balance. Required: ${bridgeAmount}, Available: ${bridgeBalance}`);
         }
+
+        console.log('✅ Sufficient balance confirmed');
 
         // Nonces are not modified for internal accounting operations
         const bridgeNonce = await this.getNonce(fromAddress);
         const recipientNonce = await this.getNonce(toAddress);
 
+        console.log('📝 Updating balances:', {
+            bridgeAccount: fromAddress,
+            bridgeBalanceBefore: bridgeBalance.toString(),
+            bridgeBalanceAfter: (bridgeBalance - bridgeAmount).toString(),
+            recipient: toAddress,
+            recipientBalanceBefore: recipientBalance.toString(),
+            recipientBalanceAfter: (recipientBalance + bridgeAmount).toString()
+        });
+
+        // Update bridge account balance (decrease)
         await this.updateBalance(fromAddress, bridgeBalance - bridgeAmount, bridgeNonce);
+        
+        // Update recipient balance (increase) - this is the critical update
+        console.log('💰 Updating recipient balance:', {
+            recipientAddress: toAddress,
+            currentBalance: recipientBalance.toString(),
+            currentBalanceEth: ethers.formatEther(recipientBalance),
+            transferAmount: bridgeAmount.toString(),
+            transferAmountEth: ethers.formatEther(bridgeAmount),
+            newBalance: (recipientBalance + bridgeAmount).toString(),
+            newBalanceEth: ethers.formatEther(recipientBalance + bridgeAmount)
+        });
+        
         await this.updateBalance(toAddress, recipientBalance + bridgeAmount, recipientNonce);
+        
+        // Verify the recipient balance was updated correctly
+        const verifyRecipientBalance = await this.getBalance(toAddress);
+        if (verifyRecipientBalance.toString() === (recipientBalance + bridgeAmount).toString()) {
+            console.log('✅✅✅ Recipient balance update VERIFIED:', {
+                recipientAddress: toAddress,
+                verifiedBalance: verifyRecipientBalance.toString(),
+                verifiedBalanceEth: ethers.formatEther(verifyRecipientBalance)
+            });
+        } else {
+            console.error('❌❌❌ Recipient balance update FAILED verification:', {
+                recipientAddress: toAddress,
+                expected: (recipientBalance + bridgeAmount).toString(),
+                expectedEth: ethers.formatEther(recipientBalance + bridgeAmount),
+                got: verifyRecipientBalance.toString(),
+                gotEth: ethers.formatEther(verifyRecipientBalance),
+                difference: (verifyRecipientBalance - (recipientBalance + bridgeAmount)).toString()
+            });
+        }
+        
+        console.log('✅ Balances updated successfully');
 
         // Generate transaction hash (or reuse provided one)
         const txHash = originalTxHash || ethers.keccak256(
@@ -534,7 +667,7 @@ class SheetOperations {
             cryptoPrices.ethPrice.toString()
         ]);
 
-        return {
+        const result = {
             transactionHash: txHash,
             blockNumber,
             from: fromAddress,
@@ -544,6 +677,17 @@ class SheetOperations {
             bridgeAccountBalance: (bridgeBalance - bridgeAmount).toString(),
             bridgeAccountHasPrivateKey: this.bridgeAccount !== null
         };
+        
+        console.log('✅ bridgeTransfer completed:', {
+            txHash: txHash,
+            blockNumber: blockNumber,
+            from: fromAddress,
+            to: toAddress,
+            amount: bridgeAmount.toString(),
+            bridgeAccountBalanceAfter: result.bridgeAccountBalance
+        });
+        
+        return result;
     }
 }
 

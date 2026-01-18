@@ -72,6 +72,37 @@ function initializeContractHandlers() {
   registerContractHandler(airdropAddress, '0x90fd50b3', () => {
     return '0x0000000000000000000000000000000000000000000000000000000000000001'; // true
   });
+  
+  // Bridge Contract handlers (0x0000000000000000000000000000000000000003)
+  const bridgeAddress = BRIDGE_CONTRACT_ADDRESS;
+  
+  // bridgeBalance() - returns the bridge account balance
+  // Function selector: keccak256("bridgeBalance()") -> 0x...
+  registerContractHandler(bridgeAddress, ethers.id('bridgeBalance()').slice(0, 10), async () => {
+    // Access sheetOps at call time (it will be available after initialization)
+    if (!sheetOps) return '0x' + '0'.repeat(64);
+    const bridgeAccountAddress = sheetOps.getBridgeAccountAddress();
+    const balance = await sheetOps.getBalance(bridgeAccountAddress);
+    return '0x' + balance.toString(16).padStart(64, '0');
+  });
+  
+  // isBridgeOperator(address) - checks if an address is a bridge operator
+  // Function selector: keccak256("isBridgeOperator(address)") -> 0x...
+  // Note: This is handled dynamically in eth_call with address decoding (see below)
+  registerContractHandler(bridgeAddress, ethers.id('isBridgeOperator(address)').slice(0, 10), () => {
+    // Placeholder - actual implementation is in eth_call handler
+    return '0x0000000000000000000000000000000000000000000000000000000000000000';
+  });
+  
+  // bridgeAccount() - returns the bridge account address
+  // Function selector: keccak256("bridgeAccount()") -> 0x...
+  registerContractHandler(bridgeAddress, ethers.id('bridgeAccount()').slice(0, 10), () => {
+    // Access sheetOps at call time (it will be available after initialization)
+    if (!sheetOps) return '0x' + '0'.repeat(64);
+    const bridgeAccountAddress = sheetOps.getBridgeAccountAddress();
+    // Return address padded to 32 bytes (64 hex chars)
+    return '0x' + bridgeAccountAddress.slice(2).padStart(64, '0');
+  });
 }
 
 // Contract addresses
@@ -81,18 +112,28 @@ const AIRDROP_CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000001';
 // Bridge operator address (on external chain) allowed to release
 // funds from the bridge contract to users on SheetChain.
 // Default is the hard-coded address, but it can be overridden via env.
-let BRIDGE_OPERATOR_ADDRESS = (process.env.BRIDGE_OPERATOR_ADDRESS || '0xfac92ecd3e2be3cb26c31dbf34948596c7159a18').toLowerCase();
+// Updated default to match the wallet address that has balance
+let BRIDGE_OPERATOR_ADDRESS = (process.env.BRIDGE_OPERATOR_ADDRESS || '0x337d7730a281efE851dbEDf5F4eD0D2610E59639').toLowerCase();
 
 async function handleBridgeTransferTransaction(tx) {
   // Only the bridge operator is allowed to trigger releases
   const caller = tx.from.toLowerCase();
+  logger.info('🔐 Checking bridge operator authorization...', {
+    caller: caller,
+    expectedOperator: BRIDGE_OPERATOR_ADDRESS.toLowerCase(),
+    authorized: caller === BRIDGE_OPERATOR_ADDRESS.toLowerCase()
+  });
+  
   if (caller !== BRIDGE_OPERATOR_ADDRESS.toLowerCase()) {
-    logger.error('Unauthorized bridgeTransfer caller', {
+    logger.error('❌ Unauthorized bridgeTransfer caller', {
       caller,
-      expected: BRIDGE_OPERATOR_ADDRESS.toLowerCase()
+      expected: BRIDGE_OPERATOR_ADDRESS.toLowerCase(),
+      txHash: tx.hash
     });
     throw new Error('Unauthorized bridgeTransfer caller');
   }
+
+  logger.info('✅ Bridge operator authorized');
 
   const bridgeTransferSelector = ethers.id('bridgeTransfer(address,uint256)').slice(0, 10);
   const iface = new ethers.Interface([
@@ -108,27 +149,65 @@ async function handleBridgeTransferTransaction(tx) {
     logger.info('🌉 BridgeTransfer decoded:', {
       operator: caller,
       bridgeAccount: sheetOps ? sheetOps.getBridgeAccountAddress() : null,
-      recipient,
-      amount: ethers.formatEther(amount) + ' ETH'
+      recipient: recipient,
+      recipientLower: recipient.toLowerCase(),
+      amountWei: amount.toString(),
+      amountEth: ethers.formatEther(amount) + ' ETH',
+      txHash: tx.hash
     });
   } catch (decodeError) {
-    logger.error('Failed to decode bridgeTransfer parameters:', {
+    logger.error('❌ Failed to decode bridgeTransfer parameters:', {
       error: decodeError.message,
       data: tx.data,
-      selector: bridgeTransferSelector
+      selector: bridgeTransferSelector,
+      txHash: tx.hash
     });
     throw new Error(`Failed to decode bridgeTransfer parameters: ${decodeError.message}`);
   }
 
   if (!sheetOps) {
+    logger.error('❌ Sheet operations not initialized');
     throw new Error('Sheet operations not initialized for bridgeTransfer');
   }
+
+  // Get balances before transfer for logging
+  const bridgeAccountAddress = sheetOps.getBridgeAccountAddress();
+  const bridgeBalanceBefore = await sheetOps.getBalance(bridgeAccountAddress);
+  const recipientBalanceBefore = await sheetOps.getBalance(recipient.toLowerCase());
+  
+  logger.info('💰 Balances BEFORE bridge transfer:', {
+    bridgeAccount: bridgeAccountAddress,
+    bridgeBalance: bridgeBalanceBefore.toString() + ' wei (' + ethers.formatEther(bridgeBalanceBefore) + ' ETH)',
+    recipient: recipient,
+    recipientBalance: recipientBalanceBefore.toString() + ' wei (' + ethers.formatEther(recipientBalanceBefore) + ' ETH)',
+    transferAmount: amount.toString() + ' wei (' + ethers.formatEther(amount) + ' ETH)'
+  });
 
   // Use the outer transaction hash for bookkeeping so the
   // internal virtual transfer shares the same tx id.
   const transferResult = await sheetOps.bridgeTransfer(recipient, amount, tx.hash);
 
-  logger.info('✅ BridgeTransfer processed:', transferResult);
+  // Get balances after transfer for logging
+  const bridgeBalanceAfter = await sheetOps.getBalance(bridgeAccountAddress);
+  const recipientBalanceAfter = await sheetOps.getBalance(recipient.toLowerCase());
+  
+  logger.info('💰 Balances AFTER bridge transfer:', {
+    bridgeAccount: bridgeAccountAddress,
+    bridgeBalance: bridgeBalanceAfter.toString() + ' wei (' + ethers.formatEther(bridgeBalanceAfter) + ' ETH)',
+    bridgeBalanceChange: (bridgeBalanceAfter - bridgeBalanceBefore).toString() + ' wei',
+    recipient: recipient,
+    recipientBalance: recipientBalanceAfter.toString() + ' wei (' + ethers.formatEther(recipientBalanceAfter) + ' ETH)',
+    recipientBalanceChange: (recipientBalanceAfter - recipientBalanceBefore).toString() + ' wei'
+  });
+
+  logger.info('✅ BridgeTransfer processed successfully:', {
+    transactionHash: transferResult.transactionHash,
+    blockNumber: transferResult.blockNumber,
+    from: transferResult.from,
+    to: transferResult.to,
+    amount: transferResult.amount,
+    bridgeAccount: transferResult.bridgeAccount
+  });
 
   return transferResult;
 }
@@ -200,27 +279,36 @@ app.use((req, res, next) => {
   const requestId = Math.random().toString(36).substr(2, 9);
   const isMetaMask = isMetaMaskRequest(req);
   
-  // Log incoming request body for debugging
+  // Log incoming request body for debugging (only for non-routine methods)
   if (req.body && req.body.method) {
-    logger.info('🔍 RAW REQUEST BODY:', {
-      method: req.body.method,
-      params: req.body.params,
-      id: req.body.id,
-      jsonrpc: req.body.jsonrpc
-    });
+    const routineMethods = ['eth_getBalance', 'eth_chainId', 'net_version', 'eth_blockNumber'];
+    if (!routineMethods.includes(req.body.method)) {
+      logger.debug('🔍 RAW REQUEST BODY:', {
+        method: req.body.method,
+        params: req.body.params,
+        id: req.body.id,
+        jsonrpc: req.body.jsonrpc
+      });
+    }
   }
 
-  // Override res.json to log response details
+  // Override res.json to log response details (only for non-routine methods)
   const originalJson = res.json;
   res.json = function(data) {
     const duration = Date.now() - startTime;
+    const method = req.body?.method;
+    const routineMethods = ['eth_getBalance', 'eth_chainId', 'net_version', 'eth_blockNumber'];
     
-    logger.info('=== RPC RESPONSE ===', {
-      requestId,
-      duration: `${duration}ms`,
-      statusCode: res.statusCode,
-      response: data
-    });
+    // Only log responses for non-routine methods or errors
+    if (!routineMethods.includes(method) || (data && data.error)) {
+      logger.debug('=== RPC RESPONSE ===', {
+        requestId,
+        duration: `${duration}ms`,
+        statusCode: res.statusCode,
+        method: method,
+        response: data
+      });
+    }
     
     return originalJson.call(this, data);
   };
@@ -307,35 +395,237 @@ app.post('/', async (req, res) => {
     });
   }
   
+  // Handle batch requests (array of requests)
+  if (Array.isArray(req.body)) {
+    logger.info('📦 Batch request received:', { count: req.body.length });
+    // Log all methods in batch for debugging
+    const batchMethods = req.body.map(r => r.method).filter(Boolean);
+    if (batchMethods.some(m => m === 'eth_sendRawTransaction')) {
+      console.log('🚨🚨🚨 BATCH REQUEST CONTAINS eth_sendRawTransaction 🚨🚨🚨', {
+        methods: batchMethods,
+        count: req.body.length,
+        timestamp: new Date().toISOString()
+      });
+    }
+    // Process all requests in the batch and return array of responses
+    const batchResults = await Promise.all(
+      req.body.map(async (batchReq) => {
+        const { jsonrpc: batchJsonrpc, method: batchMethod, params: batchParams, id: batchId } = batchReq;
+        
+        // Log eth_sendRawTransaction in batch
+        if (batchMethod === 'eth_sendRawTransaction') {
+          console.log('🚨🚨🚨 PROCESSING eth_sendRawTransaction IN BATCH 🚨🚨🚨', {
+            id: batchId,
+            hasParams: !!batchParams,
+            paramLength: batchParams?.[0]?.length || 0,
+            timestamp: new Date().toISOString()
+          });
+        }
+        
+        if (batchJsonrpc !== '2.0') {
+          return {
+            jsonrpc: '2.0',
+            error: {
+              code: -32600,
+              message: `Invalid JSON-RPC version. Expected '2.0', got '${batchJsonrpc}'`
+            },
+            id: batchId || null
+          };
+        }
+        
+        try {
+          // Handle bridge transfer detection for batch requests
+          let batchResult;
+          if (batchMethod === 'eth_sendRawTransaction' && batchParams && batchParams[0]) {
+            const rawTx = batchParams[0];
+            let tx;
+            
+            try {
+              tx = ethers.Transaction.from(rawTx);
+              
+              console.log('📨📨📨 eth_sendRawTransaction received (BATCH):', {
+                txHash: tx.hash,
+                from: tx.from,
+                to: tx.to,
+                value: tx.value ? tx.value.toString() : '0',
+                dataPrefix: tx.data ? tx.data.substring(0, 10) : 'no data',
+                nonce: tx.nonce,
+                timestamp: new Date().toISOString()
+              });
+              
+              const txTo = tx.to ? tx.to.toLowerCase() : null;
+              const txData = tx.data || '';
+              
+              // Check if this is a bridge transfer transaction
+              if (txTo === BRIDGE_CONTRACT_ADDRESS.toLowerCase() && txData) {
+                const bridgeTransferSelector = ethers.id('bridgeTransfer(address,uint256)').slice(0, 10);
+                
+                if (txData.startsWith(bridgeTransferSelector)) {
+                  console.log('🌉🌉🌉 BRIDGE TRANSFER TRANSACTION DETECTED (BATCH) 🌉🌉🌉', {
+                    txHash: tx.hash,
+                    from: tx.from,
+                    to: tx.to,
+                    dataPrefix: txData.substring(0, 10),
+                    timestamp: new Date().toISOString()
+                  });
+                  
+                  // Process bridge transfer directly
+                  const transferResult = await handleBridgeTransferTransaction(tx);
+                  batchResult = transferResult.transactionHash;
+                  
+                  console.log('✅✅✅ BRIDGE TRANSFER PROCESSED (BATCH) ✅✅✅', {
+                    txHash: tx.hash,
+                    resultTxHash: transferResult.transactionHash,
+                    timestamp: new Date().toISOString()
+                  });
+                }
+              }
+            } catch (parseError) {
+              // If parsing fails, fall through to handler
+              console.warn('Failed to parse transaction for bridge detection in batch, using handler:', parseError.message);
+            }
+          }
+          
+          // If result wasn't set by bridge transfer handling, use the handler
+          if (batchResult === undefined) {
+            batchResult = await rpcHandler.handleRequest(batchMethod, batchParams || []);
+          }
+          
+          return {
+            jsonrpc: '2.0',
+            result: batchResult,
+            id: batchId
+          };
+        } catch (error) {
+          return {
+            jsonrpc: '2.0',
+            error: {
+              code: -32603,
+              message: error.message
+            },
+            id: batchId
+          };
+        }
+      })
+    );
+    
+    return res.json(batchResults);
+  }
+  
   const { jsonrpc, method, params, id } = req.body;
   
-  // Log all RPC requests for debugging (especially MetaMask validation calls)
-  logger.info('📥 RPC Request:', { method, params: params ? JSON.stringify(params).substring(0, 200) : null, id });
-  
-  // Special logging for balance requests
-  if (method === 'eth_getBalance') {
-    logger.info('💰 BALANCE REQUEST:', { 
+  // Log all RPC requests for debugging (skip routine methods)
+  const routineMethods = ['eth_getBalance', 'eth_chainId', 'net_version', 'eth_blockNumber'];
+  if (!routineMethods.includes(method)) {
+    logger.info('📥 RPC Request:', { 
       method, 
-      address: params && params[0] ? params[0] : 'missing',
-      blockTag: params && params[1] ? params[1] : 'missing',
-      fullParams: params,
-      id 
+      params: params ? JSON.stringify(params).substring(0, 200) : null, 
+      id,
+      jsonrpc
     });
   }
   
-  if (jsonrpc !== '2.0') {
+  // Check if jsonrpc field exists and is valid
+  if (!jsonrpc) {
+    logger.error('❌ Missing jsonrpc field in request:', { 
+      body: JSON.stringify(req.body).substring(0, 500),
+      bodyType: typeof req.body,
+      isArray: Array.isArray(req.body)
+    });
     return res.json({
       jsonrpc: '2.0',
       error: {
         code: -32600,
-        message: 'Invalid JSON-RPC version'
+        message: 'Invalid request: missing jsonrpc field'
       },
-      id
+      id: id || null
     });
   }
   
+  if (jsonrpc !== '2.0') {
+    logger.error('❌ Invalid JSON-RPC version:', { 
+      received: jsonrpc, 
+      expected: '2.0',
+      requestBody: JSON.stringify(req.body).substring(0, 500)
+    });
+    return res.json({
+      jsonrpc: '2.0',
+      error: {
+        code: -32600,
+        message: `Invalid JSON-RPC version. Expected '2.0', got '${jsonrpc}'`
+      },
+      id: id || null
+    });
+  }
+  
+  // Log eth_sendRawTransaction requests at entry point
+  if (method === 'eth_sendRawTransaction') {
+    console.log('🚨🚨🚨 eth_sendRawTransaction REQUEST RECEIVED (single) 🚨🚨🚨', {
+      id: id,
+      hasParams: !!params,
+      paramLength: params?.[0]?.length || 0,
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  // Handle eth_sendRawTransaction BEFORE calling handler to detect bridge transfers
+  let result;
+  if (method === 'eth_sendRawTransaction' && params && params[0]) {
+    const rawTx = params[0];
+    let tx;
+    
+    try {
+      tx = ethers.Transaction.from(rawTx);
+      
+      // Log all raw transactions for debugging bridge transfers
+      console.log('📨📨📨 eth_sendRawTransaction received:', {
+        txHash: tx.hash,
+        from: tx.from,
+        to: tx.to,
+        value: tx.value ? tx.value.toString() : '0',
+        dataPrefix: tx.data ? tx.data.substring(0, 10) : 'no data',
+        nonce: tx.nonce,
+        timestamp: new Date().toISOString()
+      });
+      
+      const txTo = tx.to ? tx.to.toLowerCase() : null;
+      const txData = tx.data || '';
+      
+      // Check if this is a bridge transfer transaction
+      if (txTo === BRIDGE_CONTRACT_ADDRESS.toLowerCase() && txData) {
+        const bridgeTransferSelector = ethers.id('bridgeTransfer(address,uint256)').slice(0, 10);
+        
+        if (txData.startsWith(bridgeTransferSelector)) {
+          console.log('🌉🌉🌉 BRIDGE TRANSFER TRANSACTION DETECTED (BEFORE HANDLER) 🌉🌉🌉', {
+            txHash: tx.hash,
+            from: tx.from,
+            to: tx.to,
+            dataPrefix: txData.substring(0, 10),
+            timestamp: new Date().toISOString()
+          });
+          
+          // Process bridge transfer directly
+          const transferResult = await handleBridgeTransferTransaction(tx);
+          result = transferResult.transactionHash;
+          
+          console.log('✅✅✅ BRIDGE TRANSFER PROCESSED (BEFORE HANDLER) ✅✅✅', {
+            txHash: tx.hash,
+            resultTxHash: transferResult.transactionHash,
+            timestamp: new Date().toISOString()
+          });
+        }
+      }
+    } catch (parseError) {
+      // If parsing fails, fall through to handler
+      console.warn('Failed to parse transaction for bridge detection, using handler:', parseError.message);
+    }
+  }
+  
+  // If result wasn't set by bridge transfer handling, use the handler
   try {
-    let result = await rpcHandler.handleRequest(method, params || []);
+    if (result === undefined) {
+      result = await rpcHandler.handleRequest(method, params || []);
+    }
     
     // Log estimateGas requests specifically (MetaMask uses this to validate transactions)
     if (method === 'eth_estimateGas') {
@@ -379,12 +669,43 @@ app.post('/', async (req, res) => {
           logger.error('Error checking hasClaimed:', error);
           result = '0x0000000000000000000000000000000000000000000000000000000000000000';
         }
+      }
+      // Special handling for isBridgeOperator(address) function
+      else if (selector === ethers.id('isBridgeOperator(address)').slice(0, 10) && 
+               contractAddress === BRIDGE_CONTRACT_ADDRESS.toLowerCase()) {
+        try {
+          // Decode the address parameter from the data
+          const addressParam = '0x' + params[0].data.substring(34, 74);
+          const isOperator = addressParam.toLowerCase() === BRIDGE_OPERATOR_ADDRESS.toLowerCase();
+          
+          // Return boolean result (true = 1, false = 0)
+          result = isOperator
+            ? '0x0000000000000000000000000000000000000000000000000000000000000001'
+            : '0x0000000000000000000000000000000000000000000000000000000000000000';
+          
+          logger.info('🌉 isBridgeOperator check:', {
+            selector: selector,
+            address: addressParam,
+            isOperator: isOperator,
+            expectedOperator: BRIDGE_OPERATOR_ADDRESS,
+            result: result
+          });
+        } catch (error) {
+          logger.error('Error checking isBridgeOperator:', error);
+          result = '0x0000000000000000000000000000000000000000000000000000000000000000';
+        }
       } else {
         // Check if we have a handler for this contract and selector
         const handler = getContractHandler(contractAddress, selector);
         
         if (handler) {
-          result = handler(selector, params[0].data, params[0].to);
+          // Handle both sync and async handlers
+          const handlerResult = handler(selector, params[0].data, params[0].to);
+          if (handlerResult instanceof Promise) {
+            result = await handlerResult;
+          } else {
+            result = handlerResult;
+          }
           
           // Log bridge calls
           if (selector === '0x90fd50b3') {
@@ -404,6 +725,26 @@ app.post('/', async (req, res) => {
       
       try {
         tx = ethers.Transaction.from(rawTx);
+        
+        // Log all raw transactions for debugging bridge transfers
+        // Use console.log to ensure it always shows up
+        console.log('📨📨📨 eth_sendRawTransaction received:', {
+          txHash: tx.hash,
+          from: tx.from,
+          to: tx.to,
+          value: tx.value ? tx.value.toString() : '0',
+          dataPrefix: tx.data ? tx.data.substring(0, 10) : 'no data',
+          nonce: tx.nonce,
+          timestamp: new Date().toISOString()
+        });
+        logger.info('📨 eth_sendRawTransaction received:', {
+          txHash: tx.hash,
+          from: tx.from,
+          to: tx.to,
+          value: tx.value ? tx.value.toString() : '0',
+          dataPrefix: tx.data ? tx.data.substring(0, 10) : 'no data',
+          nonce: tx.nonce
+        });
       } catch (parseError) {
         logger.error('Failed to parse raw transaction:', parseError);
         throw new Error(`Invalid transaction format: ${parseError.message}`);
@@ -452,6 +793,30 @@ app.post('/', async (req, res) => {
       
       const txTo = tx.to ? tx.to.toLowerCase() : null;
       const txData = tx.data || '';
+      
+      // Log all transactions to bridge contract for debugging
+      if (txTo === BRIDGE_CONTRACT_ADDRESS.toLowerCase()) {
+        // Use console.log to ensure it always shows up
+        console.log('🌉🌉🌉 TRANSACTION TO BRIDGE CONTRACT DETECTED 🌉🌉🌉', {
+          txHash: tx.hash,
+          from: tx.from,
+          to: tx.to,
+          dataPrefix: txData.substring(0, 10),
+          dataLength: txData.length,
+          value: tx.value ? tx.value.toString() : '0',
+          fullData: txData,
+          timestamp: new Date().toISOString()
+        });
+        logger.info('🌉🌉🌉 TRANSACTION TO BRIDGE CONTRACT DETECTED 🌉🌉🌉', {
+          txHash: tx.hash,
+          from: tx.from,
+          to: tx.to,
+          dataPrefix: txData.substring(0, 10),
+          dataLength: txData.length,
+          value: tx.value ? tx.value.toString() : '0',
+          fullData: txData
+        });
+      }
       
       // Handle claim transactions (to airdrop contract with claim selector)
       if (txTo === AIRDROP_CONTRACT_ADDRESS.toLowerCase() && 
@@ -549,6 +914,19 @@ app.post('/', async (req, res) => {
         const bridgeOutSelector = ethers.id('bridgeOut(string,uint256)').slice(0, 10);
         const bridgeTransferSelector = ethers.id('bridgeTransfer(address,uint256)').slice(0, 10);
         
+        logger.info('🌉 Transaction to bridge contract detected:', {
+          txHash: tx.hash,
+          from: tx.from,
+          to: tx.to,
+          dataPrefix: txData.substring(0, 10),
+          dataLength: txData.length,
+          value: tx.value ? tx.value.toString() : '0',
+          bridgeOutSelector: bridgeOutSelector,
+          bridgeTransferSelector: bridgeTransferSelector,
+          matchesBridgeOut: txData.startsWith(bridgeOutSelector),
+          matchesBridgeTransfer: txData.startsWith(bridgeTransferSelector)
+        });
+        
         // New bridgeOut transactions (SheetChain -> other chains)
         if (txData.startsWith(bridgeOutSelector)) {
           try {
@@ -622,10 +1000,44 @@ app.post('/', async (req, res) => {
         // New bridgeTransfer transactions (other chains -> SheetChain)
         else if (txData.startsWith(bridgeTransferSelector)) {
           try {
+            // Use console.log to ensure it always shows up
+            console.log('🌉🌉🌉 BRIDGE TRANSFER TRANSACTION DETECTED 🌉🌉🌉', {
+              txHash: tx.hash,
+              from: tx.from,
+              to: tx.to,
+              value: tx.value ? tx.value.toString() : '0',
+              data: tx.data.substring(0, 20) + '...',
+              nonce: tx.nonce,
+              gasLimit: tx.gasLimit ? tx.gasLimit.toString() : 'unknown',
+              timestamp: new Date().toISOString()
+            });
+            logger.info('🌉🌉🌉 BRIDGE TRANSFER TRANSACTION DETECTED 🌉🌉🌉', {
+              txHash: tx.hash,
+              from: tx.from,
+              to: tx.to,
+              value: tx.value ? tx.value.toString() : '0',
+              data: tx.data.substring(0, 20) + '...',
+              nonce: tx.nonce,
+              gasLimit: tx.gasLimit ? tx.gasLimit.toString() : 'unknown'
+            });
+            
             const transferResult = await handleBridgeTransferTransaction(tx);
             result = transferResult.transactionHash;
+            
+            logger.info('🌉🌉🌉 BRIDGE TRANSFER COMPLETED 🌉🌉🌉', {
+              txHash: tx.hash,
+              resultTxHash: transferResult.transactionHash,
+              recipient: transferResult.to,
+              amount: transferResult.amount,
+              blockNumber: transferResult.blockNumber
+            });
           } catch (bridgeError) {
-            logger.error('Failed to process bridgeTransfer transaction:', bridgeError);
+            logger.error('❌❌❌ BRIDGE TRANSFER FAILED ❌❌❌', {
+              txHash: tx.hash,
+              from: tx.from,
+              error: bridgeError.message,
+              stack: bridgeError.stack
+            });
             throw bridgeError;
           }
         }
@@ -882,8 +1294,21 @@ app.post('/', async (req, res) => {
               data: tx.data || '0x'
             };
             
-            const transferResult = await sheetOps.processTransaction(txData);
+            // Use the actual transaction hash from ethers.js instead of generating a custom one
+            // This ensures the hash matches what ethers.js expects
+            const actualTxHash = tx.hash;
+            
+            const transferResult = await sheetOps.processTransaction(txData, actualTxHash);
             result = transferResult.transactionHash;
+            
+            // Verify the returned hash matches the actual transaction hash
+            if (result !== actualTxHash) {
+              logger.warn('⚠️  Transaction hash mismatch - using actual hash from signed transaction', {
+                returned: result,
+                actual: actualTxHash
+              });
+              result = actualTxHash;
+            }
             
             logger.info('💸 Regular transfer processed:', {
               from: tx.from,
@@ -902,16 +1327,10 @@ app.post('/', async (req, res) => {
     // Ensure result is properly formatted for balance responses
     if (method === 'eth_getBalance' && result) {
       // Verify the balance response is a valid hex string
-      if (typeof result === 'string' && result.startsWith('0x')) {
-        logger.info('✅ Sending balance response:', {
-          method,
-          address: params && params[0] ? params[0] : 'unknown',
-          result,
-          resultLength: result.length
-        });
-      } else {
+      if (typeof result !== 'string' || !result.startsWith('0x')) {
         logger.error('❌ Invalid balance response format:', { result, type: typeof result });
       }
+      // Removed verbose balance response logging - too noisy
     }
     
     res.json({

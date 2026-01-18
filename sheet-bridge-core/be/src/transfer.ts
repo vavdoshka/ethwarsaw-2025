@@ -1,4 +1,4 @@
-import { Wallet, isAddress, Contract } from 'ethers';
+import { Wallet, isAddress, Contract, Interface, AbiCoder } from 'ethers';
 import { Connection, Keypair, PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
 import { 
     getAssociatedTokenAddress, 
@@ -13,7 +13,7 @@ import {
 import { SystemProgram } from '@solana/web3.js';
 import logger from './logger';
 import tokenLockAbi from './tokenLockAbi.json';
-import { TransferContext } from './config';
+import { TransferContext, SHEET_RPC_URL, BRIDGE_CONTRACT_ADDRESS, BRIDGE_OPERATOR_ADDRESS } from './config';
 
 export async function transferTokens(
     fromChain: string,
@@ -57,14 +57,103 @@ export async function sendSheetTransfer(ethWallet: Wallet, recipient: string, am
         throw new Error(`Invalid Sheet address: ${recipient}`);
     }
     const valueWei = typeof amount === 'bigint' ? amount : BigInt(amount.toString());
-
-    const tx = await ethWallet.sendTransaction({ to: recipient, value: valueWei });
+    
     logger.info(
-        `Sheet transfer submitted: ${tx.hash} -> ${recipient} (${valueWei.toString()} wei)`
+        `📊 sendSheetTransfer called with amount: ${amount} (raw) -> ${valueWei.toString()} wei (${(Number(valueWei) / 1e18).toFixed(9)} ETH)`
     );
-    const receipt = await tx.wait();
-    logger.info(`Sheet transfer confirmed in block ${receipt?.blockNumber}`);
-    return tx.hash;
+
+    try {
+        // Check provider connection before sending
+        const provider = ethWallet.provider;
+        if (!provider) {
+            throw new Error('Wallet provider not available');
+        }
+
+        // Verify that the wallet address matches the bridge operator address
+        const walletAddress = ethWallet.address.toLowerCase();
+        const expectedOperator = BRIDGE_OPERATOR_ADDRESS.toLowerCase();
+        
+        if (walletAddress !== expectedOperator) {
+            logger.warn(
+                `⚠️  Bridge wallet address (${walletAddress}) does not match bridge operator address (${expectedOperator}). ` +
+                `The bridge contract may reject the transaction.`
+            );
+            logger.warn(
+                `   To fix this, either:` +
+                `\n   1. Set SHEET_PRIVATE_KEY to match the bridge operator private key, or` +
+                `\n   2. Set BRIDGE_OPERATOR_ADDRESS environment variable to ${walletAddress}`
+            );
+        }
+
+        // Test connection with a simple call
+        try {
+            await provider.getBlockNumber();
+        } catch (connectionError: any) {
+            const errorMsg = connectionError?.message || String(connectionError);
+            if (errorMsg.includes('Invalid JSON-RPC version') || 
+                errorMsg.includes('network') ||
+                errorMsg.includes('detect network')) {
+                throw new Error(
+                    `Sheet Chain RPC connection failed: ${errorMsg}. ` +
+                    `Please check if the RPC endpoint is running and accessible.`
+                );
+            }
+            throw connectionError;
+        }
+
+        // Use bridge contract's bridgeTransfer function instead of direct transfer
+        // Function signature: bridgeTransfer(address recipient, uint256 amount)
+        const bridgeInterface = new Interface([
+            'function bridgeTransfer(address recipient, uint256 amount)'
+        ]);
+        
+        const functionData = bridgeInterface.encodeFunctionData('bridgeTransfer', [
+            recipient,
+            valueWei
+        ]);
+
+        logger.info(
+            `🌉 Calling bridgeTransfer on bridge contract: ${BRIDGE_CONTRACT_ADDRESS}`
+        );
+        logger.info(
+            `   Recipient: ${recipient}, Amount: ${valueWei.toString()} wei`
+        );
+
+        const tx = await ethWallet.sendTransaction({
+            to: BRIDGE_CONTRACT_ADDRESS,
+            data: functionData,
+            value: 0n, // No value sent, amount is in function parameter
+        });
+        
+        logger.info(
+            `Sheet bridge transfer submitted: ${tx.hash} -> ${recipient} (${valueWei.toString()} wei)`
+        );
+        const receipt = await tx.wait();
+        logger.info(`Sheet bridge transfer confirmed in block ${receipt?.blockNumber}`);
+        return tx.hash;
+    } catch (error: any) {
+        const errorMsg = error?.message || String(error);
+        logger.error(`Sheet bridge transfer failed: ${errorMsg}`);
+        
+        // Provide more helpful error messages
+        if (errorMsg.includes('Invalid JSON-RPC version')) {
+            throw new Error(
+                `Sheet Chain RPC returned invalid response. ` +
+                `The RPC endpoint may be misconfigured or not responding correctly. ` +
+                `RPC URL: ${SHEET_RPC_URL}`
+            );
+        }
+        
+        if (errorMsg.includes('Unauthorized') || errorMsg.includes('unauthorized')) {
+            throw new Error(
+                `Bridge transfer unauthorized. ` +
+                `The wallet address (${ethWallet.address.toLowerCase()}) must match the bridge operator address (${BRIDGE_OPERATOR_ADDRESS.toLowerCase()}). ` +
+                `Please check your SHEET_PRIVATE_KEY or set BRIDGE_OPERATOR_ADDRESS environment variable.`
+            );
+        }
+        
+        throw error;
+    }
 }
 
 export async function sendSolanaTransfer(

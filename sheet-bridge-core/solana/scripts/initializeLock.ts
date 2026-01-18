@@ -12,7 +12,7 @@ import idl from '../target/idl/lock.json';
 const CONFIG = {
     rpcUrl: process.env.RPC_URL || 'https://api.devnet.solana.com',
     programId: '46BKi3nxgwFpc8EXE2Yem3syK5yqQRvJLasWzvsTEEgx',
-    mintAddress: 'Qp8iRNXcL8bjsARWeUwpyQF8ztPLwo1gd8PM3xjrfZz',
+    mintAddress: '4opADvbtoEaXryZH5UoEpVXERDJoRMZoXy8yMsogsc2S',
 };
 
 function getPayerFromEnv(): Keypair {

@@ -2,7 +2,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "ts-node src/index.ts",
-    "serve": "pm2 start src/index.ts --name sheet-bridge --interpreter ts-node --time && pm2 save"
+    "serve": "pm2 start src/index.ts --name sheet-bridge --interpreter ts-node --time && pm2 save",
+    "get-wallet-address": "ts-node scripts/getWalletAddress.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",

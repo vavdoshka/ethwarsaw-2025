@@ -4,7 +4,7 @@ import { getMint } from '@solana/spl-token';
 
 const CONFIG = {
     rpcUrl: process.env.RPC_URL || 'https://api.devnet.solana.com',
-    mintAddress: 'Qp8iRNXcL8bjsARWeUwpyQF8ztPLwo1gd8PM3xjrfZz',
+    mintAddress: '4opADvbtoEaXryZH5UoEpVXERDJoRMZoXy8yMsogsc2S',
 };
 
 async function main() {

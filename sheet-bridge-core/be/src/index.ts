@@ -7,7 +7,7 @@ import { JsonRpcProvider, Wallet, WebSocketProvider, Contract } from 'ethers';
 import { setupDatabase, insertBridgeEvent, closeDatabase, BridgeEventStatus, getPendingBridgeEvents, updateBridgeEventStatus, markEventAsProcessing } from './db';
 import { GoogleSheetsClient, BridgeMonitor } from './sheet';
 import { createWalletFromSecret, runWithAutoRestart } from './utils';
-import { BSC_HTTP_URL, BSC_WSS_URL, BSC_TOKEN_LOCK_ADDRESS, SOLANA_TOKEN_MINT, TransferContext, SOLANA_RPC_URL, LOCK_PROGRAM_ID, TOKENS_LOCKED_EVENT, SHEET_RPC_URL } from './config';
+import { BSC_HTTP_URL, BSC_WSS_URL, BSC_TOKEN_LOCK_ADDRESS, SOLANA_TOKEN_MINT, TransferContext, SOLANA_RPC_URL, LOCK_PROGRAM_ID, TOKENS_LOCKED_EVENT, SHEET_RPC_URL, BRIDGE_OPERATOR_ADDRESS } from './config';
 import { transferTokens } from './transfer';
 import tokenLockAbi from './tokenLockAbi.json';
 
@@ -15,8 +15,42 @@ async function main() {
     setupDatabase();
 
     const sheetProvider = new JsonRpcProvider(SHEET_RPC_URL);
+    
+    // Test Sheet Chain RPC connection using eth_chainId (simpler than getBlockNumber)
+    // This avoids issues with ethers.js making multiple requests for network detection
+    try {
+        logger.info(`Testing Sheet Chain RPC connection to ${SHEET_RPC_URL}...`);
+        // Use a direct RPC call instead of getBlockNumber() to avoid ethers.js network detection issues
+        const chainId = await sheetProvider.send('eth_chainId', []);
+        logger.info(`✅ Sheet Chain RPC connected. Chain ID: ${chainId}`);
+    } catch (error: any) {
+        const errorMsg = error?.message || String(error);
+        logger.error(`❌ Failed to connect to Sheet Chain RPC: ${errorMsg}`);
+        logger.error(`   RPC URL: ${SHEET_RPC_URL}`);
+        logger.error(`   Please ensure the RPC node is running and accessible.`);
+        if (SHEET_RPC_URL.includes('localhost') || SHEET_RPC_URL.includes('127.0.0.1')) {
+            logger.error(`   For localhost, ensure the RPC node is running on ${SHEET_RPC_URL}`);
+        }
+        throw new Error(`Sheet Chain RPC connection failed: ${errorMsg}`);
+    }
+    
     if (!process.env.SHEET_PRIVATE_KEY) throw new Error('SHEET_PRIVATE_KEY not set');
     const sheetWallet = createWalletFromSecret(process.env.SHEET_PRIVATE_KEY, sheetProvider);
+    const walletAddress = sheetWallet.address.toLowerCase();
+    const expectedOperator = BRIDGE_OPERATOR_ADDRESS.toLowerCase();
+    
+    logger.info(`🌉 Bridge wallet address: ${walletAddress}`);
+    logger.info(`   Bridge operator address: ${expectedOperator}`);
+    
+    if (walletAddress === expectedOperator) {
+        logger.info(`   ✅ Wallet address matches bridge operator - bridge transfers will work`);
+    } else {
+        logger.warn(`   ⚠️  Wallet address does NOT match bridge operator address!`);
+        logger.warn(`   Bridge transfers may fail. To fix:`);
+        logger.warn(`   1. Set SHEET_PRIVATE_KEY to match bridge operator private key, or`);
+        logger.warn(`   2. Set BRIDGE_OPERATOR_ADDRESS=${walletAddress} in environment`);
+    }
+    logger.info(`   Make sure this address has balance in Sheet Chain (Google Sheets Balances tab)`);
 
     const bscProvider = new JsonRpcProvider(BSC_HTTP_URL);
     if (!process.env.BSC_PRIVATE_KEY) throw new Error('BSC_PRIVATE_KEY not set');
@@ -153,8 +187,15 @@ async function monitorSolanaEvents(): Promise<void> {
                             typeof amount === 'bigint'
                                 ? amount.toString()
                                 : amount?.toString?.() ?? String(amount);
+                        
+                        // Convert Solana amount (9 decimals) to Sheet Chain amount (18 decimals)
+                        // by multiplying by 10^9
+                        const solanaAmount = BigInt(amountStr);
+                        const sheetAmount = solanaAmount * BigInt(10 ** 9);
+                        const sheetAmountStr = sheetAmount.toString();
+                        
                         logger.info(
-                            `Solana transfer event cached, user: ${sender.toString()}, amount: ${amountStr}, recipient: ${recipient}`
+                            `Solana transfer event cached, user: ${sender.toString()}, amount: ${amountStr} (Solana 9 decimals), recipient: ${recipient}, converted_amount: ${sheetAmountStr} (SheetChain 18 decimals)`
                         );
 
                         insertBridgeEvent({
@@ -163,7 +204,7 @@ async function monitorSolanaEvents(): Promise<void> {
                             from_amount: amountStr,
                             to_chain: 'sheet',
                             to_address: recipient,
-                            to_amount: amountStr,
+                            to_amount: sheetAmountStr, // Use converted amount for Sheet Chain
                             lock_tx_hash: logs.signature,
                             status: BridgeEventStatus.Pending,
                         });
@@ -242,11 +283,48 @@ async function processTransfers(context: TransferContext): Promise<void> {
                         const fromChain = event.from_chain.toLowerCase();
                         const toChain = event.to_chain.toLowerCase();
 
+                        // Amount conversion is now done when inserting the event into the database
+                        // However, we check if conversion is needed for old events that may have been inserted before the fix
+                        let transferAmount = event.to_amount;
+                        
+                        if (fromChain === 'solana' && toChain === 'sheet') {
+                            // Check if the amount looks like it's in 9 decimals format (unconverted)
+                            // If the amount is less than 10^15 (0.001 ETH in 18 decimals), it's likely in 9 decimals format
+                            const amountBigInt = BigInt(event.to_amount);
+                            const threshold = BigInt(10 ** 15); // 0.001 ETH in 18 decimals
+                            
+                            if (amountBigInt < threshold) {
+                                // This looks like an old event with unconverted amount
+                                // Convert from Solana 9 decimals to Sheet Chain 18 decimals
+                                const conversionFactor = BigInt(10 ** 9);
+                                const sheetAmount = amountBigInt * conversionFactor;
+                                transferAmount = sheetAmount.toString();
+                                
+                                logger.info(
+                                    `🔄 Converting old Solana event amount (legacy format):`
+                                );
+                                logger.info(
+                                    `   Original: ${event.to_amount} (9 decimals) = ${(Number(amountBigInt) / 1e9).toFixed(9)} SHEET`
+                                );
+                                logger.info(
+                                    `   Converted: ${transferAmount} (18 decimals) = ${(Number(sheetAmount) / 1e18).toFixed(9)} ETH`
+                                );
+                            } else {
+                                logger.info(
+                                    `✅ Amount already in correct format: ${transferAmount} (18 decimals) = ${(Number(amountBigInt) / 1e18).toFixed(9)} ETH`
+                                );
+                            }
+                        }
+                        
+                        logger.info(
+                            `📤 Processing bridge transfer: ${fromChain} -> ${toChain}, amount: ${transferAmount}`
+                        );
+
                         const transferTxHash = await transferTokens(
                             fromChain,
                             toChain,
                             event.to_address,
-                            event.to_amount,
+                            transferAmount,
                             context
                         );
 

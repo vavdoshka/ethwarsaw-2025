@@ -97,16 +97,9 @@ class RPCHandlers {
 
   async getBalance(params) {
     const [address, blockTag] = params;
-    console.log('🔍 eth_getBalance called:', { address, blockTag, params });
+    // Removed verbose logging - too noisy for routine balance checks
     const balance = await this.sheetOps.getBalance(address);
     const hexBalance = '0x' + balance.toString(16);
-    const { ethers } = require('ethers');
-    console.log('💰 Balance result:', { 
-      address, 
-      balance: balance.toString(), 
-      hexBalance,
-      balanceInEth: ethers.formatEther(balance)
-    });
     return hexBalance;
   }
 
@@ -117,11 +110,32 @@ class RPCHandlers {
   }
 
   async sendRawTransaction(params) {
+    console.log('🚨🚨🚨 sendRawTransaction HANDLER CALLED 🚨🚨🚨', {
+      hasParams: !!params,
+      paramLength: params?.[0]?.length || 0,
+      timestamp: new Date().toISOString()
+    });
+    
     const [signedTx] = params;
+    if (!signedTx) {
+      console.error('❌ No signed transaction provided to sendRawTransaction');
+      throw new Error('No signed transaction provided');
+    }
+    
     const tx = ethers.Transaction.from(signedTx);
+    console.log('🚨🚨🚨 Transaction parsed in sendRawTransaction 🚨🚨🚨', {
+      txHash: tx.hash,
+      from: tx.from,
+      to: tx.to,
+      dataPrefix: tx.data ? tx.data.substring(0, 10) : 'no data',
+      timestamp: new Date().toISOString()
+    });
     
     // Note: Signature verification is handled in server.js for eth_sendRawTransaction
     // This method is kept for compatibility but the main verification happens upstream
+    
+    // Use the actual transaction hash from the signed transaction
+    const actualTxHash = tx.hash;
     
     const txData = {
       from: tx.from,
@@ -133,7 +147,7 @@ class RPCHandlers {
       data: tx.data
     };
     
-    const result = await this.sheetOps.processTransaction(txData);
+    const result = await this.sheetOps.processTransaction(txData, actualTxHash);
     return result.transactionHash;
   }
 
@@ -144,6 +158,21 @@ class RPCHandlers {
       throw new Error('From address is required');
     }
 
+    // Log all sendTransaction requests for debugging
+    // Use console.log for now since logger isn't passed to handlers
+    const logger = {
+      info: (...args) => console.log('[INFO]', ...args),
+      error: (...args) => console.error('[ERROR]', ...args),
+      warn: (...args) => console.warn('[WARN]', ...args)
+    };
+    logger.info('📤 eth_sendTransaction received:', {
+      from: tx.from,
+      to: tx.to,
+      value: tx.value ? tx.value.toString() : '0',
+      dataPrefix: tx.data ? tx.data.substring(0, 10) : 'no data',
+      nonce: tx.nonce
+    });
+
     // Handle bridgeTransfer calls sent as eth_sendTransaction (e.g. from wallets)
     // by decoding the call data and delegating to SheetOperations.bridgeTransfer.
     if (tx.to && tx.data) {
@@ -152,15 +181,39 @@ class RPCHandlers {
       const BRIDGE_CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000003';
 
       if (toLower === BRIDGE_CONTRACT_ADDRESS.toLowerCase()) {
+        logger.info('🌉🌉🌉 TRANSACTION TO BRIDGE CONTRACT (sendTransaction) 🌉🌉🌉', {
+          from: tx.from,
+          to: tx.to,
+          dataPrefix: data.substring(0, 10),
+          dataLength: data.length,
+          value: tx.value ? tx.value.toString() : '0',
+          fullData: data
+        });
+
         const bridgeTransferSelector = ethers.id('bridgeTransfer(address,uint256)').slice(0, 10);
 
         if (data.startsWith(bridgeTransferSelector)) {
-          const BRIDGE_OPERATOR_ADDRESS = (process.env.BRIDGE_OPERATOR_ADDRESS || '0xfac92ecd3e2be3cb26c31dbf34948596c7159a18').toLowerCase();
+          logger.info('🌉🌉🌉 BRIDGE TRANSFER TRANSACTION DETECTED (sendTransaction) 🌉🌉🌉', {
+            from: tx.from,
+            to: tx.to,
+            dataPrefix: data.substring(0, 10),
+            selector: bridgeTransferSelector
+          });
+
+          const BRIDGE_OPERATOR_ADDRESS = (process.env.BRIDGE_OPERATOR_ADDRESS || '0x337d7730a281efE851dbEDf5F4eD0D2610E59639').toLowerCase();
 
           const caller = tx.from.toLowerCase();
           if (caller !== BRIDGE_OPERATOR_ADDRESS) {
+            logger.error('❌ Unauthorized bridgeTransfer caller:', {
+              caller: caller,
+              expected: BRIDGE_OPERATOR_ADDRESS
+            });
             throw new Error('Unauthorized bridgeTransfer caller');
           }
+
+          logger.info('✅ Bridge operator authorized:', {
+            caller: caller
+          });
 
           const iface = new ethers.Interface([
             'function bridgeTransfer(address recipient, uint256 amount)'
@@ -171,13 +224,28 @@ class RPCHandlers {
             const decoded = iface.decodeFunctionData('bridgeTransfer', data);
             recipient = decoded[0];
             amount = decoded[1];
+            logger.info('📋 BridgeTransfer parameters decoded:', {
+              recipient: recipient,
+              amount: amount.toString() + ' wei',
+              amountEth: ethers.formatEther(amount) + ' ETH'
+            });
           } catch (error) {
+            logger.error('❌ Failed to decode bridgeTransfer parameters:', {
+              error: error.message,
+              data: data
+            });
             throw new Error(`Failed to decode bridgeTransfer parameters: ${error.message}`);
           }
 
           // No canonical tx hash here (eth_sendTransaction), so let SheetOps
           // generate one for bookkeeping.
+          logger.info('🔄 Calling sheetOps.bridgeTransfer...');
           const transferResult = await this.sheetOps.bridgeTransfer(recipient, amount);
+          logger.info('✅ BridgeTransfer completed (sendTransaction):', {
+            transactionHash: transferResult.transactionHash,
+            recipient: recipient,
+            amount: amount.toString() + ' wei'
+          });
           return transferResult.transactionHash;
         }
       }
@@ -210,7 +278,7 @@ class RPCHandlers {
   async getBlockNumber() {
     const blockNumber = await this.sheetOps.getLatestBlockNumber();
     const blockNumberHex = '0x' + blockNumber.toString(16);
-    console.log('getBlockNumber', blockNumberHex);
+    // Removed verbose logging - too noisy for routine block number checks
     return blockNumberHex;
   }
 

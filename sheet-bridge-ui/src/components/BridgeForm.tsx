@@ -160,15 +160,26 @@ export const BridgeForm: React.FC = () => {
               >
                 View on Explorer
               </a>
+              <div className="text-xs text-gray-400 mt-2">Bridge backend is processing your transfer...</div>
             </div>
           ),
-          { id: toastId }
+          { id: toastId, duration: 8000 }
         );
 
         setFromAmount('');
         setToAmount('');
         setDestinationAddress('');
         await fetchFromBalance();
+        
+        // Refresh destination balance after a delay to allow backend to process
+        // The backend needs time to detect the Solana event and update Sheet Chain balance
+        setTimeout(async () => {
+          await fetchToBalance();
+          // Refresh again after a bit more time to ensure balance is updated
+          setTimeout(async () => {
+            await fetchToBalance();
+          }, 3000);
+        }, 2000);
       } else if (fromChain.name === 'sheet chain' && toChain.name === 'solana') {
         // Sheet Chain to Solana bridge using bridgeOut
         const connectedWallet = getWalletByChain('sheet chain');
@@ -310,16 +321,18 @@ export const BridgeForm: React.FC = () => {
 
     console.log('fetchToBalance: Fetching balance for', toChain.name, toWalletAddress);
     try {
+      let balance = 0;
       if (toChain.name === 'solana') {
-        const balance = await getSplTokenBalance(toWalletAddress);
-        setToBalance(balance.toFixed(2));
+        balance = await getSplTokenBalance(toWalletAddress);
       } else if (toChain.name === 'sheet chain') {
-        const balance = await getSheetBalance(toWalletAddress);
-        setToBalance(balance.toFixed(2));
+        balance = await getSheetBalance(toWalletAddress);
+        console.log('fetchToBalance: Sheet Chain balance fetched:', balance, 'SHEET');
       } else if (toChain.name === 'bsc') {
-        const balance = await getBscBalance(toWalletAddress);
-        setToBalance(balance.toFixed(2));
+        balance = await getBscBalance(toWalletAddress);
       }
+      const formattedBalance = balance.toFixed(2);
+      console.log('fetchToBalance: Setting balance to', formattedBalance, toChain.name);
+      setToBalance(formattedBalance);
     } catch (error) {
       console.error('Failed to fetch to balance:', error);
       setToBalance('0');
@@ -347,6 +360,32 @@ export const BridgeForm: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [toChain, toWalletAddress, fetchToBalance]);
+
+  // Auto-populate destination address with connected wallet address
+  // This effect runs when wallet address or chain changes, and also checks after a delay
+  // to catch wallet connections that happen asynchronously after page load
+  useEffect(() => {
+    const checkAndPopulate = () => {
+      if (toWalletAddress) {
+        // Auto-populate if field is empty or contains invalid address
+        if (!destinationAddress || !isValidAddress(destinationAddress, toChain.name)) {
+          setDestinationAddress(toWalletAddress);
+          setDestinationAddressError('');
+        }
+      }
+    };
+
+    // Check immediately when dependencies change
+    checkAndPopulate();
+
+    // Also check after a short delay to catch async wallet connections
+    // This handles the case where wallet connects after the component mounts
+    const timeoutId = setTimeout(checkAndPopulate, 1000);
+    
+    return () => clearTimeout(timeoutId);
+    // Only run when wallet or chain changes, not when destinationAddress changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toWalletAddress, toChain.name]);
 
   const handleDebugBridgeTransfer = async () => {
     try {
