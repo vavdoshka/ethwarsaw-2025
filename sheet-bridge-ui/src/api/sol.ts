@@ -5,7 +5,13 @@ import {
   getAccount
 } from '@solana/spl-token';
 import { AnchorProvider, Program, BN } from '@coral-xyz/anchor';
-import { SOL_RPC_ENDPOINT, SOL_SHEET_MINT_ADDRESS } from '../config';
+import { 
+  SOL_RPC_ENDPOINT, 
+  SOL_SHEET_MINT_ADDRESS, 
+  SOL_SKIP_PREFLIGHT, 
+  SOL_SIMULATE_BEFORE_SEND, 
+  SOL_LOG_SIMULATION 
+} from '../config';
 import idl from './idl/lock.json';
 
 export async function getSplTokenBalance(userAddress: string): Promise<number> {
@@ -113,8 +119,37 @@ export async function lockSplTokens(
   const lockAmount = new BN(amount * Math.pow(10, 9));
 
   let signature: string;
-  
+
   try {
+    if (SOL_SIMULATE_BEFORE_SEND) {
+      try {
+        const simulation = await program.methods
+          .lockTokens(lockAmount, recipient)
+          .accounts({
+            user,
+            lockAccount: lockAccountPda,
+            mint,
+            userTokenAccount,
+            vaultTokenAccount,
+            vaultAuthority: vaultAuthorityPda,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .simulate();
+
+        if (SOL_LOG_SIMULATION) {
+          console.log('Solana simulation result:', {
+            err: simulation?.err,
+            logs: simulation?.logs,
+            unitsConsumed: (simulation as any)?.unitsConsumed,
+          });
+        }
+      } catch (simulationError: any) {
+        if (SOL_LOG_SIMULATION) {
+          console.warn('Solana simulation threw an error:', simulationError);
+        }
+      }
+    }
+
     signature = await program.methods
       .lockTokens(lockAmount, recipient)
       .accounts({
@@ -126,7 +161,9 @@ export async function lockSplTokens(
         vaultAuthority: vaultAuthorityPda,
         tokenProgram: TOKEN_PROGRAM_ID,
       })
-      .rpc();
+      .rpc({
+        skipPreflight: SOL_SKIP_PREFLIGHT,
+      });
   } catch (error: any) {
     // Check if error is "already processed" - this might mean transaction succeeded
     const errorMsg = error?.message || String(error);

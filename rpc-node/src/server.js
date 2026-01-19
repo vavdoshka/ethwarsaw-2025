@@ -456,11 +456,76 @@ app.post('/', async (req, res) => {
               const txTo = tx.to ? tx.to.toLowerCase() : null;
               const txData = tx.data || '';
               
-              // Check if this is a bridge transfer transaction
+              // Check if this is a bridge transaction (bridgeOut or bridgeTransfer)
               if (txTo === BRIDGE_CONTRACT_ADDRESS.toLowerCase() && txData) {
+                const bridgeOutSelector = ethers.id('bridgeOut(string,uint256)').slice(0, 10);
                 const bridgeTransferSelector = ethers.id('bridgeTransfer(address,uint256)').slice(0, 10);
                 
-                if (txData.startsWith(bridgeTransferSelector)) {
+                console.log('🔍 Checking bridge transaction selectors (BATCH):', {
+                  txHash: tx.hash,
+                  dataPrefix: txData.substring(0, 10),
+                  bridgeOutSelector: bridgeOutSelector,
+                  bridgeTransferSelector: bridgeTransferSelector,
+                  matchesBridgeOut: txData.startsWith(bridgeOutSelector),
+                  matchesBridgeTransfer: txData.startsWith(bridgeTransferSelector)
+                });
+                
+                // Handle bridgeOut (Sheet Chain -> other chains)
+                if (txData.startsWith(bridgeOutSelector)) {
+                  console.log('🌉🌉🌉 BRIDGE OUT TRANSACTION DETECTED (BATCH) 🌉🌉🌉', {
+                    txHash: tx.hash,
+                    from: tx.from,
+                    to: tx.to,
+                    dataPrefix: txData.substring(0, 10),
+                    value: tx.value ? tx.value.toString() : '0',
+                    timestamp: new Date().toISOString()
+                  });
+                  
+                  try {
+                    const iface = new ethers.Interface([
+                      'function bridgeOut(string toAddress, uint256 destChainId) payable'
+                    ]);
+                    
+                    const decoded = iface.decodeFunctionData('bridgeOut', tx.data);
+                    const toAddress = decoded[0];
+                    const destChainId = Number(decoded[1]);
+                    const bridgeAmount = tx.value ? BigInt(tx.value) : BigInt(0);
+                    const fromAddress = tx.from.toLowerCase();
+                    
+                    console.log('🌉 BridgeOut decoded (BATCH):', {
+                      from: fromAddress,
+                      toAddress: toAddress,
+                      amount: bridgeAmount.toString() + ' wei (' + ethers.formatEther(bridgeAmount) + ' ETH)',
+                      destChainId: destChainId
+                    });
+                    
+                    // Process bridgeOut - use the actual transaction hash from the signed transaction
+                    const bridgeResult = await sheetOps.bridgeOut(
+                      fromAddress,
+                      bridgeAmount,
+                      toAddress,
+                      destChainId,
+                      tx.hash // Pass the signed transaction hash
+                    );
+                    
+                    batchResult = bridgeResult.transactionHash;
+                    
+                    console.log('✅✅✅ BRIDGE OUT PROCESSED (BATCH) ✅✅✅', {
+                      txHash: tx.hash,
+                      resultTxHash: bridgeResult.transactionHash,
+                      timestamp: new Date().toISOString()
+                    });
+                  } catch (bridgeError) {
+                    console.error('❌ Failed to process bridgeOut in batch:', {
+                      error: bridgeError.message,
+                      stack: bridgeError.stack,
+                      txHash: tx.hash
+                    });
+                    throw bridgeError;
+                  }
+                }
+                // Handle bridgeTransfer (other chains -> Sheet Chain)
+                else if (txData.startsWith(bridgeTransferSelector)) {
                   console.log('🌉🌉🌉 BRIDGE TRANSFER TRANSACTION DETECTED (BATCH) 🌉🌉🌉', {
                     txHash: tx.hash,
                     from: tx.from,
@@ -981,11 +1046,13 @@ app.post('/', async (req, res) => {
             });
             
             // Process bridgeOut
+            // Use the actual transaction hash from the signed transaction
             const bridgeResult = await sheetOps.bridgeOut(
               fromAddress,
               bridgeAmount,
               toAddress,
-              destChainId
+              destChainId,
+              tx.hash // Pass the signed transaction hash
             );
             
             // Return the transaction hash
