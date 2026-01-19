@@ -131,6 +131,17 @@ class GoogleSheetsClient {
 
   async appendRow(sheetName, values) {
     try {
+      // Get current row count to know which row we're adding
+      const currentRows = await this.readRange(`${sheetName}!A:A`);
+      const newRowNumber = currentRows.length + 1;
+      
+      console.log(`📝 Appending row to ${sheetName} sheet (will be row ${newRowNumber}):`, {
+        sheetName: sheetName,
+        rowNumber: newRowNumber,
+        values: values,
+        timestamp: new Date().toISOString()
+      });
+      
       const response = await this.sheets.spreadsheets.values.append({
         spreadsheetId: this.spreadsheetId,
         range: `${sheetName}!A:A`,
@@ -138,6 +149,18 @@ class GoogleSheetsClient {
         insertDataOption: 'INSERT_ROWS',
         resource: { values: [values] }
       });
+      
+      // Get updated row count to confirm
+      const updatedRows = await this.readRange(`${sheetName}!A:A`);
+      const actualRowNumber = updatedRows.length;
+      
+      console.log(`✅ Successfully appended row to ${sheetName} sheet (row ${actualRowNumber}):`, {
+        sheetName: sheetName,
+        rowNumber: actualRowNumber,
+        values: values,
+        timestamp: new Date().toISOString()
+      });
+      
       return response.data;
     } catch (error) {
       this.logger.error(`Failed to append row to ${sheetName}:`, error);

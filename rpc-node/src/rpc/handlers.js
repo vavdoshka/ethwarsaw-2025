@@ -173,8 +173,7 @@ class RPCHandlers {
       nonce: tx.nonce
     });
 
-    // Handle bridgeTransfer calls sent as eth_sendTransaction (e.g. from wallets)
-    // by decoding the call data and delegating to SheetOperations.bridgeTransfer.
+    // Handle bridgeOut and bridgeTransfer calls sent as eth_sendTransaction (e.g. from wallets)
     if (tx.to && tx.data) {
       const toLower = tx.to.toLowerCase();
       const data = tx.data;
@@ -190,9 +189,90 @@ class RPCHandlers {
           fullData: data
         });
 
+        const bridgeOutSelector = ethers.id('bridgeOut(string,uint256)').slice(0, 10);
         const bridgeTransferSelector = ethers.id('bridgeTransfer(address,uint256)').slice(0, 10);
 
-        if (data.startsWith(bridgeTransferSelector)) {
+        // Log selector comparison for debugging
+        console.log('🔍 Checking bridge selectors (sendTransaction):', {
+          receivedDataPrefix: data.substring(0, 10),
+          expectedBridgeOutSelector: bridgeOutSelector,
+          expectedBridgeTransferSelector: bridgeTransferSelector,
+          matchesBridgeOut: data.startsWith(bridgeOutSelector),
+          matchesBridgeTransfer: data.startsWith(bridgeTransferSelector),
+          dataLength: data.length
+        });
+        logger.info('🔍 Checking bridge selectors (sendTransaction):', {
+          receivedDataPrefix: data.substring(0, 10),
+          expectedBridgeOutSelector: bridgeOutSelector,
+          expectedBridgeTransferSelector: bridgeTransferSelector,
+          matchesBridgeOut: data.startsWith(bridgeOutSelector),
+          matchesBridgeTransfer: data.startsWith(bridgeTransferSelector)
+        });
+
+        // Handle bridgeOut (Sheet Chain -> other chains)
+        if (data.startsWith(bridgeOutSelector)) {
+          logger.info('🌉🌉🌉 BRIDGE OUT TRANSACTION DETECTED (sendTransaction) 🌉🌉🌉', {
+            from: tx.from,
+            to: tx.to,
+            dataPrefix: data.substring(0, 10),
+            selector: bridgeOutSelector,
+            value: tx.value ? tx.value.toString() : '0'
+          });
+
+          try {
+            const iface = new ethers.Interface([
+              'function bridgeOut(string toAddress, uint256 destChainId) payable'
+            ]);
+
+            const decoded = iface.decodeFunctionData('bridgeOut', data);
+            const toAddress = decoded[0];
+            const destChainId = Number(decoded[1]);
+
+            const bridgeAmount = tx.value ? BigInt(tx.value) : BigInt(0);
+            const fromAddress = tx.from.toLowerCase();
+
+            if (bridgeAmount === BigInt(0)) {
+              throw new Error('Bridge amount cannot be zero');
+            }
+
+            logger.info('🌉 BridgeOut parameters decoded:', {
+              from: fromAddress,
+              toAddress: toAddress,
+              amount: bridgeAmount.toString() + ' wei (' + ethers.formatEther(bridgeAmount) + ' ETH)',
+              destChainId: destChainId
+            });
+
+            // Process bridgeOut - for eth_sendTransaction, we need to generate a hash
+            // since there's no signed transaction yet. The wallet will sign it client-side.
+            // For now, we'll generate a hash, but ideally this should come from the signed tx.
+            const txHash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify({
+              from: fromAddress,
+              amount: bridgeAmount.toString(),
+              toAddress,
+              destChainId,
+              timestamp: Date.now()
+            })));
+            
+            const bridgeResult = await this.sheetOps.bridgeOut(
+              fromAddress,
+              bridgeAmount,
+              toAddress,
+              destChainId,
+              txHash // Pass the generated hash
+            );
+
+            logger.info('✅ BridgeOut processed (sendTransaction):', bridgeResult);
+            return bridgeResult.transactionHash;
+          } catch (bridgeError) {
+            logger.error('❌ Failed to process bridgeOut transaction:', {
+              error: bridgeError.message,
+              stack: bridgeError.stack
+            });
+            throw bridgeError;
+          }
+        }
+        // Handle bridgeTransfer (other chains -> Sheet Chain)
+        else if (data.startsWith(bridgeTransferSelector)) {
           logger.info('🌉🌉🌉 BRIDGE TRANSFER TRANSACTION DETECTED (sendTransaction) 🌉🌉🌉', {
             from: tx.from,
             to: tx.to,

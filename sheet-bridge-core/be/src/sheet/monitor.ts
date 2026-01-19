@@ -52,11 +52,17 @@ export class BridgeMonitor {
         this.pollTimer = setInterval(async () => {
             try {
                 const records = await this.sheetsClient.readBridgeTab();
+                logger.debug(`📊 Bridge tab polling: Found ${records.length} total records, ${this.seenTxHashes.size} already seen`);
                 
                 // Find new records by comparing txHashes
                 const newRecords = records.filter(record => {
-                    if (!record.txHash) return false;
-                    if (this.seenTxHashes.has(record.txHash)) return false;
+                    if (!record.txHash) {
+                        logger.debug(`⚠️  Skipping record without txHash at row ${record.rowIndex}`);
+                        return false;
+                    }
+                    if (this.seenTxHashes.has(record.txHash)) {
+                        return false;
+                    }
                     this.seenTxHashes.add(record.txHash);
                     return true;
                 });

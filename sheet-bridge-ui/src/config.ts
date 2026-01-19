@@ -49,6 +49,12 @@ export const SOL_SHEET_MINT_ADDRESS =
   '4opADvbtoEaXryZH5UoEpVXERDJoRMZoXy8yMsogsc2S';
 export const SOL_SHEET_BRIDGE_PROGRAM_ID =
   '46BKi3nxgwFpc8EXE2Yem3syK5yqQRvJLasWzvsTEEgx';
+export const SOL_SKIP_PREFLIGHT =
+  (import.meta.env.VITE_SOL_SKIP_PREFLIGHT as string | undefined)?.toLowerCase() === 'true';
+export const SOL_SIMULATE_BEFORE_SEND =
+  (import.meta.env.VITE_SOL_SIMULATE_BEFORE_SEND as string | undefined)?.toLowerCase() === 'true';
+export const SOL_LOG_SIMULATION =
+  (import.meta.env.VITE_SOL_LOG_SIMULATION as string | undefined)?.toLowerCase() === 'true';
 
 export const SHEET_RPC_ENDPOINT = 'http://localhost:8545';
 

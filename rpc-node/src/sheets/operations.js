@@ -455,7 +455,7 @@ class SheetOperations {
             });
     }
 
-    async bridgeOut(fromAddress, amount, toAddress, destChainId) {
+    async bridgeOut(fromAddress, amount, toAddress, destChainId, providedTxHash = null) {
         fromAddress = fromAddress.toLowerCase();
         const bridgeAccountAddress = this.getBridgeAccountAddress();
         const bridgeAmount = BigInt(amount);
@@ -477,8 +477,9 @@ class SheetOperations {
         await this.updateBalance(fromAddress, fromBalance - bridgeAmount, fromNonce + 1);
         await this.updateBalance(bridgeAccountAddress, bridgeBalance + bridgeAmount, bridgeNonce);
         
-        // Generate transaction hash
-        const txHash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify({
+        // Use provided transaction hash if available (from signed transaction),
+        // otherwise generate one (for backward compatibility)
+        const txHash = providedTxHash || ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify({
             from: fromAddress,
             amount: bridgeAmount.toString(),
             toAddress,
@@ -489,8 +490,11 @@ class SheetOperations {
         // Get block number
         const blockNumber = await this.getLatestBlockNumber() + 1;
         
+        // Fetch current crypto prices for transaction record
+        const cryptoPrices = await this.fetchCryptoPrices();
+        
         // Record bridge transaction in Bridge sheet
-        await this.client.appendRow('Bridge', [
+        const bridgeRecord = [
             new Date().toISOString(),
             txHash,
             fromAddress,
@@ -499,7 +503,42 @@ class SheetOperations {
             destChainId.toString(),
             'Success',
             blockNumber.toString()
-        ]);
+        ];
+        
+        console.log('📝 Writing bridgeOut transaction to Bridge tab:', {
+            timestamp: bridgeRecord[0],
+            txHash: bridgeRecord[1],
+            from: bridgeRecord[2],
+            amount: bridgeRecord[3],
+            toAddress: bridgeRecord[4],
+            destChainId: bridgeRecord[5],
+            status: bridgeRecord[6],
+            blockNumber: bridgeRecord[7]
+        });
+        
+        await this.client.appendRow('Bridge', bridgeRecord);
+        
+        // Also record in Transactions sheet so getTransactionReceipt can find it
+        // The transaction is from user to bridge contract
+        const bridgeContractAddress = '0x0000000000000000000000000000000000000003';
+        const gasLimit = BigInt(21000); // Standard gas for bridgeOut
+        const transactionRecord = [
+            new Date().toISOString(),
+            txHash,
+            fromAddress,
+            bridgeContractAddress,
+            bridgeAmount.toString(),
+            fromNonce.toString(),
+            'Success',
+            blockNumber.toString(),
+            gasLimit.toString(),
+            cryptoPrices.btcPrice.toString(),
+            cryptoPrices.ethPrice.toString()
+        ];
+        
+        await this.client.appendRow('Transactions', transactionRecord);
+        
+        console.log('✅ BridgeOut transaction written to Bridge and Transactions tabs successfully');
         
         return {
             transactionHash: txHash,

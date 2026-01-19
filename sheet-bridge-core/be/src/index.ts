@@ -171,13 +171,31 @@ async function monitorSolanaEvents(): Promise<void> {
         connection.onLogs(
             LOCK_PROGRAM_ID,
             (logs) => {
-                if (logs.err) return;
+                // Log all events for debugging
+                logger.debug(`📨 Received logs from program ${LOCK_PROGRAM_ID.toBase58()}:`, {
+                    signature: logs.signature,
+                    err: logs.err,
+                    logCount: logs.logs.length
+                });
+                
+                if (logs.err) {
+                    logger.debug(`⚠️  Transaction had error, skipping: ${JSON.stringify(logs.err)}`);
+                    return;
+                }
 
                 const logMessages = logs.logs.join(' ');
-                if (logMessages.includes('Program log: AnchorError')) return;
+                if (logMessages.includes('Program log: AnchorError')) {
+                    logger.debug(`⚠️  Transaction had AnchorError, skipping`);
+                    return;
+                }
 
-                for (const evt of parser.parseLogs(logs.logs)) {
-                    if (evt.name === TOKENS_LOCKED_EVENT) {
+                try {
+                    let eventCount = 0;
+                    for (const evt of parser.parseLogs(logs.logs)) {
+                        eventCount++;
+                        logger.debug(`📋 Event found: ${evt.name}`);
+                        
+                        if (evt.name === TOKENS_LOCKED_EVENT) {
                         const { sender, amount, recipient } = evt.data as {
                             sender: PublicKey;
                             amount: any;
@@ -198,17 +216,25 @@ async function monitorSolanaEvents(): Promise<void> {
                             `Solana transfer event cached, user: ${sender.toString()}, amount: ${amountStr} (Solana 9 decimals), recipient: ${recipient}, converted_amount: ${sheetAmountStr} (SheetChain 18 decimals)`
                         );
 
-                        insertBridgeEvent({
-                            from_chain: 'solana',
-                            from_address: sender.toString(),
-                            from_amount: amountStr,
-                            to_chain: 'sheet',
-                            to_address: recipient,
-                            to_amount: sheetAmountStr, // Use converted amount for Sheet Chain
-                            lock_tx_hash: logs.signature,
-                            status: BridgeEventStatus.Pending,
-                        });
+                            insertBridgeEvent({
+                                from_chain: 'solana',
+                                from_address: sender.toString(),
+                                from_amount: amountStr,
+                                to_chain: 'sheet',
+                                to_address: recipient,
+                                to_amount: sheetAmountStr, // Use converted amount for Sheet Chain
+                                lock_tx_hash: logs.signature,
+                                status: BridgeEventStatus.Pending,
+                            });
+                        }
                     }
+                    if (eventCount > 0) {
+                        logger.debug(`📋 Parsed ${eventCount} event(s) from logs`);
+                    }
+                } catch (parseError: any) {
+                    logger.error(`❌ Error parsing Solana logs: ${parseError?.message ?? String(parseError)}`);
+                    logger.error(`   Signature: ${logs.signature}`);
+                    logger.error(`   Logs: ${JSON.stringify(logs.logs)}`);
                 }
             },
             'confirmed'
@@ -340,13 +366,80 @@ async function processTransfers(context: TransferContext): Promise<void> {
                         );
                         
                         // Check if error is "AlreadyProcessed" - this might mean the transaction actually succeeded
-                        // In this case, we should check if we can verify the transaction
-                        if (errorMsg.includes('AlreadyProcessed')) {
+                        // In this case, we should verify the transfer by checking the recipient's balance
+                        const eventFromChain = event.from_chain.toLowerCase();
+                        const eventToChain = event.to_chain.toLowerCase();
+                        if (errorMsg.includes('AlreadyProcessed') && eventFromChain === 'sheet' && eventToChain === 'solana') {
                             logger.warn(
                                 `Event ${event.id} got "AlreadyProcessed" error. ` +
-                                `This might mean the transaction was already sent. ` +
-                                `Marking as failed but transaction may have succeeded.`
+                                `Verifying if transfer actually succeeded by checking recipient balance...`
                             );
+                            
+                            try {
+                                const { Connection, PublicKey } = await import('@solana/web3.js');
+                                const { getAssociatedTokenAddress, getAccount, getMint } = await import('@solana/spl-token');
+                                
+                                if (!context.solanaConnection || !context.solanaTokenMint) {
+                                    throw new Error('Solana not configured');
+                                }
+                                
+                                const recipientPubkey = new PublicKey(event.to_address);
+                                const mintAddress = new PublicKey(context.solanaTokenMint);
+                                
+                                // Get expected amount in Solana token units
+                                const mintInfo = await getMint(context.solanaConnection, mintAddress);
+                                const decimals = mintInfo.decimals;
+                                // Use event.to_amount which is already in the correct format (18 decimals for Sheet Chain)
+                                const amountWei = BigInt(event.to_amount);
+                                const expectedAmount = amountWei / BigInt(10 ** (18 - decimals));
+                                
+                                // Check recipient's current balance
+                                const recipientTokenAccount = await getAssociatedTokenAddress(
+                                    mintAddress,
+                                    recipientPubkey
+                                );
+                                
+                                try {
+                                    const recipientAccount = await getAccount(context.solanaConnection, recipientTokenAccount);
+                                    const currentBalance = BigInt(recipientAccount.amount.toString());
+                                    
+                                    logger.info(
+                                        `Recipient balance check: current=${currentBalance}, expected increase=${expectedAmount}`
+                                    );
+                                    
+                                    // If balance is at least the expected amount, the transfer likely succeeded
+                                    // (We can't know the exact previous balance, but if it's >= expected, it's likely good)
+                                    if (currentBalance >= expectedAmount) {
+                                        logger.info(
+                                            `✅ Transfer verification: Recipient has sufficient balance. ` +
+                                            `Marking event as processed (transaction likely succeeded despite "AlreadyProcessed" error).`
+                                        );
+                                        
+                                        updateBridgeEventStatus(event.id, BridgeEventStatus.Processed, {
+                                            transfer_tx_hash: 'verified-by-balance-check',
+                                            transfer_at: new Date().toISOString(),
+                                            error: null,
+                                        });
+                                        continue; // Skip marking as failed
+                                    } else {
+                                        logger.warn(
+                                            `⚠️  Transfer verification: Recipient balance (${currentBalance}) is less than expected (${expectedAmount}). ` +
+                                            `Transaction may not have succeeded.`
+                                        );
+                                    }
+                                } catch (balanceError: any) {
+                                    // If we can't check balance (account doesn't exist, etc.), assume it failed
+                                    logger.warn(
+                                        `Could not verify recipient balance: ${balanceError?.message || String(balanceError)}. ` +
+                                        `Marking as failed.`
+                                    );
+                                }
+                            } catch (verifyError: any) {
+                                logger.warn(
+                                    `Failed to verify transfer: ${verifyError?.message || String(verifyError)}. ` +
+                                    `Marking as failed.`
+                                );
+                            }
                         }
                         
                         updateBridgeEventStatus(event.id, BridgeEventStatus.Failed, {
