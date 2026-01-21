@@ -136,8 +136,9 @@ docker buildx build \
     --tag ${BRIDGE_BACKEND_IMAGE} \
     --tag ${BRIDGE_BACKEND_TIMESTAMP} \
     --push \
+    --no-cache \
     --file ./sheet-bridge-core/be/Dockerfile \
-    ./sheet-bridge-core/be
+    ./sheet-bridge-core
 
 echo -e "${GREEN}✓ Bridge Backend image built and pushed${NC}"
 

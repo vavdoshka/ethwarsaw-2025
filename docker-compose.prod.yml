@@ -1,10 +1,10 @@
+# Production docker-compose using ECR images
+# Usage: docker-compose -f docker-compose.prod.yml up -d
 # version is obsolete in newer docker-compose, removed
 
 services:
   rpc-node:
-    build:
-      context: ./rpc-node
-      dockerfile: Dockerfile
+    image: 902230975350.dkr.ecr.eu-central-1.amazonaws.com/sheetchain:rpc-node
     container_name: sheetchain-rpc-node
     ports:
       - "8545:8545"
@@ -39,9 +39,7 @@ services:
       - sheetchain-network
 
   bridge-backend:
-    build:
-      context: ./sheet-bridge-core
-      dockerfile: be/Dockerfile
+    image: 902230975350.dkr.ecr.eu-central-1.amazonaws.com/sheetchain:bridge-backend
     container_name: sheetchain-bridge-backend
     environment:
       - NODE_ENV=production

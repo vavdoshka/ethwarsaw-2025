@@ -2,7 +2,9 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import logger from './logger';
 
-const DB_PATH = path.join(__dirname, '../bridge.db');
+// Database path: use /app/data/bridge.db for persistence, fallback to /app/bridge.db
+// __dirname in compiled JS is /app/dist/, so ../data/bridge.db = /app/data/bridge.db
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, '../data/bridge.db');
 
 let db: Database.Database;
 
