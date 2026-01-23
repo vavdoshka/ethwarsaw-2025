@@ -9,3 +9,9 @@ test-ledger
 .vscode
 .env
 cred.json
+# Database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+data/

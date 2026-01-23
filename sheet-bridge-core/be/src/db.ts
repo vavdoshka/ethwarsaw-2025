@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import fs from 'fs';
 import logger from './logger';
 
 // Database path: use /app/data/bridge.db for persistence, fallback to /app/bridge.db
@@ -32,6 +33,13 @@ export interface BridgeEventRecord {
 }
 
 export function setupDatabase(): Database.Database {
+    // Ensure the directory exists before creating the database
+    const dbDir = path.dirname(DB_PATH);
+    if (!fs.existsSync(dbDir)) {
+        logger.info(`Creating database directory: ${dbDir}`);
+        fs.mkdirSync(dbDir, { recursive: true });
+    }
+    
     db = new Database(DB_PATH);
 
     // Create table with new schema (lock_tx_hash as unique identifier)
