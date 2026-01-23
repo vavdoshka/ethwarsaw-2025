@@ -9,3 +9,9 @@ build/
 rpc-node/cred/crypto-bots-409100-5febfadd93bc.json
 **/cred.json
 sheet-bridge-core/be/cred.json
+# Database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+sheet-bridge-core/be/data/
