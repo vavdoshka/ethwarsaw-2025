@@ -39,6 +39,30 @@ const sheetChainForClient = defineChain({
 // Bridge contract address (using a special address for bridge operations)
 const BRIDGE_CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000003';
 
+/**
+ * Test RPC connection by calling a simple RPC method
+ */
+export async function testRpcConnection(): Promise<boolean> {
+  try {
+    const client = createPublicClient({
+      chain: sheetChainForClient,
+      transport: http(SHEET_RPC_ENDPOINT, {
+        retryCount: 1,
+        retryDelay: 500,
+        timeout: 5000,
+      }),
+    });
+    
+    const chainId = await client.getChainId();
+    console.log('RPC connection test successful. Chain ID:', chainId);
+    return chainId === 12345;
+  } catch (error) {
+    console.error('RPC connection test failed:', error);
+    console.error('RPC Endpoint:', SHEET_RPC_ENDPOINT);
+    return false;
+  }
+}
+
 export async function getSheetBalance(userAddress: string): Promise<number> {
   console.log('getSheetBalance: Fetching balance for', userAddress, 'from', SHEET_RPC_ENDPOINT);
   
@@ -76,6 +100,19 @@ export async function bridgeOut(
 ): Promise<string> {
   if (!walletClient) {
     throw new Error('Wallet client not available. Please connect your wallet.');
+  }
+
+  // Test RPC connection before attempting transaction
+  console.log('Testing RPC connection before bridgeOut...');
+  const rpcConnected = await testRpcConnection();
+  if (!rpcConnected) {
+    throw new Error(
+      `Cannot connect to SheetChain RPC at ${SHEET_RPC_ENDPOINT}.\n\n` +
+      `Please check:\n` +
+      `1. The RPC server is running and accessible\n` +
+      `2. Your network connection\n` +
+      `3. If using MetaMask, ensure the SheetChain network is configured with RPC URL: ${SHEET_RPC_ENDPOINT}`
+    );
   }
 
   try {
@@ -128,10 +165,31 @@ export async function bridgeOut(
     return txHash;
   } catch (error: any) {
     console.error('Error calling bridgeOut:', error);
+    console.error('RPC Endpoint configured:', SHEET_RPC_ENDPOINT);
+    
     // Provide more helpful error messages
-    if (error?.message?.includes('circuit breaker') || error?.message?.includes('Execution prevented')) {
-      throw new Error('RPC connection issue. Please refresh the page and ensure the RPC node is running on http://localhost:8545');
+    const errorMessage = error?.message || error?.toString() || '';
+    const errorDetails = error?.details || '';
+    
+    // Check for RPC connection issues
+    if (
+      errorMessage.includes('Requested resource not available') ||
+      errorMessage.includes('RPC endpoint returned too many errors') ||
+      errorMessage.includes('circuit breaker') ||
+      errorMessage.includes('Execution prevented') ||
+      errorDetails.includes('Requested resource not available')
+    ) {
+      throw new Error(
+        `RPC connection failed. The SheetChain RPC endpoint may not be reachable.\n\n` +
+        `Expected endpoint: ${SHEET_RPC_ENDPOINT}\n\n` +
+        `If you're using MetaMask, please:\n` +
+        `1. Go to MetaMask Settings > Networks\n` +
+        `2. Find SheetChain (Chain ID: 12345)\n` +
+        `3. Remove it and re-add it with RPC URL: ${SHEET_RPC_ENDPOINT}\n` +
+        `4. Or use the "Add Network" button in the app to re-add it automatically.`
+      );
     }
+    
     throw error;
   }
 }

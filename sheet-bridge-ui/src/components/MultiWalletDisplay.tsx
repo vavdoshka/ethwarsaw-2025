@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 import { useWallet } from '../contexts/walletContext';
 import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
-import { useAccount, useDisconnect } from 'wagmi';
+import { useAccount, useDisconnect, useSwitchChain } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { CHAINS } from '../config';
 import { bsc, bscTestnet } from 'wagmi/chains';
 import { IS_MAINNET } from '../config';
+import { switchToSheetChain } from '../utils/metamask';
 
 const SHEET_CHAIN_ID = 12345;
 
@@ -26,6 +28,7 @@ export const MultiWalletDisplay: React.FC = () => {
   const { setVisible: setSolanaModalVisible } = useWalletModal();
   const { address: evmAddress, isConnected: evmConnected, chain: currentEvmChain } = useAccount();
   const { disconnect: disconnectEvm } = useDisconnect();
+  const { switchChain } = useSwitchChain();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -88,9 +91,74 @@ export const MultiWalletDisplay: React.FC = () => {
     setIsOpen(false);
   };
 
-  const handleEvmConnect = (openConnectModal: () => void) => {
-    openConnectModal();
-    setIsOpen(false);
+  const handleEvmConnect = async (openConnectModal: () => void, chainName: string) => {
+    try {
+      // If connecting to SheetChain, ensure network is added and switched
+      if (chainName === 'sheet chain') {
+        const toastId = toast.loading('Switching to SheetChain network...');
+        
+        try {
+          // First try to switch to SheetChain (this will add it if not present)
+          await switchToSheetChain();
+          toast.success('Switched to SheetChain network', { id: toastId });
+        } catch (error: any) {
+          // If network doesn't exist, switchToSheetChain will try to add it
+          // If that fails, show error but still try to connect
+          if (error.message?.includes('rejected')) {
+            toast.error('Network switch was rejected', { id: toastId });
+            setIsOpen(false);
+            return;
+          } else if (error.message?.includes('already exists')) {
+            // Network exists but might need to be switched to
+            toast.error(
+              () => (
+                <div>
+                  <div className="font-semibold">Network Already Exists</div>
+                  <div className="text-sm text-gray-300 mt-1">
+                    Please switch to SheetChain manually in MetaMask, or remove and re-add it.
+                  </div>
+                </div>
+              ),
+              { id: toastId, duration: 6000 }
+            );
+          } else {
+            toast.error(`Failed to switch network: ${error.message}`, { id: toastId });
+          }
+        }
+        
+        // If we have switchChain available, also use it to ensure we're on the right chain
+        if (switchChain) {
+          try {
+            await switchChain({ chainId: SHEET_CHAIN_ID });
+          } catch (error: any) {
+            // If switch fails, still try to open connect modal
+            console.error('Error switching chain via wagmi:', error);
+          }
+        }
+      } else if (chainName === 'bsc') {
+        // Switch to BSC before connecting
+        const bscChainConfig = IS_MAINNET ? bsc : bscTestnet;
+        if (switchChain) {
+          try {
+            await switchChain({ chainId: bscChainConfig.id });
+          } catch (error: any) {
+            console.error('Error switching to BSC:', error);
+          }
+        }
+      }
+      
+      // Small delay to ensure chain switch completes
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Now open the connect modal
+      openConnectModal();
+      setIsOpen(false);
+    } catch (error: any) {
+      console.error('Error in handleEvmConnect:', error);
+      // Still try to open the modal even if chain switch fails
+      openConnectModal();
+      setIsOpen(false);
+    }
   };
 
   const handleEvmDisconnect = () => {
@@ -179,7 +247,7 @@ export const MultiWalletDisplay: React.FC = () => {
                         <div className="text-sm font-medium text-white truncate">
                           {wallet.chain.display_name}
                         </div>
-                        {(wallet.isConnected || (isEvmChain && isThisEvmChainConnected)) && wallet.address && (
+                        {(wallet.isConnected || (isEvmChain && evmConnected && wallet.address)) && wallet.address && (
                           <div className="text-xs text-white/60 truncate">
                             {formatAddress(wallet.address)}
                           </div>
@@ -207,7 +275,9 @@ export const MultiWalletDisplay: React.FC = () => {
                       ) : isEvmChain ? (
                         <ConnectButton.Custom>
                           {({ openConnectModal, account }) => {
-                            if (isThisEvmChainConnected && account) {
+                            // For EVM chains, if wallet is connected, show Disconnect regardless of current chain
+                            // The same wallet can be used for both SheetChain and BSC
+                            if (evmConnected && account) {
                               return (
                                 <button
                                   onClick={handleEvmDisconnect}
@@ -219,7 +289,7 @@ export const MultiWalletDisplay: React.FC = () => {
                             }
                             return (
                               <button
-                                onClick={() => handleEvmConnect(openConnectModal)}
+                                onClick={() => handleEvmConnect(openConnectModal, wallet.chain.name)}
                                 className="px-3 py-1.5 text-xs font-medium text-white bg-[#00c853] hover:bg-[#00b64f] rounded transition-colors"
                               >
                                 Connect

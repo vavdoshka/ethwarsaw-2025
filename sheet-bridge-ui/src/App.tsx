@@ -81,15 +81,32 @@ function App() {
   // Configure all available Solana wallets
   // Note: Wallet adapters use the ConnectionProvider's endpoint (devnet)
   // Users must manually switch their wallet extension (Phantom/Solflare) to devnet
-  const wallets = useMemo(
-    () => [
+  const wallets = useMemo(() => {
+    const walletAdapters = [
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
       new TorusWalletAdapter(),
       new LedgerWalletAdapter(),
-    ],
-    []
-  );
+    ];
+    
+    // Filter out duplicates by wallet name to prevent React key warnings
+    // The wallet adapter's name property is used as the key in the UI
+    const seenNames = new Set<string>();
+    const uniqueWallets = walletAdapters.filter((wallet) => {
+      // Access the name property from the adapter
+      const walletName = (wallet as any).name || (wallet as any).adapter?.name || wallet.constructor.name;
+      
+      if (seenNames.has(walletName)) {
+        console.warn(`Duplicate wallet adapter detected: ${walletName}. Skipping.`);
+        return false;
+      }
+      
+      seenNames.add(walletName);
+      return true;
+    });
+    
+    return uniqueWallets;
+  }, []);
 
   return (
     <WagmiProvider config={config}>

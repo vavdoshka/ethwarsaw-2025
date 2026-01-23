@@ -56,7 +56,7 @@ export const SOL_SIMULATE_BEFORE_SEND =
 export const SOL_LOG_SIMULATION =
   (import.meta.env.VITE_SOL_LOG_SIMULATION as string | undefined)?.toLowerCase() === 'true';
 
-export const SHEET_RPC_ENDPOINT = 'http://localhost:8545';
+export const SHEET_RPC_ENDPOINT = 'https://rpc-testnet.sheetchain.com';
 
 export const BSC_RPC_ENDPOINT = IS_MAINNET
   ? 'https://bsc-dataseed.binance.org'
