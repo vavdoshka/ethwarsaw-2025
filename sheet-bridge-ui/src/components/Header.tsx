@@ -4,6 +4,7 @@ import { useSwitchChain, useAccount } from 'wagmi';
 import { bsc, bscTestnet } from 'wagmi/chains';
 import { IS_MAINNET } from '../config';
 import { MultiWalletDisplay } from './MultiWalletDisplay';
+import { AddNetworkButton } from './AddNetworkButton';
 
 const SHEET_CHAIN_ID = 12345;
 
@@ -43,7 +44,8 @@ export const Header: React.FC = () => {
           </span>
         </div>
 
-        <div className="flex items-stretch h-full">
+        <div className="flex items-stretch h-full gap-2">
+          <AddNetworkButton />
           <MultiWalletDisplay />
         </div>
       </div>
