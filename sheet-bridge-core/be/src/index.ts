@@ -14,6 +14,11 @@ import tokenLockAbi from './tokenLockAbi.json';
 async function main() {
     setupDatabase();
 
+    logger.info(`📋 Configuration:`);
+    logger.info(`   SHEET_RPC_URL: ${SHEET_RPC_URL}`);
+    logger.info(`   GOOGLE_SHEET_ID: ${process.env.GOOGLE_SHEET_ID || 'NOT SET'}`);
+    logger.info(`   BRIDGE_OPERATOR_ADDRESS: ${BRIDGE_OPERATOR_ADDRESS}`);
+
     const sheetProvider = new JsonRpcProvider(SHEET_RPC_URL);
     
     // Test Sheet Chain RPC connection using eth_chainId (simpler than getBlockNumber)
@@ -30,6 +35,8 @@ async function main() {
         logger.error(`   Please ensure the RPC node is running and accessible.`);
         if (SHEET_RPC_URL.includes('localhost') || SHEET_RPC_URL.includes('127.0.0.1')) {
             logger.error(`   For localhost, ensure the RPC node is running on ${SHEET_RPC_URL}`);
+        } else {
+            logger.error(`   For production, ensure SHEET_RPC_URL is set correctly (e.g., https://rpc-testnet.sheetchain.com)`);
         }
         throw new Error(`Sheet Chain RPC connection failed: ${errorMsg}`);
     }
@@ -115,16 +122,33 @@ async function main() {
         const sheetsClient = new GoogleSheetsClient();
         await sheetsClient.initialize();
         
-        // Create Bridge monitor with 10 second polling interval (default)
-        const pollInterval = parseInt(process.env.BRIDGE_POLL_INTERVAL_MS || '10000', 10);
+        // Create Bridge monitor with 30 second polling interval (default)
+        // Increased from 10s to reduce Google Sheets API quota usage
+        const pollInterval = parseInt(process.env.BRIDGE_POLL_INTERVAL_MS || '30000', 10);
         bridgeMonitor = new BridgeMonitor(sheetsClient, pollInterval);
         
         // Read all existing records first (just to get count and track them)
-        await bridgeMonitor.readAllRecords();
+        // This will gracefully handle if Bridge tab doesn't exist
+        try {
+            await bridgeMonitor.readAllRecords();
+        } catch (error: any) {
+            // If Bridge tab doesn't exist, log warning and continue
+            if (error.code === 404 || error.status === 404 || 
+                (error.response?.status === 404) ||
+                (error.message && error.message.includes('not found'))) {
+                logger.warn('⚠️  Bridge tab does not exist in Google Sheets.');
+                logger.warn('   Bridge monitoring will be disabled until the Bridge tab is created.');
+                logger.warn('   Please create a "Bridge" tab with columns: Timestamp, TxHash, From, Amount, ToAddress, DestChainId, Status, BlockNumber');
+            } else {
+                throw error; // Re-throw if it's a different error
+            }
+        }
         
-        // Start monitoring for new records
-        await bridgeMonitor.startMonitoring();
-        logger.info('✅ Bridge tab monitor started successfully');
+        // Start monitoring for new records (only if Bridge tab exists)
+        if (bridgeMonitor) {
+            await bridgeMonitor.startMonitoring();
+            logger.info('✅ Bridge tab monitor started successfully');
+        }
     } catch (error: any) {
         logger.error(`Failed to initialize Bridge tab monitor: ${error?.message ?? String(error)}`);
         logger.warn('Continuing without Bridge tab monitoring...');
