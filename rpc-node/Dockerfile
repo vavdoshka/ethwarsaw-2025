@@ -7,7 +7,8 @@ COPY package*.json ./
 COPY yarn.lock* ./
 
 # Install dependencies
-RUN npm ci --only=production || yarn install --frozen-lockfile --production
+# Try npm ci first (fastest), fallback to npm install if lock file is out of sync, then try yarn
+RUN npm ci --omit=dev || npm install --omit=dev || yarn install --frozen-lockfile --production
 
 # Copy application code
 COPY . .

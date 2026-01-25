@@ -17,6 +17,7 @@
     "dotenv": "^16.4.5",
     "ethers": "^6.15.0",
     "googleapis": "^144.0.0",
+    "node-telegram-bot-api": "^0.66.0",
     "winston": "^3.18.3"
   },
   "devDependencies": {

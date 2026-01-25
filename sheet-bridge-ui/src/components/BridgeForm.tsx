@@ -6,7 +6,7 @@ import { useWalletClient, useAccount } from 'wagmi';
 import type { Token } from '../types/index';
 import { CHAINS, BRIDGE_OPERATOR_ADDRESS, IS_MAINNET } from '../config';
 import { isValidAmount, isValidAddress } from '../utils/format';
-import { ArrowSwapIcon, SpinnerIcon } from './ui/icons';
+import { ArrowSwapIcon, SpinnerIcon, RefreshIcon } from './ui/icons';
 import { getSplTokenBalance, lockSplTokens } from '../api/sol';
 import { getSheetBalance, bridgeOut, bridgeTransfer } from '../api/sheet';
 import { getBscBalance } from '../api/bsc';
@@ -31,6 +31,7 @@ export const BridgeForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [fromBalance, setFromBalance] = useState('0');
   const [toBalance, setToBalance] = useState('0');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Debug bridgeTransfer inputs
   const [debugRecipient, setDebugRecipient] = useState('');
@@ -339,27 +340,29 @@ export const BridgeForm: React.FC = () => {
     }
   }, [toChain, toWalletAddress]);
 
+  // Fetch balances only on mount and when wallet addresses change
+  // Removed automatic polling to reduce API quota usage
   useEffect(() => {
     fetchFromBalance();
-    // Set up periodic refresh every 5 seconds when wallet is connected
-    if (fromWalletAddress) {
-      const interval = setInterval(() => {
-        fetchFromBalance();
-      }, 5000);
-      return () => clearInterval(interval);
-    }
   }, [fromChain, fromWalletAddress, fetchFromBalance]);
 
   useEffect(() => {
     fetchToBalance();
-    // Set up periodic refresh every 5 seconds when wallet is connected
-    if (toWalletAddress) {
-      const interval = setInterval(() => {
-        fetchToBalance();
-      }, 5000);
-      return () => clearInterval(interval);
-    }
   }, [toChain, toWalletAddress, fetchToBalance]);
+
+  // Refresh balances manually
+  const handleRefreshBalances = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([fetchFromBalance(), fetchToBalance()]);
+      toast.success('Balances refreshed');
+    } catch (error) {
+      console.error('Failed to refresh balances:', error);
+      toast.error('Failed to refresh balances');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Auto-populate destination address with connected wallet address
   // This effect runs when wallet address or chain changes, and also checks after a delay
@@ -509,9 +512,21 @@ export const BridgeForm: React.FC = () => {
             <div className="border border-white/[0.08] bg-[#0a0a0a] px-5 py-5">
               <div className="flex items-center justify-between mb-5 text-sm text-white/60">
                 <span className="text-white">You pay</span>
-                <span>
-                  Balance: {fromBalance} {fromToken.symbol}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span>
+                    Balance: {fromBalance} {fromToken.symbol}
+                  </span>
+                  <button
+                    onClick={handleRefreshBalances}
+                    disabled={isRefreshing}
+                    className="p-1 hover:bg-white/5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Refresh balances"
+                  >
+                    <RefreshIcon 
+                      className={`w-4 h-4 text-white/60 hover:text-white ${isRefreshing ? 'animate-spin' : ''}`} 
+                    />
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-center gap-4 overflow-hidden">
@@ -546,9 +561,21 @@ export const BridgeForm: React.FC = () => {
             <div className="border border-white/[0.08] bg-[#0a0a0a] px-5 py-5">
               <div className="flex items-center justify-between mb-5 text-sm text-white/60">
                 <span className="text-white">You pay</span>
-                <span>
-                  Balance: {toBalance} {toToken.symbol}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span>
+                    Balance: {toBalance} {toToken.symbol}
+                  </span>
+                  <button
+                    onClick={handleRefreshBalances}
+                    disabled={isRefreshing}
+                    className="p-1 hover:bg-white/5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Refresh balances"
+                  >
+                    <RefreshIcon 
+                      className={`w-4 h-4 text-white/60 hover:text-white ${isRefreshing ? 'animate-spin' : ''}`} 
+                    />
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-center gap-4 overflow-hidden">

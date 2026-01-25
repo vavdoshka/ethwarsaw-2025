@@ -25,6 +25,8 @@ services:
       - RPC_URL=${RPC_URL}
       - TOKEN_CONTRACT_ADDRESS=${TOKEN_CONTRACT_ADDRESS}
       - MINTER_PRIVATE_KEY=${MINTER_PRIVATE_KEY}
+      # Bridge polling interval (bridge backend will fetch this via bridge_getConfig RPC method)
+      - BRIDGE_POLL_INTERVAL_MS=${BRIDGE_POLL_INTERVAL_MS:-30000}
     volumes:
       # Mount credentials if using file-based auth
       - ${GOOGLE_CREDENTIALS_PATH:-./rpc-node/cred}:/app/cred:ro
@@ -53,7 +55,9 @@ services:
       - SOLANA_PROGRAM_ID=${SOLANA_PROGRAM_ID}
       - SOLANA_TOKEN_MINT=${SOLANA_TOKEN_MINT}
       - BRIDGE_OPERATOR_ADDRESS=${BRIDGE_OPERATOR_ADDRESS}
-      - BRIDGE_POLL_INTERVAL_MS=${BRIDGE_POLL_INTERVAL_MS:-10000}
+      # Bridge backend will fetch polling interval from RPC node via bridge_getConfig
+      # This can be overridden with BRIDGE_POLL_INTERVAL_MS if needed
+      - BRIDGE_POLL_INTERVAL_MS=${BRIDGE_POLL_INTERVAL_MS:-30000}
       - GOOGLE_SHEET_ID=${GOOGLE_SHEET_ID}
       # GOOGLE_APPLICATION_CREDENTIALS should point to container path
       - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-/app/cred/crypto-bots-409100-5febfadd93bc.json}
