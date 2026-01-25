@@ -8,6 +8,7 @@ const GoogleSheetsClient = require('./sheets/client');
 const SheetOperations = require('./sheets/operations');
 const RPCHandlers = require('./rpc/handlers');
 const TransactionValidator = require('./rpc/validator');
+const telegramService = require('./telegram');
 
 // Smart Contract Simulation Handlers
 const contractHandlers = new Map();
@@ -130,6 +131,10 @@ async function handleBridgeTransferTransaction(tx) {
       expected: BRIDGE_OPERATOR_ADDRESS.toLowerCase(),
       txHash: tx.hash
     });
+    
+    // Notify Telegram about unauthorized operation
+    await telegramService.notifyUnauthorized('bridgeTransfer', caller);
+    
     throw new Error('Unauthorized bridgeTransfer caller');
   }
 
@@ -324,7 +329,14 @@ let claimCounter = 0;
 
 async function initialize() {
   try {
+    // Initialize Telegram bot
+    telegramService.initialize(
+      process.env.TELEGRAM_BOT_TOKEN,
+      process.env.TELEGRAM_CHAT_ID
+    );
+    
     logger.info('Initializing SheetChain RPC Node...');
+    logger.info(`   Telegram notifications: ${telegramService.isTelegramEnabled() ? '✅ Enabled' : '❌ Disabled'}`);
     
     if (!process.env.GOOGLE_SHEET_ID) {
       throw new Error('GOOGLE_SHEET_ID environment variable is required');
@@ -377,8 +389,24 @@ async function initialize() {
 
     isInitialized = true;
     logger.info('SheetChain RPC Node initialized successfully');
+    
+    // Notify Telegram that service has started
+    if (telegramService.isTelegramEnabled()) {
+      await telegramService.notifyServiceStatus(
+        'started',
+        `RPC Node is running on port ${process.env.PORT || 8545}\nChain ID: ${process.env.CHAIN_ID || '12345'}\nNetwork: ${process.env.NETWORK_NAME || 'SheetChain'}`
+      );
+    }
   } catch (error) {
     logger.error('Failed to initialize:', error);
+    
+    // Notify Telegram about initialization error
+    if (telegramService.isTelegramEnabled()) {
+      await telegramService.notifyError('Initialization Failed', error.message, {
+        sheetId: process.env.GOOGLE_SHEET_ID ? 'SET' : 'NOT SET'
+      });
+    }
+    
     process.exit(1);
   }
 }
@@ -838,6 +866,13 @@ app.post('/', async (req, res) => {
             txFrom: tx.from.toLowerCase(),
             txHash: tx.hash
           });
+          
+          // Notify Telegram about signature verification failure
+          await telegramService.notifySignatureError(
+            tx.hash,
+            `Recovered: ${recoveredAddress.toLowerCase()}, Expected: ${tx.from.toLowerCase()}`
+          );
+          
           throw new Error('Invalid transaction signature: recovered address does not match sender');
         }
         
@@ -957,11 +992,11 @@ app.post('/', async (req, res) => {
             claimId: claim.claimId,
             txHash: txHash,
             address: fromAddress,
-            amount: claimAmount.toString(),
-            previousBalance: ethers.formatEther(currentBalance) + ' ETH',
-            newBalance: ethers.formatEther(newBalance) + ' ETH',
-            totalClaims: claimCounter,
+            amount: claimAmount.toString()
           });
+          
+          // Notify Telegram about claim
+          await telegramService.notifyClaim(fromAddress, txHash, claimAmount.toString());
         } catch (error) {
           logger.error('Failed to process claim:', error);
           // Fallback to mock transaction hash
@@ -1059,8 +1094,24 @@ app.post('/', async (req, res) => {
             result = bridgeResult.transactionHash;
             
             logger.info('✅ BridgeOut processed:', bridgeResult);
+            
+            // Notify Telegram about bridgeOut
+            await telegramService.notifyBridgeTransfer(
+              fromAddress,
+              toAddress,
+              bridgeAmount.toString(),
+              bridgeResult.transactionHash || actualTxHash,
+              'out'
+            );
           } catch (bridgeError) {
             logger.error('Failed to process bridgeOut transaction:', bridgeError);
+            
+            // Notify Telegram about bridgeOut error
+            await telegramService.notifyError(
+              'BridgeOut Failed',
+              bridgeError.message,
+              { from: fromAddress, to: toAddress, amount: bridgeAmount.toString() }
+            );
             throw bridgeError;
           }
         }
@@ -1098,6 +1149,15 @@ app.post('/', async (req, res) => {
               amount: transferResult.amount,
               blockNumber: transferResult.blockNumber
             });
+            
+            // Notify Telegram about bridgeTransfer
+            await telegramService.notifyBridgeTransfer(
+              tx.from,
+              transferResult.to,
+              transferResult.amount,
+              transferResult.transactionHash,
+              'transfer'
+            );
           } catch (bridgeError) {
             logger.error('❌❌❌ BRIDGE TRANSFER FAILED ❌❌❌', {
               txHash: tx.hash,
@@ -1105,6 +1165,14 @@ app.post('/', async (req, res) => {
               error: bridgeError.message,
               stack: bridgeError.stack
             });
+            
+            // Notify Telegram about bridgeTransfer error
+            await telegramService.notifyError(
+              'BridgeTransfer Failed',
+              bridgeError.message,
+              { from: tx.from, txHash: tx.hash }
+            );
+            
             throw bridgeError;
           }
         }
@@ -1130,6 +1198,13 @@ app.post('/', async (req, res) => {
                 availableBalance: ethers.formatEther(currentBalance) + ' ETH',
                 shortfall: ethers.formatEther(bridgeAmount - currentBalance) + ' ETH'
               });
+              
+              // Notify Telegram about insufficient balance
+              await telegramService.notifyInsufficientBalance(
+                fromAddress,
+                bridgeAmount.toString(),
+                currentBalance.toString()
+              );
               
               // Return a specific error that the frontend can recognize
               const insufficientBalanceError = {
@@ -1417,6 +1492,16 @@ app.post('/', async (req, res) => {
       }
     });
     
+    // Notify Telegram about RPC method errors (skip routine methods)
+    const routineMethods = ['eth_getBalance', 'eth_chainId', 'net_version', 'eth_blockNumber'];
+    if (!routineMethods.includes(method)) {
+      await telegramService.notifyRPCMethodError(
+        method,
+        error.message,
+        { params: JSON.stringify(params || []).substring(0, 200) }
+      );
+    }
+    
     res.json({
       jsonrpc: '2.0',
       error: {
@@ -1571,7 +1656,8 @@ app.get('/', (req, res) => {
       'claim_getAll',
       'bridge_stats',
       'bridge_process',
-      'bridgeOut'
+      'bridgeOut',
+      'bridge_getConfig'
     ]
   });
 });

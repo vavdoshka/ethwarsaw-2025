@@ -14,7 +14,24 @@ export const SOLANA_RPC_URL = SOLANA_RPC_URL_ENV || (SOLANA_NETWORK === 'mainnet
 
 // Sheet Chain RPC URL - can be overridden via environment variable
 // Default to localhost for local development, or use remote URL for production
-export const SHEET_RPC_URL = process.env.SHEET_RPC_URL || 'http://localhost:8545';
+// Automatically add http:// protocol if missing
+function normalizeRpcUrl(url: string): string {
+  if (!url) return 'http://localhost:8545';
+  
+  // If URL doesn't start with http:// or https://, add http://
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    // If it contains localhost or 127.0.0.1, use http://
+    if (url.includes('localhost') || url.includes('127.0.0.1')) {
+      return `http://${url}`;
+    }
+    // Otherwise assume https:// for remote URLs
+    return `https://${url}`;
+  }
+  
+  return url;
+}
+
+export const SHEET_RPC_URL = normalizeRpcUrl(process.env.SHEET_RPC_URL || 'http://localhost:8545');
 
 // Program ID - can be overridden via environment variable
 // Devnet: 46BKi3nxgwFpc8EXE2Yem3syK5yqQRvJLasWzvsTEEgx
@@ -51,3 +68,7 @@ export interface TransferContext {
     solanaAuthority?: Keypair;
     solanaTokenMint?: PublicKey;
 }
+
+// Telegram Bot Configuration
+export const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || null;
+export const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || null;

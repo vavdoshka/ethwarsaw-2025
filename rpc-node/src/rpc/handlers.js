@@ -80,6 +80,9 @@ class RPCHandlers {
       case 'bridgeOut':
         return await this.bridgeOut(params);
       
+      case 'bridge_getConfig':
+        return this.getBridgeConfig();
+      
       case 'eth_requestAccounts':
         // MetaMask uses this to get accounts - return empty array (accounts managed by MetaMask)
         return [];
@@ -465,6 +468,27 @@ class RPCHandlers {
 
   async getAllClaims() {
     return await this.sheetOps.getAllClaims();
+  }
+
+  getBridgeConfig() {
+    // Return bridge configuration that can be used by bridge backend
+    return {
+      pollIntervalMs: parseInt(process.env.BRIDGE_POLL_INTERVAL_MS || '30000', 10),
+      chainId: this.chainId,
+      networkName: this.networkName,
+      bridgeOperatorAddress: process.env.BRIDGE_OPERATOR_ADDRESS || null,
+    };
+  }
+
+  getBridgeConfig() {
+    // Return bridge configuration that can be used by bridge backend
+    // This allows the RPC node to control the polling interval
+    return {
+      pollIntervalMs: parseInt(process.env.BRIDGE_POLL_INTERVAL_MS || '30000', 10),
+      chainId: this.chainId,
+      networkName: this.networkName,
+      bridgeOperatorAddress: process.env.BRIDGE_OPERATOR_ADDRESS || null,
+    };
   }
 
   async bridgeOut(params) {

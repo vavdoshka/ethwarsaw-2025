@@ -1,6 +1,7 @@
 import { GoogleSheetsClient, BridgeRecord } from './client';
 import logger from '../logger';
 import { insertBridgeEvent, BridgeEventStatus } from '../db';
+import { telegramService } from '../telegram';
 
 export class BridgeMonitor {
     private sheetsClient: GoogleSheetsClient;
@@ -132,6 +133,15 @@ export class BridgeMonitor {
                         
                         if (inserted) {
                             logger.info(`✅ Inserted bridge event: sheet -> ${toChain} (${record.amount} to ${record.toAddress})`);
+                            
+                            // Notify Telegram
+                            await telegramService.notifySheetBridgeRecord(
+                                record.txHash || '',
+                                record.from || '',
+                                record.amount || '0',
+                                record.toAddress || '',
+                                toChain
+                            );
                         } else {
                             logger.info(`ℹ️  Bridge event already exists (duplicate): ${record.txHash}`);
                         }

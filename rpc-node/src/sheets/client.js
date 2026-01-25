@@ -36,6 +36,12 @@ class GoogleSheetsClient {
       await this.ensureSheetStructure();
     } catch (error) {
       this.logger.error('Failed to initialize Google Sheets client:', error);
+      
+      // Notify Telegram about Sheets initialization error
+      const telegramService = require('../telegram');
+      if (telegramService.isTelegramEnabled()) {
+        telegramService.notifySheetsError('Initialization', error.message).catch(() => {});
+      }
       throw error;
     }
   }
@@ -110,6 +116,12 @@ class GoogleSheetsClient {
       return response.data.values || [];
     } catch (error) {
       this.logger.error(`Failed to read range ${range}:`, error);
+      
+      // Notify Telegram about Sheets read error (only for critical operations)
+      const telegramService = require('../telegram');
+      if (telegramService.isTelegramEnabled() && !error.message.includes('quota')) {
+        telegramService.notifySheetsError(`Read ${range}`, error.message).catch(() => {});
+      }
       throw error;
     }
   }

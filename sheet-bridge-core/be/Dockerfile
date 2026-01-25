@@ -13,13 +13,32 @@ COPY be/tsconfig.json ./
 # Install ALL dependencies (including dev dependencies for building)
 RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 
+# Copy Solana IDL file FIRST (required for TypeScript compilation and event parsing)
+# The IDL should be built with 'anchor build' in solana/ before building this image
+# Path: be/src/index.ts imports from ../../solana/target/idl/lock.json
+# So from be/ directory (WORKDIR /app), we need ../solana/target/idl/lock.json
+# Create directory structure first
+RUN mkdir -p ../solana/target/idl
+
+# Copy the IDL file - this will fail if the file doesn't exist, which is good!
+# It forces the build to ensure the IDL is present before compiling TypeScript
+# The IDL must be built with 'anchor build' in solana/ before building this image
+COPY solana/target/idl/lock.json ../solana/target/idl/
+
+# Verify IDL file has events (fail build if it's a placeholder)
+RUN if grep -q '"events":\s*\[\s*\]' ../solana/target/idl/lock.json || ! grep -q '"events":\s*\[' ../solana/target/idl/lock.json; then \
+      echo "❌ ERROR: IDL file has no events or is a placeholder!" && \
+      echo "   Please run 'anchor build' in solana/ directory before building this image" && \
+      exit 1; \
+    fi && \
+    if ! grep -q '"name":\s*"TokensLocked"' ../solana/target/idl/lock.json; then \
+      echo "❌ ERROR: TokensLocked event not found in IDL!" && \
+      exit 1; \
+    fi && \
+    echo "✅ Real IDL file verified with TokensLocked event"
+
 # Copy application code
 COPY be/ .
-
-# Create Solana IDL placeholder for TypeScript compilation
-# Real IDL should be built with 'anchor build' in solana/
-RUN mkdir -p /solana/target/idl && \
-    echo '{"version":"0.1.0","name":"lock","address":"11111111111111111111111111111111","metadata":{"name":"lock","version":"0.1.0","spec":"0.1.0"},"instructions":[],"accounts":[],"types":[],"events":[],"errors":[]}' > /solana/target/idl/lock.json
 
 # Build TypeScript to JavaScript (reduces runtime memory by ~400MB)
 RUN mkdir -p dist && \
@@ -51,9 +70,18 @@ COPY --from=builder /app/dist ./dist
 RUN test -f dist/index.js || (echo "❌ ERROR: dist/index.js not found after COPY from builder" && ls -la dist/ 2>&1 && exit 1) && \
     echo "✅ dist/index.js verified in production stage"
 
-# Create Solana IDL placeholder (same as builder stage)
-RUN mkdir -p /solana/target/idl && \
-    echo '{"version":"0.1.0","name":"lock","address":"11111111111111111111111111111111","metadata":{"name":"lock","version":"0.1.0","spec":"0.1.0"},"instructions":[],"accounts":[],"types":[],"events":[],"errors":[]}' > /solana/target/idl/lock.json
+# Copy Solana IDL file from builder stage (for verification - JSON is already bundled in JS)
+# The compiled JS imports the IDL via resolveJsonModule which bundles it into the JS
+# But we keep a copy for runtime verification
+RUN mkdir -p ../solana/target/idl
+COPY --from=builder /app/../solana/target/idl/lock.json ../solana/target/idl/lock.json
+
+# Verify IDL in production stage
+RUN if grep -q '"name":\s*"TokensLocked"' ../solana/target/idl/lock.json; then \
+      echo "✅ Production: IDL file with TokensLocked event verified"; \
+    else \
+      echo "⚠️  WARNING: Production: TokensLocked event not found in IDL (but may be bundled in JS)"; \
+    fi
 
 # Create directory for database and logs
 RUN mkdir -p /app/data /app/logs /app/cred
