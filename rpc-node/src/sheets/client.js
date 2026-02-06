@@ -36,6 +36,12 @@ class GoogleSheetsClient {
       await this.ensureSheetStructure();
     } catch (error) {
       this.logger.error('Failed to initialize Google Sheets client:', error);
+      
+      // Notify Telegram about Sheets initialization error
+      const telegramService = require('../telegram');
+      if (telegramService.isTelegramEnabled()) {
+        telegramService.notifySheetsError('Initialization', error.message).catch(() => {});
+      }
       throw error;
     }
   }
@@ -58,6 +64,10 @@ class GoogleSheetsClient {
       
       if (!sheetTitles.includes('Claims')) {
         await this.createSheet('Claims', ['ClaimId', 'Address', 'Amount', 'Timestamp', 'Status', 'TransactionHash', 'BlockNumber']);
+      }
+      
+      if (!sheetTitles.includes('Bridge')) {
+        await this.createSheet('Bridge', ['Timestamp', 'TxHash', 'From', 'Amount', 'ToAddress', 'DestChainId', 'Status', 'BlockNumber']);
       }
     } catch (error) {
       this.logger.error('Failed to ensure sheet structure:', error);
@@ -106,6 +116,12 @@ class GoogleSheetsClient {
       return response.data.values || [];
     } catch (error) {
       this.logger.error(`Failed to read range ${range}:`, error);
+      
+      // Notify Telegram about Sheets read error (only for critical operations)
+      const telegramService = require('../telegram');
+      if (telegramService.isTelegramEnabled() && !error.message.includes('quota')) {
+        telegramService.notifySheetsError(`Read ${range}`, error.message).catch(() => {});
+      }
       throw error;
     }
   }
@@ -127,6 +143,17 @@ class GoogleSheetsClient {
 
   async appendRow(sheetName, values) {
     try {
+      // Get current row count to know which row we're adding
+      const currentRows = await this.readRange(`${sheetName}!A:A`);
+      const newRowNumber = currentRows.length + 1;
+      
+      console.log(`📝 Appending row to ${sheetName} sheet (will be row ${newRowNumber}):`, {
+        sheetName: sheetName,
+        rowNumber: newRowNumber,
+        values: values,
+        timestamp: new Date().toISOString()
+      });
+      
       const response = await this.sheets.spreadsheets.values.append({
         spreadsheetId: this.spreadsheetId,
         range: `${sheetName}!A:A`,
@@ -134,6 +161,18 @@ class GoogleSheetsClient {
         insertDataOption: 'INSERT_ROWS',
         resource: { values: [values] }
       });
+      
+      // Get updated row count to confirm
+      const updatedRows = await this.readRange(`${sheetName}!A:A`);
+      const actualRowNumber = updatedRows.length;
+      
+      console.log(`✅ Successfully appended row to ${sheetName} sheet (row ${actualRowNumber}):`, {
+        sheetName: sheetName,
+        rowNumber: actualRowNumber,
+        values: values,
+        timestamp: new Date().toISOString()
+      });
+      
       return response.data;
     } catch (error) {
       this.logger.error(`Failed to append row to ${sheetName}:`, error);

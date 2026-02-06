@@ -8,5 +8,10 @@ test-ledger
 .yarn
 .vscode
 .env
-
-bridge.db
+cred.json
+# Database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+data/

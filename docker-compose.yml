@@ -1,0 +1,82 @@
+# version is obsolete in newer docker-compose, removed
+
+services:
+  rpc-node:
+    build:
+      context: ./rpc-node
+      dockerfile: Dockerfile
+    container_name: sheetchain-rpc-node
+    ports:
+      - "8545:8545"
+    environment:
+      - NODE_ENV=production
+      - PORT=8545
+      - GOOGLE_SHEET_ID=${GOOGLE_SHEET_ID}
+      # GOOGLE_APPLICATION_CREDENTIALS should point to container path, not host path
+      # If using file-based auth, set to /app/cred/filename.json (mounted from host)
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-/app/cred/crypto-bots-409100-5febfadd93bc.json}
+      - GOOGLE_SERVICE_ACCOUNT_EMAIL=${GOOGLE_SERVICE_ACCOUNT_EMAIL}
+      - GOOGLE_PRIVATE_KEY=${GOOGLE_PRIVATE_KEY}
+      - BRIDGE_ACCOUNT_PRIVATE_KEY=${BRIDGE_ACCOUNT_PRIVATE_KEY}
+      - BRIDGE_OPERATOR_ADDRESS=${BRIDGE_OPERATOR_ADDRESS}
+      - CHAIN_ID=${CHAIN_ID:-12345}
+      - NETWORK_NAME=${NETWORK_NAME:-SheetChain}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - RPC_URL=${RPC_URL}
+      - TOKEN_CONTRACT_ADDRESS=${TOKEN_CONTRACT_ADDRESS}
+      - MINTER_PRIVATE_KEY=${MINTER_PRIVATE_KEY}
+    volumes:
+      # Mount credentials if using file-based auth
+      - ${GOOGLE_CREDENTIALS_PATH:-./rpc-node/cred}:/app/cred:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8545/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - sheetchain-network
+
+  bridge-backend:
+    build:
+      context: ./sheet-bridge-core
+      dockerfile: be/Dockerfile
+    container_name: sheetchain-bridge-backend
+    environment:
+      - NODE_ENV=production
+      - SHEET_RPC_URL=${SHEET_RPC_URL:-http://rpc-node:8545}
+      - SHEET_PRIVATE_KEY=${SHEET_PRIVATE_KEY}
+      - BSC_PRIVATE_KEY=${BSC_PRIVATE_KEY}
+      # SOLANA_SECRET_KEY: JSON array format, e.g., [136,123,...]
+      - SOLANA_SECRET_KEY=${SOLANA_SECRET_KEY:-}
+      - SOLANA_NETWORK=${SOLANA_NETWORK:-devnet}
+      - SOLANA_RPC_URL=${SOLANA_RPC_URL}
+      - SOLANA_PROGRAM_ID=${SOLANA_PROGRAM_ID}
+      - SOLANA_TOKEN_MINT=${SOLANA_TOKEN_MINT}
+      - BRIDGE_OPERATOR_ADDRESS=${BRIDGE_OPERATOR_ADDRESS}
+      - BRIDGE_POLL_INTERVAL_MS=${BRIDGE_POLL_INTERVAL_MS:-10000}
+      - GOOGLE_SHEET_ID=${GOOGLE_SHEET_ID}
+      # GOOGLE_APPLICATION_CREDENTIALS should point to container path
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-/app/cred/crypto-bots-409100-5febfadd93bc.json}
+      - GOOGLE_SERVICE_ACCOUNT_EMAIL=${GOOGLE_SERVICE_ACCOUNT_EMAIL}
+      - GOOGLE_PRIVATE_KEY=${GOOGLE_PRIVATE_KEY}
+    volumes:
+      # Persist SQLite database (bridge.db is created at /app/data/bridge.db)
+      - bridge-db-data:/app/data
+      # Mount credentials if using file-based auth
+      - ${GOOGLE_CREDENTIALS_PATH:-./sheet-bridge-core/be/cred}:/app/cred:ro
+    depends_on:
+      rpc-node:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - sheetchain-network
+
+volumes:
+  bridge-db-data:
+    driver: local
+
+networks:
+  sheetchain-network:
+    driver: bridge

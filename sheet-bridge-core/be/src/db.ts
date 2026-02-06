@@ -1,13 +1,17 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import fs from 'fs';
 import logger from './logger';
 
-const DB_PATH = path.join(__dirname, '../bridge.db');
+// Database path: use /app/data/bridge.db for persistence, fallback to /app/bridge.db
+// __dirname in compiled JS is /app/dist/, so ../data/bridge.db = /app/data/bridge.db
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, '../data/bridge.db');
 
 let db: Database.Database;
 
 export enum BridgeEventStatus {
     Pending = 'pending',
+    Processing = 'processing',
     Processed = 'processed',
     Failed = 'failed',
 }
@@ -29,8 +33,18 @@ export interface BridgeEventRecord {
 }
 
 export function setupDatabase(): Database.Database {
+    // Ensure the directory exists before creating the database
+    const dbDir = path.dirname(DB_PATH);
+    if (!fs.existsSync(dbDir)) {
+        logger.info(`Creating database directory: ${dbDir}`);
+        fs.mkdirSync(dbDir, { recursive: true });
+    }
+    
     db = new Database(DB_PATH);
 
+    // Create table with new schema (lock_tx_hash as unique identifier)
+    // Changed from UNIQUE constraint on (from_chain, from_address, from_amount, to_chain, to_address, to_amount)
+    // to UNIQUE on lock_tx_hash to allow multiple transactions with same amount
     db.exec(`
         CREATE TABLE IF NOT EXISTS bridge_events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,12 +59,19 @@ export function setupDatabase(): Database.Database {
             error TEXT,
             status TEXT NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            transfer_at DATETIME,
-            UNIQUE(from_chain, from_address, from_amount, to_chain, to_address, to_amount)
+            transfer_at DATETIME
         )
+    `);
+    
+    // Create unique index on lock_tx_hash - this is the true unique identifier
+    // Each Solana transaction has a unique signature, so this allows multiple
+    // transactions with the same amount from the same user
+    db.exec(`
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_lock_tx_hash ON bridge_events(lock_tx_hash)
     `);
 
     logger.info(`Database initialized at ${DB_PATH}`);
+    logger.info('Using lock_tx_hash as unique identifier (allows multiple transactions with same amount)');
     return db;
 }
 
@@ -103,11 +124,38 @@ export function getPendingBridgeEvents(): BridgeEventRecord[] {
             SELECT * FROM bridge_events
             WHERE status = @status
             ORDER BY created_at ASC
+            LIMIT 10
         `);
 
         return stmt.all({ status: BridgeEventStatus.Pending }) as BridgeEventRecord[];
     } catch (error: any) {
         logger.error(`Failed to get pending bridge events: ${error?.message ?? String(error)}`);
+        throw error;
+    }
+}
+
+export function markEventAsProcessing(id: number): boolean {
+    if (!db) {
+        throw new Error('Database not initialized. Call setupDatabase() first.');
+    }
+
+    try {
+        // Atomically update status to processing only if it's still pending
+        const stmt = db.prepare(`
+            UPDATE bridge_events
+            SET status = @processingStatus
+            WHERE id = @id AND status = @pendingStatus
+        `);
+
+        const result = stmt.run({ 
+            id,
+            pendingStatus: BridgeEventStatus.Pending,
+            processingStatus: BridgeEventStatus.Processing
+        });
+
+        return result.changes > 0;
+    } catch (error: any) {
+        logger.error(`Failed to mark event as processing: ${error?.message ?? String(error)}`);
         throw error;
     }
 }

@@ -77,15 +77,33 @@ class RPCHandlers {
     case 'eth_getStorageAt':
         return '0x'
         
+      case 'bridgeOut':
+        return await this.bridgeOut(params);
+      
+      case 'bridge_getConfig':
+        return this.getBridgeConfig();
+      
+      case 'eth_requestAccounts':
+        // MetaMask uses this to get accounts - return empty array (accounts managed by MetaMask)
+        return [];
+        
+      case 'wallet_requestPermissions':
+        // MetaMask permission request - return empty permissions
+        return [];
+        
       default:
+        // Log unsupported methods instead of throwing to see what MetaMask is requesting
+        console.warn(`⚠️  Unsupported RPC method requested: ${method}`, { params });
         throw new Error(`Method ${method} not supported`);
     }
   }
 
   async getBalance(params) {
     const [address, blockTag] = params;
+    // Removed verbose logging - too noisy for routine balance checks
     const balance = await this.sheetOps.getBalance(address);
-    return '0x' + balance.toString(16);
+    const hexBalance = '0x' + balance.toString(16);
+    return hexBalance;
   }
 
   async getTransactionCount(params) {
@@ -95,8 +113,32 @@ class RPCHandlers {
   }
 
   async sendRawTransaction(params) {
+    console.log('🚨🚨🚨 sendRawTransaction HANDLER CALLED 🚨🚨🚨', {
+      hasParams: !!params,
+      paramLength: params?.[0]?.length || 0,
+      timestamp: new Date().toISOString()
+    });
+    
     const [signedTx] = params;
+    if (!signedTx) {
+      console.error('❌ No signed transaction provided to sendRawTransaction');
+      throw new Error('No signed transaction provided');
+    }
+    
     const tx = ethers.Transaction.from(signedTx);
+    console.log('🚨🚨🚨 Transaction parsed in sendRawTransaction 🚨🚨🚨', {
+      txHash: tx.hash,
+      from: tx.from,
+      to: tx.to,
+      dataPrefix: tx.data ? tx.data.substring(0, 10) : 'no data',
+      timestamp: new Date().toISOString()
+    });
+    
+    // Note: Signature verification is handled in server.js for eth_sendRawTransaction
+    // This method is kept for compatibility but the main verification happens upstream
+    
+    // Use the actual transaction hash from the signed transaction
+    const actualTxHash = tx.hash;
     
     const txData = {
       from: tx.from,
@@ -108,7 +150,7 @@ class RPCHandlers {
       data: tx.data
     };
     
-    const result = await this.sheetOps.processTransaction(txData);
+    const result = await this.sheetOps.processTransaction(txData, actualTxHash);
     return result.transactionHash;
   }
 
@@ -117,6 +159,179 @@ class RPCHandlers {
     
     if (!tx.from) {
       throw new Error('From address is required');
+    }
+
+    // Log all sendTransaction requests for debugging
+    // Use console.log for now since logger isn't passed to handlers
+    const logger = {
+      info: (...args) => console.log('[INFO]', ...args),
+      error: (...args) => console.error('[ERROR]', ...args),
+      warn: (...args) => console.warn('[WARN]', ...args)
+    };
+    logger.info('📤 eth_sendTransaction received:', {
+      from: tx.from,
+      to: tx.to,
+      value: tx.value ? tx.value.toString() : '0',
+      dataPrefix: tx.data ? tx.data.substring(0, 10) : 'no data',
+      nonce: tx.nonce
+    });
+
+    // Handle bridgeOut and bridgeTransfer calls sent as eth_sendTransaction (e.g. from wallets)
+    if (tx.to && tx.data) {
+      const toLower = tx.to.toLowerCase();
+      const data = tx.data;
+      const BRIDGE_CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000003';
+
+      if (toLower === BRIDGE_CONTRACT_ADDRESS.toLowerCase()) {
+        logger.info('🌉🌉🌉 TRANSACTION TO BRIDGE CONTRACT (sendTransaction) 🌉🌉🌉', {
+          from: tx.from,
+          to: tx.to,
+          dataPrefix: data.substring(0, 10),
+          dataLength: data.length,
+          value: tx.value ? tx.value.toString() : '0',
+          fullData: data
+        });
+
+        const bridgeOutSelector = ethers.id('bridgeOut(string,uint256)').slice(0, 10);
+        const bridgeTransferSelector = ethers.id('bridgeTransfer(address,uint256)').slice(0, 10);
+
+        // Log selector comparison for debugging
+        console.log('🔍 Checking bridge selectors (sendTransaction):', {
+          receivedDataPrefix: data.substring(0, 10),
+          expectedBridgeOutSelector: bridgeOutSelector,
+          expectedBridgeTransferSelector: bridgeTransferSelector,
+          matchesBridgeOut: data.startsWith(bridgeOutSelector),
+          matchesBridgeTransfer: data.startsWith(bridgeTransferSelector),
+          dataLength: data.length
+        });
+        logger.info('🔍 Checking bridge selectors (sendTransaction):', {
+          receivedDataPrefix: data.substring(0, 10),
+          expectedBridgeOutSelector: bridgeOutSelector,
+          expectedBridgeTransferSelector: bridgeTransferSelector,
+          matchesBridgeOut: data.startsWith(bridgeOutSelector),
+          matchesBridgeTransfer: data.startsWith(bridgeTransferSelector)
+        });
+
+        // Handle bridgeOut (Sheet Chain -> other chains)
+        if (data.startsWith(bridgeOutSelector)) {
+          logger.info('🌉🌉🌉 BRIDGE OUT TRANSACTION DETECTED (sendTransaction) 🌉🌉🌉', {
+            from: tx.from,
+            to: tx.to,
+            dataPrefix: data.substring(0, 10),
+            selector: bridgeOutSelector,
+            value: tx.value ? tx.value.toString() : '0'
+          });
+
+          try {
+            const iface = new ethers.Interface([
+              'function bridgeOut(string toAddress, uint256 destChainId) payable'
+            ]);
+
+            const decoded = iface.decodeFunctionData('bridgeOut', data);
+            const toAddress = decoded[0];
+            const destChainId = Number(decoded[1]);
+
+            const bridgeAmount = tx.value ? BigInt(tx.value) : BigInt(0);
+            const fromAddress = tx.from.toLowerCase();
+
+            if (bridgeAmount === BigInt(0)) {
+              throw new Error('Bridge amount cannot be zero');
+            }
+
+            logger.info('🌉 BridgeOut parameters decoded:', {
+              from: fromAddress,
+              toAddress: toAddress,
+              amount: bridgeAmount.toString() + ' wei (' + ethers.formatEther(bridgeAmount) + ' ETH)',
+              destChainId: destChainId
+            });
+
+            // Process bridgeOut - for eth_sendTransaction, we need to generate a hash
+            // since there's no signed transaction yet. The wallet will sign it client-side.
+            // For now, we'll generate a hash, but ideally this should come from the signed tx.
+            const txHash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify({
+              from: fromAddress,
+              amount: bridgeAmount.toString(),
+              toAddress,
+              destChainId,
+              timestamp: Date.now()
+            })));
+            
+            const bridgeResult = await this.sheetOps.bridgeOut(
+              fromAddress,
+              bridgeAmount,
+              toAddress,
+              destChainId,
+              txHash // Pass the generated hash
+            );
+
+            logger.info('✅ BridgeOut processed (sendTransaction):', bridgeResult);
+            return bridgeResult.transactionHash;
+          } catch (bridgeError) {
+            logger.error('❌ Failed to process bridgeOut transaction:', {
+              error: bridgeError.message,
+              stack: bridgeError.stack
+            });
+            throw bridgeError;
+          }
+        }
+        // Handle bridgeTransfer (other chains -> Sheet Chain)
+        else if (data.startsWith(bridgeTransferSelector)) {
+          logger.info('🌉🌉🌉 BRIDGE TRANSFER TRANSACTION DETECTED (sendTransaction) 🌉🌉🌉', {
+            from: tx.from,
+            to: tx.to,
+            dataPrefix: data.substring(0, 10),
+            selector: bridgeTransferSelector
+          });
+
+          const BRIDGE_OPERATOR_ADDRESS = (process.env.BRIDGE_OPERATOR_ADDRESS || '0x337d7730a281efE851dbEDf5F4eD0D2610E59639').toLowerCase();
+
+          const caller = tx.from.toLowerCase();
+          if (caller !== BRIDGE_OPERATOR_ADDRESS) {
+            logger.error('❌ Unauthorized bridgeTransfer caller:', {
+              caller: caller,
+              expected: BRIDGE_OPERATOR_ADDRESS
+            });
+            throw new Error('Unauthorized bridgeTransfer caller');
+          }
+
+          logger.info('✅ Bridge operator authorized:', {
+            caller: caller
+          });
+
+          const iface = new ethers.Interface([
+            'function bridgeTransfer(address recipient, uint256 amount)'
+          ]);
+
+          let recipient, amount;
+          try {
+            const decoded = iface.decodeFunctionData('bridgeTransfer', data);
+            recipient = decoded[0];
+            amount = decoded[1];
+            logger.info('📋 BridgeTransfer parameters decoded:', {
+              recipient: recipient,
+              amount: amount.toString() + ' wei',
+              amountEth: ethers.formatEther(amount) + ' ETH'
+            });
+          } catch (error) {
+            logger.error('❌ Failed to decode bridgeTransfer parameters:', {
+              error: error.message,
+              data: data
+            });
+            throw new Error(`Failed to decode bridgeTransfer parameters: ${error.message}`);
+          }
+
+          // No canonical tx hash here (eth_sendTransaction), so let SheetOps
+          // generate one for bookkeeping.
+          logger.info('🔄 Calling sheetOps.bridgeTransfer...');
+          const transferResult = await this.sheetOps.bridgeTransfer(recipient, amount);
+          logger.info('✅ BridgeTransfer completed (sendTransaction):', {
+            transactionHash: transferResult.transactionHash,
+            recipient: recipient,
+            amount: amount.toString() + ' wei'
+          });
+          return transferResult.transactionHash;
+        }
+      }
     }
     
     if (tx.nonce === undefined) {
@@ -146,7 +361,7 @@ class RPCHandlers {
   async getBlockNumber() {
     const blockNumber = await this.sheetOps.getLatestBlockNumber();
     const blockNumberHex = '0x' + blockNumber.toString(16);
-    console.log('getBlockNumber', blockNumberHex);
+    // Removed verbose logging - too noisy for routine block number checks
     return blockNumberHex;
   }
 
@@ -253,6 +468,59 @@ class RPCHandlers {
 
   async getAllClaims() {
     return await this.sheetOps.getAllClaims();
+  }
+
+  getBridgeConfig() {
+    // Return bridge configuration that can be used by bridge backend
+    return {
+      pollIntervalMs: parseInt(process.env.BRIDGE_POLL_INTERVAL_MS || '30000', 10),
+      chainId: this.chainId,
+      networkName: this.networkName,
+      bridgeOperatorAddress: process.env.BRIDGE_OPERATOR_ADDRESS || null,
+    };
+  }
+
+  getBridgeConfig() {
+    // Return bridge configuration that can be used by bridge backend
+    // This allows the RPC node to control the polling interval
+    return {
+      pollIntervalMs: parseInt(process.env.BRIDGE_POLL_INTERVAL_MS || '30000', 10),
+      chainId: this.chainId,
+      networkName: this.networkName,
+      bridgeOperatorAddress: process.env.BRIDGE_OPERATOR_ADDRESS || null,
+    };
+  }
+
+  async bridgeOut(params) {
+    const [fromAddress, amount, toAddress, destChainId] = params;
+    
+    if (!fromAddress) {
+      throw new Error('From address is required');
+    }
+    
+    if (!amount || amount <= 0) {
+      throw new Error('Valid amount is required');
+    }
+    
+    if (!toAddress) {
+      throw new Error('Destination address is required');
+    }
+    
+    if (!destChainId) {
+      throw new Error('Destination chain ID is required');
+    }
+    
+    // Convert amount to BigInt if it's a string
+    const amountBigInt = typeof amount === 'string' 
+      ? (amount.startsWith('0x') ? BigInt(amount) : BigInt(amount))
+      : BigInt(amount);
+    
+    // Convert destChainId to number if it's a string
+    const chainId = typeof destChainId === 'string'
+      ? (destChainId.startsWith('0x') ? parseInt(destChainId, 16) : parseInt(destChainId))
+      : parseInt(destChainId);
+    
+    return await this.sheetOps.bridgeOut(fromAddress, amountBigInt, toAddress, chainId);
   }
 }
 

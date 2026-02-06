@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
+import { Toaster } from 'react-hot-toast';
 import { WagmiProvider, http } from 'wagmi';
-import { mainnet, sepolia, bsc, bscTestnet } from 'wagmi/chains';
+import { defineChain } from 'viem';
+import { bsc, bscTestnet } from 'wagmi/chains';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   RainbowKitProvider,
@@ -33,17 +35,41 @@ import {
 import '@rainbow-me/rainbowkit/styles.css';
 import '@solana/wallet-adapter-react-ui/styles.css';
 
+// Define SheetChain configuration
+export const sheetChain = defineChain({
+  id: 12345,
+  name: 'SheetChain',
+  network: 'sheetchain',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Ether',
+    symbol: 'ETH',
+  },
+  rpcUrls: {
+    default: {
+      http: [SHEET_RPC_ENDPOINT],
+    },
+    public: {
+      http: [SHEET_RPC_ENDPOINT],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'SheetChain Explorer',
+      url: '',
+    },
+  },
+});
+
 // Configure wagmi with RainbowKit for EVM chains
-const sheetChainConfig = IS_MAINNET ? mainnet : sepolia;
 const bscChainConfig = IS_MAINNET ? bsc : bscTestnet;
 
 const config = getDefaultConfig({
   appName: 'Sheet Bridge',
   projectId: '479c1dd316d4edfe4a4cce462bf1d26d',
-  // Put BSC first as it's the default chain users will see
-  chains: [bscChainConfig, sheetChainConfig],
+  chains: [sheetChain, bscChainConfig],
   transports: {
-    [sheetChainConfig.id]: http(SHEET_RPC_ENDPOINT),
+    [sheetChain.id]: http(SHEET_RPC_ENDPOINT),
     [bscChainConfig.id]: http(BSC_RPC_ENDPOINT),
   },
 });
@@ -53,15 +79,34 @@ const queryClient = new QueryClient();
 
 function App() {
   // Configure all available Solana wallets
-  const wallets = useMemo(
-    () => [
+  // Note: Wallet adapters use the ConnectionProvider's endpoint (devnet)
+  // Users must manually switch their wallet extension (Phantom/Solflare) to devnet
+  const wallets = useMemo(() => {
+    const walletAdapters = [
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
       new TorusWalletAdapter(),
       new LedgerWalletAdapter(),
-    ],
-    []
-  );
+    ];
+    
+    // Filter out duplicates by wallet name to prevent React key warnings
+    // The wallet adapter's name property is used as the key in the UI
+    const seenNames = new Set<string>();
+    const uniqueWallets = walletAdapters.filter((wallet) => {
+      // Access the name property from the adapter
+      const walletName = (wallet as any).name || (wallet as any).adapter?.name || wallet.constructor.name;
+      
+      if (seenNames.has(walletName)) {
+        console.warn(`Duplicate wallet adapter detected: ${walletName}. Skipping.`);
+        return false;
+      }
+      
+      seenNames.add(walletName);
+      return true;
+    });
+    
+    return uniqueWallets;
+  }, []);
 
   return (
     <WagmiProvider config={config}>
@@ -83,6 +128,29 @@ function App() {
                     </main>
 
                     <Footer />
+                    <Toaster
+                      position="top-right"
+                      toastOptions={{
+                        duration: 5000,
+                        style: {
+                          background: '#1a1a1a',
+                          color: '#fff',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                        },
+                        success: {
+                          iconTheme: {
+                            primary: '#4ade80',
+                            secondary: '#fff',
+                          },
+                        },
+                        error: {
+                          iconTheme: {
+                            primary: '#ef4444',
+                            secondary: '#fff',
+                          },
+                        },
+                      }}
+                    />
                   </div>
                 </WalletProvider>
               </WalletModalProvider>

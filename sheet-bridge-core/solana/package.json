@@ -4,7 +4,22 @@
     "dev": "ts-node be/index.ts",
     "serve": "pm2 start be/index.ts --name sheet-bridge --interpreter ts-node --time && pm2 save",
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+    "build": "anchor build",
+    "deploy": "ts-node scripts/deploy.ts",
+    "deploy:anchor": "anchor deploy --provider.cluster devnet",
+    "initialize": "ts-node scripts/initializeLock.ts",
+    "mint": "ts-node scripts/mintToken.ts",
+    "mint-to-authority": "ts-node scripts/mintToAuthority.ts",
+    "transfer-to-authority": "ts-node scripts/transferToAuthority.ts",
+    "check-mint-authority": "ts-node scripts/checkMintAuthority.ts",
+    "update-mint-address": "ts-node scripts/updateMintAddress.ts",
+    "verify-config": "ts-node scripts/verifyConfig.ts",
+    "test-transfer": "ts-node scripts/testTransfer.ts",
+    "send-sol": "ts-node scripts/sendSol.ts",
+    "check-user-tokens": "ts-node scripts/checkUserTokens.ts",
+    "generate-keypair": "ts-node scripts/generateKeypair.ts",
+    "check-balance": "ts-node scripts/checkAuthorityBalance.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",

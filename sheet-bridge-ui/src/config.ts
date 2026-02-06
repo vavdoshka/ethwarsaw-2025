@@ -44,20 +44,65 @@ export const CHAINS: Chain[] = [
 
 export const IS_MAINNET = false;
 
-export const SOL_RPC_ENDPOINT = 'https://api.devnet.solana.com';
+// Solana RPC endpoint - can be configured via VITE_SOL_RPC_ENDPOINT
+export const SOL_RPC_ENDPOINT = import.meta.env.VITE_SOL_RPC_ENDPOINT || 'https://api.devnet.solana.com';
 export const SOL_SHEET_MINT_ADDRESS =
-  'CpsKSnkJXrgxUXjJjqLR9tn3QM9RrVASHjA8LW97XHo3';
+  '4opADvbtoEaXryZH5UoEpVXERDJoRMZoXy8yMsogsc2S';
 export const SOL_SHEET_BRIDGE_PROGRAM_ID =
   '46BKi3nxgwFpc8EXE2Yem3syK5yqQRvJLasWzvsTEEgx';
+export const SOL_SKIP_PREFLIGHT =
+  (import.meta.env.VITE_SOL_SKIP_PREFLIGHT as string | undefined)?.toLowerCase() === 'true';
+export const SOL_SIMULATE_BEFORE_SEND =
+  (import.meta.env.VITE_SOL_SIMULATE_BEFORE_SEND as string | undefined)?.toLowerCase() === 'true';
+export const SOL_LOG_SIMULATION =
+  (import.meta.env.VITE_SOL_LOG_SIMULATION as string | undefined)?.toLowerCase() === 'true';
 
-export const SHEET_RPC_ENDPOINT = IS_MAINNET
-  ? 'https://eth.llamarpc.com'
-  : 'https://eth-sepolia.g.alchemy.com/v2/demo';
+// Helper function to normalize RPC URL - automatically adds http:// if missing
+function normalizeRpcUrl(url: string | undefined, defaultUrl: string): string {
+  const rpcUrl = url || defaultUrl;
+  
+  // If URL doesn't start with http:// or https://, add http://
+  if (!rpcUrl.startsWith('http://') && !rpcUrl.startsWith('https://')) {
+    // If it contains localhost or 127.0.0.1, use http://
+    if (rpcUrl.includes('localhost') || rpcUrl.includes('127.0.0.1')) {
+      return `http://${rpcUrl}`;
+    }
+    // Otherwise assume https:// for remote URLs
+    return `https://${rpcUrl}`;
+  }
+  
+  return rpcUrl;
+}
 
-export const BSC_RPC_ENDPOINT = IS_MAINNET
+// SheetChain RPC endpoint - can be configured via VITE_SHEET_RPC_ENDPOINT
+// Default: https://rpc-testnet.sheetchain.com
+// For local development: VITE_SHEET_RPC_ENDPOINT=localhost:8545 or VITE_SHEET_RPC_ENDPOINT=http://localhost:8545
+export const SHEET_RPC_ENDPOINT = normalizeRpcUrl(
+  import.meta.env.VITE_SHEET_RPC_ENDPOINT,
+  'https://rpc-testnet.sheetchain.com'
+);
+
+// Log RPC endpoint on startup (only in development)
+if (import.meta.env.DEV) {
+  console.log('🔧 SheetChain RPC Endpoint:', SHEET_RPC_ENDPOINT);
+  if (import.meta.env.VITE_SHEET_RPC_ENDPOINT) {
+    console.log('   Configured via VITE_SHEET_RPC_ENDPOINT');
+  } else {
+    console.log('   Using default endpoint');
+  }
+}
+
+// BSC RPC endpoint - can be configured via VITE_BSC_RPC_ENDPOINT
+const defaultBscRpc = IS_MAINNET
   ? 'https://bsc-dataseed.binance.org'
   : 'https://data-seed-prebsc-1-s1.binance.org:8545';
+export const BSC_RPC_ENDPOINT = import.meta.env.VITE_BSC_RPC_ENDPOINT || defaultBscRpc;
 export const BSC_SHEET_TOKEN_ADDRESS =
-  '0xe66E4213A373dECB6793240f69ADE43A6bB972bd';
+  '0x0000000000000000000000000000000000000000'; // TODO: Replace with actual BSC SHEET token address
 export const BSC_SHEET_BRIDGE_PROGRAM_ID =
-  '0xfD5A4Cee5d5C5b7b5E3B18b8401879361F58113b';
+  '0xfD5A4Cee5d5C5b7b5E3B18b8401879361F58113b'; // BSC Token Lock contract address
+
+// Bridge operator address (must match rpc-node BRIDGE_OPERATOR_ADDRESS)
+export const BRIDGE_OPERATOR_ADDRESS =
+  (import.meta.env.VITE_BRIDGE_OPERATOR_ADDRESS as string | undefined)?.toLowerCase() ??
+  '0xfac92ecd3e2be3cb26c31dbf34948596c7159a18';

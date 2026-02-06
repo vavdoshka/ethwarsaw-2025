@@ -1,717 +1,1113 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  
-  <!-- Primary Meta Tags -->
-  <title>SheetChain — The First Blockchain Backed by Google Sheets | Layer-5 Settlement</title>
-  <meta name="title" content="SheetChain — The First Blockchain Backed by Google Sheets | Layer-5 Settlement" />
-  <meta name="description" content="SheetChain is a revolutionary Layer-5 blockchain that settles directly on Google Sheets. Experience gasless transactions, cell-based consensus, and universal access to decentralized finance." />
-  <meta name="keywords" content="blockchain, Google Sheets, Layer-5, gasless transactions, DeFi, decentralized finance, cell-based consensus, spreadsheet blockchain, Web3, cryptocurrency" />
-  <meta name="robots" content="index, follow" />
-  <meta name="author" content="SheetChain" />
-  <meta name="theme-color" content="#0c1216" />
-  <link rel="canonical" href="https://sheetchain.com" />
-  
-  <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="icon" type="image/png" href="/favicon.png" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="manifest" href="/manifest.json" />
+<html lang="ru">
 
+<head>
+
+	<meta charset="utf-8">
+
+  <title>Sheetchain - The L1 Blockchain for Global Settlement</title>
+  <meta name="description" content="Sheetchain resolves the blockchain trilemma by leveraging the world's most adopted, battle-tested distributed ledger. Infinite scalability, institutional-grade reliability, and a frictionless user experience - natively integrated.">
+  
   <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://sheetchain.com" />
-  <meta property="og:title" content="SheetChain — The First Blockchain Backed by Google Sheets" />
-  <meta property="og:description" content="A revolutionary Layer-5 blockchain settling directly on Google Sheets. Gasless transactions, cell-based consensus, and universal access to decentralized finance." />
-  <meta property="og:image" content="https://sheetchain.com/og-image.png" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-  <meta property="og:site_name" content="SheetChain" />
-  <meta property="og:locale" content="en_US" />
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sheetchain.com/">
+  <meta property="og:title" content="Sheetchain - The L1 Blockchain for Global Settlement">
+  <meta property="og:description" content="Sheetchain resolves the blockchain trilemma by leveraging the world's most adopted, battle-tested distributed ledger. Infinite scalability, institutional-grade reliability, and a frictionless user experience - natively integrated.">
+  <meta property="og:image" content="https://sheetchain.com/img/og-image.png">
 
   <!-- Twitter -->
-  <meta property="twitter:card" content="summary_large_image" />
-  <meta property="twitter:url" content="https://sheetchain.com" />
-  <meta property="twitter:title" content="SheetChain — The First Blockchain Backed by Google Sheets" />
-  <meta property="twitter:description" content="A revolutionary Layer-5 blockchain settling directly on Google Sheets. Gasless transactions, cell-based consensus, and universal access." />
-  <meta property="twitter:image" content="https://sheetchain.com/twitter-image.png" />
-  <meta property="twitter:creator" content="@sheetchain" />
-  <meta property="twitter:site" content="@sheetchain" />
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://sheetchain.com/">
+  <meta property="twitter:title" content="Sheetchain - The L1 Blockchain for Global Settlement">
+  <meta property="twitter:description" content="Sheetchain resolves the blockchain trilemma by leveraging the world's most adopted, battle-tested distributed ledger. Infinite scalability, institutional-grade reliability, and a frictionless user experience - natively integrated.">
+  <meta property="twitter:image" content="https://sheetchain.com/img/og-image.png">
 
   <!-- Additional SEO -->
-  <meta name="format-detection" content="telephone=no" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="SheetChain" />
-  
-  <!-- Preconnect for performance -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  
-  <!-- Sitemap -->
-  <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+  <meta name="author" content="Sheetchain">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sheetchain.com/">
 
-  <!-- Google Analytics 4 -->
-  <script src="/ga-config.js"></script>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    
-    // Get measurement ID from config or use default
-    const measurementId = window.GA_CONFIG?.measurementId || 'GA_MEASUREMENT_ID';
-    
-    gtag('config', measurementId, {
-      page_title: 'SheetChain — The First Blockchain Backed by Google Sheets',
-      page_location: window.location.href,
-      send_page_view: true,
-      debug_mode: window.GA_CONFIG?.debug || false
-    });
-  </script>
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <!-- Optional: Inter font (uncomment if desired) -->
-  <!-- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"> -->
+	<link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96" />
+	<link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+	<link rel="shortcut icon" href="/favicon/favicon.ico" />
+	<link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+	<meta name="apple-mobile-web-app-title" content="Sheetchain" />
+	<link rel="manifest" href="/favicon/site.webmanifest" />
 
-  <style>
-    :root{
-      --bg-0:#0b1014;
-      --bg-1:#0f1720;
-      --bg-2:#0c1216;
-      --text-0:#e9f1f7;
-      --text-1:#b8c3cc;
-      --brand:#2fe2a0;          /* emerald/teal accent */
-      --brand-2:#7ee0ff;        /* cyan accent */
-      --muted:#27323b;
-      --card:#101720;
-      --ring: rgba(127, 224, 255, 0.35);
-      --maxw: 1200px;
-      --radius: 14px;
-      --shadow: 0 10px 40px rgba(0,0,0,.45);
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      background: radial-gradient(1200px 600px at 80% -10%, rgba(47,226,160,.12), transparent 60%),
-                  radial-gradient(900px 500px at 20% 10%, rgba(126,224,255,.08), transparent 60%),
-                  linear-gradient(180deg,var(--bg-0),var(--bg-1));
-      color:var(--text-0);
-      font: 16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
-      overflow-x:hidden;
-    }
-    a{color:inherit;text-decoration:none}
-    .container{max-width:var(--maxw); margin:0 auto; padding:0 24px}
-    header{
-      position:sticky; top:0; z-index:30; backdrop-filter: blur(10px);
-      background: linear-gradient(to bottom, rgba(12,18,22,.9), rgba(12,18,22,.6));
-      border-bottom:1px solid rgba(126,224,255,.08);
-    }
-    .nav{
-      display:flex; align-items:center; justify-content:space-between; height:72px;
-    }
-    .brand{display:flex; align-items:center; gap:12px; font-weight:700; letter-spacing:.2px}
-    .logo{
-      width:34px; height:34px; border-radius:8px; display:grid; place-items:center;
-      background: linear-gradient(135deg, rgba(47,226,160,.25), rgba(126,224,255,.2));
-      border:1px solid rgba(126,224,255,.25);
-      box-shadow: inset 0 0 20px rgba(47,226,160,.15);
-    }
-    .logo svg{width:22px; height:22px}
-    .nav a{color:var(--text-1)}
-    .nav-links{display:flex; gap:22px; align-items:center}
-    .cta{
-      display:inline-grid; place-items:center; padding:10px 16px; border-radius:10px; font-weight:600;
-      background:linear-gradient(180deg, rgba(47,226,160,.15), rgba(126,224,255,.12));
-      border:1px solid rgba(126,224,255,.25);
-      box-shadow: var(--shadow);
-      color:var(--text-0);
-    }
-    .cta.primary{
-      background: linear-gradient(180deg, #18b17a, #0ea371);
-      border-color: rgba(47,226,160,.65);
-      color:#081012;
-    }
-    .hero{
-      position:relative; padding:120px 0 72px;
-    }
-    .grid-bg{
-      position:absolute; inset:0; pointer-events:none; opacity:.22; mask-image: radial-gradient(60% 56% at 50% 0%, black 50%, transparent 100%);
-    }
-    .grid-bg::before{
-      content:""; position:absolute; inset:-200px -200px; 
-      background:
-        linear-gradient(rgba(126,224,255,.14) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(126,224,255,.12) 1px, transparent 1px);
-      background-size: 42px 42px, 42px 42px;
-    }
-    h1{
-      margin:0 0 18px; font-size: clamp(36px, 6vw, 64px); line-height:1.05; letter-spacing:-0.02em;
-      text-shadow: 0 1px 0 rgba(0,0,0,.4);
-    }
-    .sub{color:var(--text-1); max-width:760px; font-size: clamp(16px, 2.5vw, 20px)}
-    .hero-cta{display:flex; gap:14px; margin-top:26px; flex-wrap:wrap}
-    .pill{
-      display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:999px; 
-      background:rgba(47,226,160,.12); border:1px solid rgba(47,226,160,.25); color:#aaf3d9; font-weight:600; font-size:13px
-    }
-    section{padding:84px 0}
-    .section-title{font-size:28px; letter-spacing:.2px; margin:0 0 18px}
-    .section-lead{color:var(--text-1); max-width:800px; margin-bottom:28px}
-    .cards{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px}
-    .card{
-      background: linear-gradient(180deg, rgba(16,23,32,.9), rgba(10,16,21,.9));
-      border:1px solid rgba(126,224,255,.12);
-      border-radius: var(--radius);
-      padding:20px; min-height:160px;
-      box-shadow: var(--shadow);
-    }
-    .card h3{margin:0 0 6px; font-size:18px}
-    .card p{margin:0; color:var(--text-1)}
-    .icon{
-      width:36px; height:36px; border-radius:8px; display:grid; place-items:center; margin-bottom:12px;
-      background: linear-gradient(135deg, rgba(47,226,160,.18), rgba(126,224,255,.16));
-      border:1px solid rgba(126,224,255,.2);
-    }
-    .tech{
-      display:grid; grid-template-columns: 1.2fr .8fr; gap:26px; align-items:center;
-    }
-    .diagram{
-      background:linear-gradient(180deg, rgba(16,23,32,.9), rgba(10,16,21,.9));
-      border:1px solid rgba(126,224,255,.12); border-radius:var(--radius); padding:18px;
-      box-shadow:var(--shadow);
-    }
-    .diagram svg{width:100%; height:auto; display:block}
-    .ecosys-logos{
-      display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px; align-items:center
-    }
-    .logo-tile{
-      background:linear-gradient(180deg, rgba(16,23,32,.9), rgba(10,16,21,.9));
-      border:1px solid rgba(126,224,255,.12); border-radius:12px; padding:18px; height:84px;
-      display:grid; place-items:center; color: var(--text-1);
-    }
-    .timeline{
-      display:grid; gap:14px; max-width:900px
-    }
-    .milestone{
-      display:grid; grid-template-columns: 28px 1fr; gap:14px; align-items:start
-    }
-    .dot{
-      width:28px; height:28px; border-radius:50%;
-      background: radial-gradient(circle at 30% 30%, var(--brand), #138a64);
-      box-shadow:0 0 0 4px rgba(47,226,160,.15), 0 0 24px rgba(47,226,160,.4);
-    }
-    .ms-card{
-      background:linear-gradient(180deg, rgba(16,23,32,.9), rgba(10,16,21,.9));
-      border:1px solid rgba(126,224,255,.12); border-radius:12px; padding:14px 16px
-    }
-    .ms-card h4{margin:0 0 4px}
-    .ms-card p{margin:0; color:var(--text-1)}
-    .callout{
-      background: linear-gradient(180deg, rgba(47,226,160,.12), rgba(126,224,255,.10));
-      border:1px solid rgba(126,224,255,.28); border-radius:16px; padding:22px; text-align:center;
-      box-shadow: var(--shadow);
-    }
-    footer{
-      padding:36px 0 56px; color:var(--text-1);
-      border-top:1px solid rgba(126,224,255,.08);
-      background: linear-gradient(180deg, rgba(10,16,21,0), rgba(10,16,21,.6));
-    }
-    .foot-grid{display:grid; grid-template-columns: 1fr auto; gap:14px; align-items:start}
-    .legal{font-size:13px; opacity:.8}
-    .links{display:flex; gap:18px}
-    .badge{font-size:12px; opacity:.9}
-    .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size:12px; opacity:.9}
-    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+	<link rel="stylesheet" href="css/main.min.css">
 
-    /* Responsive */
-    @media (max-width: 1000px){
-      .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .tech{grid-template-columns:1fr}
-      .ecosys-logos{grid-template-columns:repeat(3,minmax(0,1fr))}
-    }
-    @media (max-width: 640px){
-      .cards{grid-template-columns:1fr}
-      .ecosys-logos{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .nav-links{display:none}
-      .hero{padding:92px 0 56px}
-    }
-
-    /* Subtle entrance animations */
-    @media (prefers-reduced-motion: no-preference){
-      [data-animate]{opacity:0; transform: translateY(10px); transition: opacity .6s ease, transform .6s ease}
-      [data-animate].in{opacity:1; transform: translateY(0)}
-    }
-
-    /* Focus styles */
-    :focus-visible{
-      outline: 2px solid var(--brand-2);
-      outline-offset: 2px;
-      box-shadow: 0 0 0 4px var(--ring);
-      border-radius: 10px;
-    }
-  </style>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital@0;1&display=swap" rel="stylesheet">
 </head>
+
 <body>
-  <header>
-    <div class="container nav">
-      <a class="brand" href="#" aria-label="SheetChain Home">
-        <span class="logo" aria-hidden="true">
-          <!-- Grid + chain glyph -->
-          <svg viewBox="0 0 24 24" fill="none">
-            <rect x="3" y="3" width="18" height="18" rx="4" stroke="url(#g1)" stroke-width="1.5"/>
-            <path d="M7 8h5M7 12h10M7 16h6" stroke="url(#g2)" stroke-width="1.6" stroke-linecap="round"/>
-            <defs>
-              <linearGradient id="g1" x1="0" y1="0" x2="24" y2="24">
-                <stop stop-color="#7ee0ff"/><stop offset="1" stop-color="#2fe2a0"/>
-              </linearGradient>
-              <linearGradient id="g2" x1="0" y1="0" x2="24" y2="24">
-                <stop stop-color="#2fe2a0"/><stop offset="1" stop-color="#7ee0ff"/>
-              </linearGradient>
-            </defs>
-          </svg>
-        </span>
-        <span>SheetChain</span>
-      </a>
-      <nav class="nav-links" aria-label="Primary">
-        <a href="#why">Why</a>
-        <a href="#technology">Technology</a>
-        <a href="#ecosystem">Ecosystem</a>
-        <a href="#roadmap">Roadmap</a>
-        <a class="cta" href="#community">Community</a>
-        <a class="cta primary" href="https://app.sheetchain.com" target="_blank" rel="noopener">Launch App</a>
-      </nav>
-    </div>
-  </header>
 
-  <main>
-    <!-- HERO -->
-    <section class="hero" role="banner">
-      <div class="grid-bg" aria-hidden="true"></div>
-      <div class="container">
-        <span class="pill" role="text">Layer-5 Settlement • Gasless • Cell-Based Consensus</span>
-        <h1 data-animate>
-          The First Blockchain<br/> Backed by Google Sheets<span aria-hidden="true">™</span>
-        </h1>
-        <p class="sub" data-animate>
-          SheetChain introduces a new paradigm in decentralized settlement—combining the accessibility of spreadsheets with the guarantees of distributed ledgers. Universal access, instant finality, and zero gas fees.
-        </p>
-        <nav class="hero-cta" data-animate aria-label="Primary actions">
-          <a class="cta primary" href="https://app.sheetchain.com" target="_blank" rel="noopener" aria-label="Launch SheetChain App">Launch App</a>
-          <a class="cta" href="/whitepaper.pdf" aria-label="Read SheetChain Whitepaper">Read Whitepaper</a>
-          <a class="cta" href="#technology" aria-label="View Technology Overview">View Technology</a>
-        </nav>
-      </div>
-    </section>
+	<!-- HEADER START -->
 
-    <!-- WHY -->
-    <section id="why" aria-labelledby="why-title">
-      <div class="container">
-        <h2 id="why-title" class="section-title">Why SheetChain</h2>
-        <p class="section-lead">A credible, developer-friendly approach to decentralized settlement: gasless transactions, global availability, and familiar tooling.</p>
-        <div class="cards">
-          <div class="card" data-animate>
-            <div class="icon" aria-hidden="true">🔒</div>
-            <h3>Institutional-Grade Reliability</h3>
-            <p>Built on a globally distributed spreadsheet infrastructure with autosave redundancy and version history.</p>
-          </div>
-          <div class="card" data-animate>
-            <div class="icon" aria-hidden="true">⚡</div>
-            <h3>Gasless Transactions</h3>
-            <p>Frictionless user experience—execute transfers without fees. Ideal for onboarding the next billion users.</p>
-          </div>
-          <div class="card" data-animate>
-            <div class="icon" aria-hidden="true">🧩</div>
-            <h3>Universal Access</h3>
-            <p>If Sheets runs, SheetChain runs. No specialized hardware required; interact from browser or API.</p>
-          </div>
-          <div class="card" data-animate>
-            <div class="icon" aria-hidden="true">📈</div>
-            <h3>Scalable by Design</h3>
-            <p>Cell-level parallelism with row-wise batching and optimistic rollups ensure consistent throughput.</p>
-          </div>
-        </div>
-      </div>
-    </section>
+	<header class="header" role="banner">
+		<div class="container">
+			<div class="header__row">
+				<button class="hamburger">
+					<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path
+							d="M18.3333 9.16667H19.1667V10.8333H18.3333V11.6667H1.66668V10.8333H0.833344V9.16667H1.66668V8.33333H18.3333V9.16667Z"
+							fill="white" />
+						<path
+							d="M18.3333 15.8333H19.1667V17.5H18.3333V18.3333H1.66668V17.5H0.833344V15.8333H1.66668V15H18.3333V15.8333Z"
+							fill="white" />
+						<path
+							d="M19.1667 2.5V4.16667H18.3333V5H1.66668V4.16667H0.833344V2.5H1.66668V1.66667H18.3333V2.5H19.1667Z"
+							fill="white" />
+					</svg>
+					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path
+							d="M15 13H16V14H17V15H18V16H19V17H20V18H21V19H22V20H21V21H20V22H19V21H18V20H17V19H16V18H15V17H14V16H13V15H11V16H10V17H9V18H8V19H7V20H6V21H5V22H4V21H3V20H2V19H3V18H4V17H5V16H6V15H7V14H8V13H9V11H8V10H7V9H6V8H5V7H4V6H3V5H2V4H3V3H4V2H5V3H6V4H7V5H8V6H9V7H10V8H11V9H13V8H14V7H15V6H16V5H17V4H18V3H19V2H20V3H21V4H22V5H21V6H20V7H19V8H18V9H17V10H16V11H15V13Z"
+							fill="white" />
+					</svg>
+				</button>
+				<div class="logo">
+					<svg width="18" height="20" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path
+							d="M0.666748 3.94737H2.52786V3.07895H3.44453V1.31579H7.25008V0H8.63897V1.31579H9.33341V0H10.7223V1.31579H14.5556V3.07895H15.4723V3.94737H17.3334V6.57895H14.5556V4.81579H13.639V3.94737H4.36119V4.81579H3.44453V7.81579H4.36119V8.68421H14.5556V10.4474H15.4723V11.3158H17.3334V16.0526H15.4723V16.8947H14.5556V18.6842H10.7223V20H9.33341V18.6842H8.63897V20H7.25008V18.6842H3.44453V16.9211H2.52786V16.0526H0.666748V13.4211H3.44453V15.1842H4.36119V16.0526H13.639V15.1842H14.5556V12.1842H13.639V11.3158H3.44453V9.55263H2.52786V8.68421H0.666748V3.94737Z"
+							fill="white" />
+					</svg>
+				</div>
+				<nav class="main__nav">
+					<ul class="main__list">
+						<li><a href="#">Technology</a></li>
+						<li><a href="#">Ecosystem</a></li>
+						<li><a href="#">Grants</a></li>
+						<li><a href="#">Careers</a></li>
+						<li><a href="#">Whitepaper</a></li>
+						<li><a href="#">Community</a></li>
+					</ul>
+				</nav>
+				<a href="#" class="btn btn-green">
+					<span>Claim Airdrop</span>
+					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path
+							d="M1.125 6.125V14.25H1.75V14.875H14.25V14.25H14.875V6.125H1.125ZM8.625 13V14.25H7.375V13H6.125V11.75H8.625V11.125H6.75V10.5H6.125V8H7.375V6.75H8.625V8H9.875V9.25H7.375V9.875H9.25V10.5H9.875V13H8.625Z"
+							fill="white" />
+						<path d="M7.375 1.125V4.875H1.125V4.25H1.75V3H2.375V2.375H3V1.75H3.625V1.125H7.375Z" fill="white" />
+						<path d="M14.875 4.25V4.875H8.625V1.125H12.375V1.75H13V2.375H13.625V3H14.25V4.25H14.875Z"
+							fill="white" />
+					</svg>
+				</a>
 
-    <!-- TECHNOLOGY -->
-    <section id="technology" aria-labelledby="technology-title">
-      <div class="container">
-        <h2 id="technology-title" class="section-title">Technology</h2>
-        <p class="section-lead">A Layer-5 blockchain settled directly on Google Sheets. Novel primitives enable credible finality and programmable logic.</p>
-        <div class="tech">
-          <div>
-            <div class="card" data-animate>
-              <h3>Cell-Based Consensus (PoC)</h3>
-              <p>Consensus validated at the cell level with deterministic state transitions and conflict resolution through optimistic row rollups.</p>
-            </div>
-            <div class="card" data-animate>
-              <h3>Optimistic Row Rollups</h3>
-              <p>Transactions are aggregated per row, verified, and finalized via Sheets’ versioning. Fraud proofs submitted as cell diffs.</p>
-            </div>
-            <div class="card" data-animate>
-              <h3>Formula-Native Smart Contracts</h3>
-              <p>Compose logic with familiar spreadsheet functions (<span class="kbd">=IF</span>, <span class="kbd">=SUM</span>, <span class="kbd">=VLOOKUP</span>). Deterministic execution; auditable in-cell.</p>
-            </div>
-            <div class="card" data-animate>
-              <h3>RPC Gateway</h3>
-              <p>Wallet → RPC → Sheets API. Compatible with EVM wallets through a thin translation layer for accounts, nonces, and receipts.</p>
-            </div>
-          </div>
-          <!-- Diagram -->
-          <div class="diagram" role="img" aria-label="SheetChain Architecture: Data flows from Wallet through RPC Gateway to Google Sheets API, then to Ledger Cells for settlement">
-            <svg viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg" aria-labelledby="diagram-title">
-              <title id="diagram-title">SheetChain Architecture Flow</title>
-              <defs>
-                <linearGradient id="line" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stop-color="#7ee0ff"/><stop offset="100%" stop-color="#2fe2a0"/>
-                </linearGradient>
-                <filter id="glow"><feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#2fe2a0" flood-opacity=".35"/></filter>
-              </defs>
-              <!-- Nodes -->
-              <g font-family="Inter,system-ui" font-size="16" fill="#cfe6f3">
-                <rect x="30" y="60" width="210" height="80" rx="12" fill="#0f1822" stroke="#214052"/>
-                <text x="135" y="108" text-anchor="middle">Wallet / dApp</text>
+			</div>
+		</div>
+	</header>
 
-                <rect x="330" y="60" width="240" height="80" rx="12" fill="#0f1822" stroke="#214052"/>
-                <text x="450" y="108" text-anchor="middle">RPC Gateway</text>
+	<!-- HEADER END -->
 
-                <rect x="640" y="60" width="230" height="80" rx="12" fill="#0f1822" stroke="#214052"/>
-                <text x="755" y="108" text-anchor="middle">Google Sheets API</text>
+	<!-- MAIN CONTENT START -->
 
-                <rect x="330" y="240" width="240" height="240" rx="14" fill="#0f1822" stroke="#214052"/>
-                <text x="450" y="270" text-anchor="middle">Ledger: Cells</text>
-                <!-- Grid -->
-                <g opacity=".8">
-                  <rect x="350" y="290" width="200" height="160" rx="8" fill="#0b1319" stroke="#1c3643"/>
-                  <!-- verticals -->
-                  <path d="M390 290V450 M430 290V450 M470 290V450 M510 290V450" stroke="#17303b"/>
-                  <!-- horizontals -->
-                  <path d="M350 330H550 M350 370H550 M350 410H550" stroke="#17303b"/>
-                  <circle cx="390" cy="330" r="5" fill="#2fe2a0" filter="url(#glow)"/>
-                  <circle cx="470" cy="370" r="5" fill="#7ee0ff" filter="url(#glow)"/>
-                  <circle cx="510" cy="410" r="5" fill="#2fe2a0" filter="url(#glow)"/>
-                </g>
-              </g>
-              <!-- Lines -->
-              <path d="M240 100 H330" stroke="url(#line)" stroke-width="2.5"/>
-              <path d="M570 100 H640" stroke="url(#line)" stroke-width="2.5"/>
-              <path d="M450 140 V240" stroke="url(#line)" stroke-width="2.5"/>
-            </svg>
-          </div>
-        </div>
-      </div>
-    </section>
+	<main class="main" role="main">
+		<section class="hero section">
+			<div class="container">
+				<div class="section__row">
+					<div class="section__label">
+						<span>Hello!</span>
+					</div>
+					<div class="section__content hero__wrapper">
+						<div class="grid-container hero__bg"></div>
+						<div class="section__texture"></div>
+						<!-- <img src="img/texture.svg" alt="alt" class="hero__bg" width="1632" height="872"> -->
+						<div class="section__container">
+							<div class="hero__content">
+								<h1 class="h1">The L1 Blockchain <br>
+									for Global Settlement.</h1>
+								<p>Sheetchain resolves the blockchain trilemma by leveraging the world's most adopted,
+									battle-tested
+									distributed ledger. Infinite scalability, institutional-grade reliability, and a frictionless
+									user
+									experience - natively integrated.</p>
+								<div class="hero__nav">
+									<a href="#" class="btn btn-green">
+										<span>Launch App</span>
+										<svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+											xmlns="http://www.w3.org/2000/svg">
+											<path
+												d="M14.875 1.125V6.125H13.625V5.5H13V4.875H12.375V5.5H11.75V6.125H11.125V6.75H10.5V7.375H9.875V8H9.25V8.625H8.625V9.25H8V9.875H7.375V10.5H6.75V11.125H6.125V11.75H5.5V11.125H4.875V10.5H4.25V9.875H4.875V9.25H5.5V8.625H6.125V8H6.75V7.375H7.375V6.75H8V6.125H8.625V5.5H9.25V4.875H9.875V4.25H10.5V3.625H11.125V3H10.5V2.375H9.875V1.125H14.875Z"
+												fill="white" />
+											<path
+												d="M13 9.875V14.25H12.375V14.875H1.75V14.25H1.125V3.625H1.75V3H7.375V4.875H3V13H11.125V9.875H13Z"
+												fill="white" />
+										</svg>
+									</a>
+									<a href="#" class="btn btn-gray btn-transparent">
+										<span>Read the Docs</span>
+									</a>
+								</div>
+								<a href="#simple" class="scroll__down">
+									<svg width="18" height="46" viewBox="0 0 18 46" fill="none"
+										xmlns="http://www.w3.org/2000/svg">
+										<g class="arrow arrow--1">
+											<path
+												d="M3.75 5.25H5.25V6H6V6.75H6.75V7.5H7.5V8.25H8.25V9H9.75V8.25H10.5V7.5H11.25V6.75H12V6H12.75V5.25H14.25V6H15V7.5H14.25V8.25H13.5V9H12.75V9.75H12V10.5H11.25V11.25H10.5V12H9.75V12.75H8.25V12H7.5V11.25H6.75V10.5H6V9.75H5.25V9H4.5V8.25H3.75V7.5H3V6H3.75V5.25Z"
+												fill="white" />
+										</g>
+										<g class="arrow arrow--2">
+											<path
+												d="M3.75 19.25H5.25V20H6V20.75H6.75V21.5H7.5V22.25H8.25V23H9.75V22.25H10.5V21.5H11.25V20.75H12V20H12.75V19.25H14.25V20H15V21.5H14.25V22.25H13.5V23H12.75V23.75H12V24.5H11.25V25.25H10.5V26H9.75V26.75H8.25V26H7.5V25.25H6.75V24.5H6V23.75H5.25V23H4.5V22.25H3.75V21.5H3V20H3.75V19.25Z"
+												fill="white" />
+										</g>
+										<g class="arrow arrow--3">
+											<path
+												d="M3.75 33.25H5.25V34H6V34.75H6.75V35.5H7.5V36.25H8.25V37H9.75V36.25H10.5V35.5H11.25V34.75H12V34H12.75V33.25H14.25V34H15V35.5H14.25V36.25H13.5V37H12.75V37.75H12V38.5H11.25V39.25H10.5V40H9.75V40.75H8.25V40H7.5V39.25H6.75V38.5H6V37.75H5.25V37H4.5V36.25H3.75V35.5H3V34H3.75V33.25Z"
+												fill="white" />
+										</g>
+									</svg>
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+		<section class="simple section section--white" id="simple">
+			<div class="container">
+				<div class="section__row">
+					<div class="section__label">
+						<span>Why Sheetchain?</span>
+					</div>
+					<div class="section__content">
+						<div class="section__header">
+							<div class="section__container">
+								<div class="section__title text-center">
+									<div class="section__alert">
+										<svg width="17" height="16" viewBox="0 0 17 16" fill="none"
+											xmlns="http://www.w3.org/2000/svg">
+											<path
+												d="M7.16675 8.00004H7.83341V14.6667H7.16675V15.3334H5.83341V14.6667H5.16675V8.00004H5.83341V7.33337H7.16675V8.00004Z"
+												fill="#8F8F94" />
+											<path d="M8.50008 4.00004H7.83341V4.66671H8.50008V4.00004Z" fill="#8F8F94" />
+											<path d="M9.16675 4.66671H8.50008V5.33337H9.16675V4.66671Z" fill="#8F8F94" />
+											<path
+												d="M11.1667 6.00004H11.8334V7.33337H11.1667V8.00004H9.83341V7.33337H9.16675V6.00004H9.83341V5.33337H11.1667V6.00004Z"
+												fill="#8F8F94" />
+											<path
+												d="M11.1667 10.6667H11.8334V14.6667H11.1667V15.3334H9.83341V14.6667H9.16675V10.6667H9.83341V10H11.1667V10.6667Z"
+												fill="#8F8F94" />
+											<path d="M12.5001 4.66671H11.8334V5.33337H12.5001V4.66671Z" fill="#8F8F94" />
+											<path d="M13.1667 4.00004H12.5001V4.66671H13.1667V4.00004Z" fill="#8F8F94" />
+											<path
+												d="M15.8334 2.00004V3.33337H15.1667V4.00004H13.8334V3.33337H13.1667V2.00004H13.8334V1.33337H15.1667V2.00004H15.8334Z"
+												fill="#8F8F94" />
+											<path
+												d="M15.1667 8.00004H15.8334V14.6667H15.1667V15.3334H13.8334V14.6667H13.1667V8.00004H13.8334V7.33337H15.1667V8.00004Z"
+												fill="#8F8F94" />
+											<path d="M4.50008 5.33337H3.83341V6.00004H4.50008V5.33337Z" fill="#8F8F94" />
+											<path
+												d="M3.16675 6.66671H3.83341V8.00004H3.16675V8.66671H1.83341V8.00004H1.16675V6.66671H1.83341V6.00004H3.16675V6.66671Z"
+												fill="#8F8F94" />
+											<path
+												d="M3.16675 11.3334H3.83341V14.6667H3.16675V15.3334H1.83341V14.6667H1.16675V11.3334H1.83341V10.6667H3.16675V11.3334Z"
+												fill="#8F8F94" />
+											<path d="M5.16675 4.66671H4.50008V5.33337H5.16675V4.66671Z" fill="#8F8F94" />
+											<path
+												d="M5.83341 3.33337H5.16675V2.00004H5.83341V1.33337H7.16675V2.00004H7.83341V3.33337H7.16675V4.00004H5.83341V3.33337Z"
+												fill="#8F8F94" />
+										</svg>
+										<span>The Sheetchain Pillars</span>
+									</div>
+									<h2 class="h2 black">A Radically Simple Foundation for a Complex World</h2>
+								</div>
+							</div>
+						</div>
+						<div class="section__body">
+							<div class="section__container">
+								<div class="simple__row">
+									<div class="simple__item">
+										<div class="simple__item-icon">
+											<svg width="32" height="32" viewBox="0 0 32 32" fill="none"
+												xmlns="http://www.w3.org/2000/svg">
+												<path
+													d="M26.6667 16V14.6667H25.3333V8.00004H24V5.33337H22.6667V4.00004H21.3333V2.66671H18.6667V1.33337H13.3333V2.66671H10.6667V4.00004H9.33333V5.33337H8V8.00004H6.66667V14.6667H5.33333V16H4V29.3334H5.33333V30.6667H26.6667V29.3334H28V16H26.6667ZM10.6667 8.00004H12V6.66671H13.3333V5.33337H18.6667V6.66671H20V8.00004H21.3333V14.6667H10.6667V8.00004Z"
+													fill="black" />
+											</svg>
+										</div>
+										<div class="simple__item-content">
+											<h3 class="h3">Institutional-Grade Reliability</h3>
+											<p>Built on a globally distributed data infrastructure with native autosave redundancy
+												and
+												version history. Sheetchain offers the uptime and data integrity required for
+												mission-critical applications.</p>
+										</div>
+									</div>
+									<div class="simple__item">
+										<div class="simple__item-icon">
+											<svg width="32" height="32" viewBox="0 0 32 32" fill="none"
+												xmlns="http://www.w3.org/2000/svg">
+												<path
+													d="M28 13.3334V14.6667H26.6667V16H25.3333V17.3334H24V18.6667H22.6667V20H21.3333V21.3334H20V22.6667H18.6667V24H17.3333V25.3334H16V26.6667H14.6667V28H13.3333V29.3334H12V30.6667H10.6667V28H12V24H13.3333V18.6667H4V17.3334H5.33333V16H6.66667V14.6667H8V13.3334H9.33333V12H10.6667V10.6667H12V9.33337H13.3333V8.00004H14.6667V6.66671H16V5.33337H17.3333V4.00004H18.6667V2.66671H20V1.33337H21.3333V4.00004H20V8.00004H18.6667V13.3334H28Z"
+													fill="black" />
+											</svg>
+										</div>
+										<div class="simple__item-content">
+											<h3 class="h3">Virtually Cost-Free Transactions</h3>
+											<p>Built on a globally distributed data infrastructure with native autosave redundancy
+												and
+												version history. Sheetchain offers the uptime and data integrity required for
+												mission-critical applications.</p>
+										</div>
+									</div>
+									<div class="simple__item">
+										<div class="simple__item-icon">
+											<svg width="32" height="32" viewBox="0 0 32 32" fill="none"
+												xmlns="http://www.w3.org/2000/svg">
+												<path
+													d="M26.6666 17.3334V13.3334H25.3333V12H23.9999V8.00004H22.6666V5.33337H21.3333V4.00004H19.9999V2.66671H18.6666V1.33337H15.9999V2.66671H17.3333V5.33337H15.9999V8.00004H14.6666V9.33337H13.3333V10.6667H11.9999V12H10.6666V13.3334H9.33325V17.3334H10.6666V20H9.33325V18.6667H7.99992V16H6.66659V18.6667H5.33325V22.6667H6.66659V25.3334H7.99992V26.6667H9.33325V28H10.6666V29.3334H11.9999V30.6667H22.6666V29.3334H23.9999V28H25.3333V26.6667H26.6666V24H27.9999V17.3334H26.6666ZM23.9999 26.6667H22.6666V28H19.9999V29.3334H14.6666V28H13.3333V22.6667H14.6666V21.3334H15.9999V20H17.3333V18.6667H18.6666V14.6667H17.3333V13.3334H15.9999V12H17.3333V13.3334H19.9999V16H21.3333V22.6667H19.9999V25.3334H21.3333V24H22.6666V22.6667H23.9999V26.6667Z"
+													fill="black" />
+											</svg>
+										</div>
+										<div class="simple__item-content">
+											<h3 class="h3">Universal Adoption</h3>
+											<p>Sheetchain launched with billions of users already proficient with its native
+												client.
+												No specialized hardware or software required. Interact directly from any modern
+												browser
+												or API, solving the industry's user onboarding challenge on day one.</p>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="section__footer">
+							<div class="section__container">
 
-    <!-- ECOSYSTEM -->
-    <section id="ecosystem" aria-labelledby="ecosystem-title">
-      <div class="container">
-        <h2 id="ecosystem-title" class="section-title">Ecosystem</h2>
-        <p class="section-lead">A growing suite of tools and assets designed for creators, analysts, and builders.</p>
-        <div class="cards" style="margin-bottom:18px">
-          <div class="card" data-animate>
-            <h3>$SHEET — Native Asset</h3>
-            <p>The fundamental utility token of SheetChain for governance, staking, and network alignment.</p>
-          </div>
-          <div class="card" data-animate>
-            <h3>DeFi Sheets</h3>
-            <p>Composable yield strategies expressed as formulas. Transparent, auditable, and instantly shareable.</p>
-          </div>
-          <div class="card" data-animate>
-            <h3>NFT Charts</h3>
-            <p>Tokenized data visualizations and chart artworks, minted from deterministic cell ranges.</p>
-          </div>
-          <div class="card" data-animate>
-            <h3>DAO Forms</h3>
-            <p>Governance workflows powered by Forms + Sheets for proposals, voting, and reporting.</p>
-          </div>
-        </div>
-        <div class="ecosys-logos" aria-hidden="true">
-          <div class="logo-tile">Explorer</div>
-          <div class="logo-tile">Wallet</div>
-          <div class="logo-tile">Bridge</div>
-          <div class="logo-tile">Index</div>
-          <div class="logo-tile">$SHEET</div>
-        </div>
-      </div>
-    </section>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+		<section class="perfomance section">
+			<div class="container">
+				<div class="section__row">
+					<div class="section__label">
+						<span>Technology</span>
+					</div>
+					<div class="section__content perfomance__wrap">
 
-    <!-- ROADMAP -->
-    <section id="roadmap" aria-labelledby="roadmap-title">
-      <div class="container">
-        <h2 id="roadmap-title" class="section-title">Roadmap</h2>
-        <p class="section-lead">Disciplined, milestone-driven delivery focused on core primitives and developer experience.</p>
-        <div class="timeline">
-          <div class="milestone" data-animate>
-            <div class="dot" aria-hidden="true"></div>
-            <div class="ms-card">
-              <h4>Q3 2025 — Testnet Alpha</h4>
-              <p>Private Drive deployment, RPC Gateway v0, ledger spec, and explorer prototype.</p>
-            </div>
-          </div>
-          <div class="milestone" data-animate>
-            <div class="dot" aria-hidden="true"></div>
-            <div class="ms-card">
-              <h4>Q4 2025 — Mainnet Launch</h4>
-              <p>$SHEET genesis, public RPC, formula-native contracts, and ecosystem grants.</p>
-            </div>
-          </div>
-          <div class="milestone" data-animate>
-            <div class="dot" aria-hidden="true"></div>
-            <div class="ms-card">
-              <h4>Q1 2026 — Cross-Sheet Interoperability</h4>
-              <p>Multi-tab scaling with optimistic row rollups across worksheets.</p>
-            </div>
-          </div>
-          <div class="milestone" data-animate>
-            <div class="dot" aria-hidden="true"></div>
-            <div class="ms-card">
-              <h4>Q2 2026 — Excel Bridge</h4>
-              <p>Native bridge to Excel for enterprise-grade interoperability.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+						<div class="section__container">
+							<div class="perfomance__row">
+								<div class="perfomance__content">
+									<h2 class="h2 h2--56">A Vertically Integrated
+										Architecture for Unparalleled
+										Performance.</h2>
+									<img src="img/perfomance.webp" alt="alt" class="perfomance__img" width="838" height="838">
+									<div class="perfomance__box">
+										<div class="perfomance__item">
+											<svg width="18" height="18" viewBox="0 0 18 18" fill="none"
+												xmlns="http://www.w3.org/2000/svg">
+												<path
+													d="M17.25 4.5V5.25H16.5V6H15.75V6.75H15V7.5H14.25V8.25H13.5V9H12.75V9.75H12V10.5H11.25V11.25H10.5V12H9.75V12.75H9V13.5H8.25V14.25H7.5V15H6V14.25H5.25V13.5H4.5V12.75H3.75V12H3V11.25H2.25V10.5H1.5V9.75H0.75V9H1.5V8.25H2.25V7.5H3V8.25H3.75V9H4.5V9.75H5.25V10.5H6V11.25H7.5V10.5H8.25V9.75H9V9H9.75V8.25H10.5V7.5H11.25V6.75H12V6H12.75V5.25H13.5V4.5H14.25V3.75H15V3H15.75V3.75H16.5V4.5H17.25Z"
+													fill="#69696C" />
+											</svg>
+											<div class="perfomance__item-title">Proof-of-Row (PoR) Consensus</div>
+											<p>Our novel consensus mechanism provides deterministic state transitions validated at
+												the row level. Transactions are batched, appended, and finalized with near-instant
+												verifiability, ensuring the canonical state of the ledger is always auditable.</p>
+										</div>
+										<div class="perfomance__item">
+											<svg width="18" height="18" viewBox="0 0 18 18" fill="none"
+												xmlns="http://www.w3.org/2000/svg">
+												<g clip-path="url(#clip0_17_3391)">
+													<path
+														d="M17.25 13.5V15H15.75V15.75H15V17.25H13.5V15.75H12.75V15H11.25V13.5H12.75V12.75H13.5V11.25H15V12.75H15.75V13.5H17.25Z"
+														fill="#69696C" />
+													<path
+														d="M17.25 3V4.5H15.75V5.25H15V6.75H13.5V5.25H12.75V4.5H11.25V3H12.75V2.25H13.5V0.75H15V2.25H15.75V3H17.25Z"
+														fill="#69696C" />
+													<path
+														d="M12.75 8.25V9.75H11.25V10.5H9.75V11.25H9V12H8.25V13.5H7.5V15H6V13.5H5.25V12H4.5V11.25H3.75V10.5H2.25V9.75H0.75V8.25H2.25V7.5H3.75V6.75H4.5V6H5.25V4.5H6V3H7.5V4.5H8.25V6H9V6.75H9.75V7.5H11.25V8.25H12.75Z"
+														fill="#69696C" />
+												</g>
+												<defs>
+													<clipPath id="clip0_17_3391">
+														<rect width="18" height="18" fill="white" />
+													</clipPath>
+												</defs>
+											</svg>
+											<div class="perfomance__item-title">The Genesis Sequencer</div>
+											<p>Sheetchain is operated by a high-performance Genesis Sequencer responsible for
+												transaction ordering, execution, and settlement. This centralized design provides a
+												web-scale user experience without compromising on the cell-by-cell auditability of
+												the underlying ledger.</p>
+										</div>
+										<div class="perfomance__item">
+											<svg width="18" height="18" viewBox="0 0 18 18" fill="none"
+												xmlns="http://www.w3.org/2000/svg">
+												<g clip-path="url(#clip0_17_3397)">
+													<path d="M2.25 0.750244H1.5V1.50024H2.25V0.750244Z" fill="#69696C" />
+													<path d="M3 1.50024H2.25V2.25024H3V1.50024Z" fill="#69696C" />
+													<path d="M3.75 2.25024H3V3.00024H3.75V2.25024Z" fill="#69696C" />
+													<path d="M1.5 12.0002H0.75V12.7502H1.5V12.0002Z" fill="#69696C" />
+													<path d="M2.25 11.2502H1.5V12.0002H2.25V11.2502Z" fill="#69696C" />
+													<path d="M3 10.5002H2.25V11.2502H3V10.5002Z" fill="#69696C" />
+													<path d="M17.25 12.0002H16.5V12.7502H17.25V12.0002Z" fill="#69696C" />
+													<path d="M16.5 11.2502H15.75V12.0002H16.5V11.2502Z" fill="#69696C" />
+													<path d="M15.75 10.5002H15V11.2502H15.75V10.5002Z" fill="#69696C" />
+													<path d="M16.5 0.750244H15.75V1.50024H16.5V0.750244Z" fill="#69696C" />
+													<path d="M15.75 1.50024H15V2.25024H15.75V1.50024Z" fill="#69696C" />
+													<path d="M15 2.25024H14.25V3.00024H15V2.25024Z" fill="#69696C" />
+													<path d="M2.25 6.00024H0.75V6.75024H2.25V6.00024Z" fill="#69696C" />
+													<path
+														d="M11.25 13.5002V15.7502H10.5V16.5002H9.75V17.2502H8.25V16.5002H7.5V15.7502H6.75V13.5002H11.25Z"
+														fill="#69696C" />
+													<path
+														d="M14.25 3.75024H13.5V3.00024H12.75V2.25024H12V1.50024H10.5V0.750244H7.5V1.50024H6V2.25024H5.25V3.00024H4.5V3.75024H3.75V5.25024H3V8.25024H3.75V9.75024H4.5V10.5002H5.25V11.2502H6V12.0002H6.75V12.7502H11.25V12.0002H12V11.2502H12.75V10.5002H13.5V9.75024H14.25V8.25024H15V5.25024H14.25V3.75024ZM5.25 5.25024H6V4.50024H6.75V3.75024H7.5V3.00024H9.75V3.75024H7.5V4.50024H6.75V5.25024H6V6.75024H5.25V5.25024Z"
+														fill="#69696C" />
+													<path d="M17.25 6.00024H15.75V6.75024H17.25V6.00024Z" fill="#69696C" />
+												</g>
+												<defs>
+													<clipPath id="clip0_17_3397">
+														<rect width="18" height="18" fill="white"
+															transform="translate(0 0.000244141)" />
+													</clipPath>
+												</defs>
+											</svg>
+											<div class="perfomance__item-title">Formula-Native Smart Contracts</div>
+											<p>Compose powerful, auditable logic with familiar spreadsheet functions (=IF, =SUM,
+												=VLOOKUP). Sheetchain supports deterministic execution for a new class of
+												transparent, formula-native financial applications.</p>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+		<section class="build section">
+			<div class="container">
+				<div class="section__row">
+					<div class="section__label">
+						<span>Ecosystem</span>
+					</div>
+					<div class="section__content">
+						<div class="section__header">
+							<div class="section__container">
+								<div class="section__title text-center">
+									<div class="section__alert">
+										<svg width="17" height="16" viewBox="0 0 17 16" fill="none"
+											xmlns="http://www.w3.org/2000/svg">
+											<path
+												d="M7.16675 8.00004H7.83341V14.6667H7.16675V15.3334H5.83341V14.6667H5.16675V8.00004H5.83341V7.33337H7.16675V8.00004Z"
+												fill="#8F8F94" />
+											<path d="M8.50008 4.00004H7.83341V4.66671H8.50008V4.00004Z" fill="#8F8F94" />
+											<path d="M9.16675 4.66671H8.50008V5.33337H9.16675V4.66671Z" fill="#8F8F94" />
+											<path
+												d="M11.1667 6.00004H11.8334V7.33337H11.1667V8.00004H9.83341V7.33337H9.16675V6.00004H9.83341V5.33337H11.1667V6.00004Z"
+												fill="#8F8F94" />
+											<path
+												d="M11.1667 10.6667H11.8334V14.6667H11.1667V15.3334H9.83341V14.6667H9.16675V10.6667H9.83341V10H11.1667V10.6667Z"
+												fill="#8F8F94" />
+											<path d="M12.5001 4.66671H11.8334V5.33337H12.5001V4.66671Z" fill="#8F8F94" />
+											<path d="M13.1667 4.00004H12.5001V4.66671H13.1667V4.00004Z" fill="#8F8F94" />
+											<path
+												d="M15.8334 2.00004V3.33337H15.1667V4.00004H13.8334V3.33337H13.1667V2.00004H13.8334V1.33337H15.1667V2.00004H15.8334Z"
+												fill="#8F8F94" />
+											<path
+												d="M15.1667 8.00004H15.8334V14.6667H15.1667V15.3334H13.8334V14.6667H13.1667V8.00004H13.8334V7.33337H15.1667V8.00004Z"
+												fill="#8F8F94" />
+											<path d="M4.50008 5.33337H3.83341V6.00004H4.50008V5.33337Z" fill="#8F8F94" />
+											<path
+												d="M3.16675 6.66671H3.83341V8.00004H3.16675V8.66671H1.83341V8.00004H1.16675V6.66671H1.83341V6.00004H3.16675V6.66671Z"
+												fill="#8F8F94" />
+											<path
+												d="M3.16675 11.3334H3.83341V14.6667H3.16675V15.3334H1.83341V14.6667H1.16675V11.3334H1.83341V10.6667H3.16675V11.3334Z"
+												fill="#8F8F94" />
+											<path d="M5.16675 4.66671H4.50008V5.33337H5.16675V4.66671Z" fill="#8F8F94" />
+											<path
+												d="M5.83341 3.33337H5.16675V2.00004H5.83341V1.33337H7.16675V2.00004H7.83341V3.33337H7.16675V4.00004H5.83341V3.33337Z"
+												fill="#8F8F94" />
+										</svg>
+										<span>The Sheetchain Pillars</span>
+									</div>
+									<h2 class="h2">Build the Future of <br>
+										On-Sheet Finance and Culture.</h2>
+								</div>
+							</div>
+						</div>
+						<div class="section__body">
+							<div class="section__container">
+								<div class="simple__row">
+									<div class="simple__item simple__item--50">
+										<div class="simple__item-icon">
+											<svg width="32" height="32" viewBox="0 0 32 32" fill="none"
+												xmlns="http://www.w3.org/2000/svg">
+												<path
+													d="M1.33325 11.9999V29.3333H2.66659V30.6666H29.3333V29.3333H30.6666V11.9999H1.33325ZM17.3333 26.6666V29.3333H14.6666V26.6666H11.9999V23.9999H17.3333V22.6666H13.3333V21.3333H11.9999V15.9999H14.6666V13.3333H17.3333V15.9999H19.9999V18.6666H14.6666V19.9999H18.6666V21.3333H19.9999V26.6666H17.3333Z"
+													fill="#D0D0D0" />
+												<path
+													d="M14.6666 1.33325V9.33325H1.33325V7.99992H2.66659V5.33325H3.99992V3.99992H5.33325V2.66659H6.66658V1.33325H14.6666Z"
+													fill="#D0D0D0" />
+												<path
+													d="M30.6666 7.99992V9.33325H17.3333V1.33325H25.3333V2.66659H26.6666V3.99992H27.9999V5.33325H29.3333V7.99992H30.6666Z"
+													fill="#D0D0D0" />
+											</svg>
+										</div>
+										<div class="simple__item-content">
+											<h3 class="h3">$SHEET — The Native Asset</h3>
+											<p>The fundamental utility and governance asset of the Sheetchain L1. Used for network
+												security, bridging, and aligning ecosystem participants.</p>
+										</div>
+									</div>
+									<div class="simple__item simple__item--50">
+										<div class="simple__item-icon">
+											<svg width="32" height="32" viewBox="0 0 32 32" fill="none"
+												xmlns="http://www.w3.org/2000/svg">
+												<path
+													d="M25.3333 1.33325V2.66659H23.9999V3.99992H22.6666V2.66659H21.3333V1.33325H18.6666V2.66659H17.3333V3.99992H14.6666V2.66659H13.3333V1.33325H10.6666V2.66659H9.33325V3.99992H7.99992V2.66659H6.66659V1.33325H5.33325V30.6666H6.66659V29.3333H7.99992V27.9999H9.33325V29.3333H10.6666V30.6666H13.3333V29.3333H14.6666V27.9999H17.3333V29.3333H18.6666V30.6666H21.3333V29.3333H22.6666V27.9999H23.9999V29.3333H25.3333V30.6666H26.6666V1.33325H25.3333ZM23.9999 11.9999H7.99992V9.33325H23.9999V11.9999ZM23.9999 17.3333H7.99992V14.6666H23.9999V17.3333ZM23.9999 22.6666H7.99992V19.9999H23.9999V22.6666Z"
+													fill="#D0D0D0" />
+											</svg>
+										</div>
+										<div class="simple__item-content">
+											<h3 class="h3">DeFi Sheets</h3>
+											<p>Composable yield strategies and financial primitives expressed as transparent
+												formulas. Build, share, and audit novel DeFi protocols in a deterministic,
+												grid-based execution environment.</p>
+										</div>
+									</div>
+									<div class="simple__item simple__item--50">
+										<div class="simple__item-icon">
+											<svg width="32" height="32" viewBox="0 0 32 32" fill="none"
+												xmlns="http://www.w3.org/2000/svg">
+												<path
+													d="M13.3333 16.0001H14.6666V29.3334H13.3333V30.6667H10.6666V29.3334H9.33325V16.0001H10.6666V14.6667H13.3333V16.0001Z"
+													fill="#D0D0D0" />
+												<path d="M15.9999 8.00008H14.6666V9.33341H15.9999V8.00008Z" fill="#D0D0D0" />
+												<path d="M17.3333 9.33341H15.9999V10.6667H17.3333V9.33341Z" fill="#D0D0D0" />
+												<path
+													d="M21.3333 12.0001H22.6666V14.6667H21.3333V16.0001H18.6666V14.6667H17.3333V12.0001H18.6666V10.6667H21.3333V12.0001Z"
+													fill="#D0D0D0" />
+												<path
+													d="M21.3333 21.3334H22.6666V29.3334H21.3333V30.6667H18.6666V29.3334H17.3333V21.3334H18.6666V20.0001H21.3333V21.3334Z"
+													fill="#D0D0D0" />
+												<path d="M23.9999 9.33341H22.6666V10.6667H23.9999V9.33341Z" fill="#D0D0D0" />
+												<path d="M25.3333 8.00008H23.9999V9.33341H25.3333V8.00008Z" fill="#D0D0D0" />
+												<path
+													d="M30.6666 4.00008V6.66675H29.3333V8.00008H26.6666V6.66675H25.3333V4.00008H26.6666V2.66675H29.3333V4.00008H30.6666Z"
+													fill="#D0D0D0" />
+												<path
+													d="M29.3333 16.0001H30.6666V29.3334H29.3333V30.6667H26.6666V29.3334H25.3333V16.0001H26.6666V14.6667H29.3333V16.0001Z"
+													fill="#D0D0D0" />
+												<path d="M7.99992 10.6667H6.66658V12.0001H7.99992V10.6667Z" fill="#D0D0D0" />
+												<path
+													d="M5.33325 13.3334H6.66658V16.0001H5.33325V17.3334H2.66659V16.0001H1.33325V13.3334H2.66659V12.0001H5.33325V13.3334Z"
+													fill="#D0D0D0" />
+												<path
+													d="M5.33325 22.6667H6.66658V29.3334H5.33325V30.6667H2.66659V29.3334H1.33325V22.6667H2.66659V21.3334H5.33325V22.6667Z"
+													fill="#D0D0D0" />
+												<path d="M9.33325 9.33341H7.99992V10.6667H9.33325V9.33341Z" fill="#D0D0D0" />
+												<path
+													d="M10.6666 6.66675H9.33325V4.00008H10.6666V2.66675H13.3333V4.00008H14.6666V6.66675H13.3333V8.00008H10.6666V6.66675Z"
+													fill="#D0D0D0" />
+											</svg>
+										</div>
+										<div class="simple__item-content">
+											<h3 class="h3">NFT Charts</h3>
+											<p>Tokenize deterministic cell ranges as on-chain data visualizations and chart
+												artworks. The first truly immutable, data-native NFTs where the asset is the source
+												data.</p>
+										</div>
+									</div>
+									<div class="simple__item simple__item--50">
+										<div class="simple__item-icon">
+											<svg width="32" height="32" viewBox="0 0 32 32" fill="none"
+												xmlns="http://www.w3.org/2000/svg">
+												<path
+													d="M2.66659 16V14.6667H1.33325V12H2.66659V10.6667H9.33325V14.6667H10.6666V16H2.66659Z"
+													fill="#D0D0D0" />
+												<path
+													d="M6.66658 8H5.33325V5.33333H6.66658V4H9.33325V5.33333H10.6666V6.66667H9.33325V9.33333H6.66658V8Z"
+													fill="#D0D0D0" />
+												<path
+													d="M10.6666 8H11.9999V6.66667H13.3333V5.33333H18.6666V6.66667H19.9999V8H21.3333V13.3333H19.9999V14.6667H18.6666V16H13.3333V14.6667H11.9999V13.3333H10.6666V8Z"
+													fill="#D0D0D0" />
+												<path
+													d="M25.3333 22.6667H26.6666V26.6667H25.3333V28H6.66658V26.6667H5.33325V22.6667H6.66658V21.3333H7.99992V20H10.6666V18.6667H21.3333V20H23.9999V21.3333H25.3333V22.6667Z"
+													fill="#D0D0D0" />
+												<path
+													d="M30.6666 12V14.6667H29.3333V16H21.3333V14.6667H22.6666V10.6667H29.3333V12H30.6666Z"
+													fill="#D0D0D0" />
+												<path
+													d="M22.6666 6.66667H21.3333V5.33333H22.6666V4H25.3333V5.33333H26.6666V8H25.3333V9.33333H22.6666V6.66667Z"
+													fill="#D0D0D0" />
+											</svg>
+										</div>
+										<div class="simple__item-content">
+											<h3 class="h3">DAO Forms</h3>
+											<p>Power next-generation governance workflows with the native integration of Forms and
+												Sheets. Enable transparent proposals, auditable voting, and automated treasury
+												reporting.</p>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="section__footer">
+							<div class="section__container">
 
-    <!-- COMMUNITY -->
-    <section id="community" aria-labelledby="community-title">
-      <div class="container">
-        <div class="callout" data-animate>
-          <h3 id="community-title" style="margin-top:0">Join the Sheet Movement</h3>
-          <p style="margin:6px 0 16px">Be the first to deploy contracts, launch dApps, and help define the standard for spreadsheet-native settlement.</p>
-          <div class="hero-cta" style="justify-content:center">
-            <a class="cta primary" href="https://x.com/sheetchain" target="_blank" rel="noopener" aria-label="Follow on X">Follow on X</a>
-            <a class="cta" href="https://t.me/sheetchain" target="_blank" rel="noopener" aria-label="Join Telegram">Telegram</a>
-            <a class="cta" href="https://discord.gg/sheetchain" target="_blank" rel="noopener" aria-label="Join Discord">Discord</a>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+		<section class="roadmap section section--white">
+			<div class="container">
+				<div class="section__row">
+					<div class="section__label">
+						<span>Roadmap</span>
+					</div>
+					<div class="section__content">
+						<div class="section__header">
+							<div class="section__container">
+								<div class="section__title text-center">
+									<div class="section__alert">
+										<svg width="17" height="16" viewBox="0 0 17 16" fill="none"
+											xmlns="http://www.w3.org/2000/svg">
+											<path
+												d="M7.16675 8.00004H7.83341V14.6667H7.16675V15.3334H5.83341V14.6667H5.16675V8.00004H5.83341V7.33337H7.16675V8.00004Z"
+												fill="#8F8F94" />
+											<path d="M8.50008 4.00004H7.83341V4.66671H8.50008V4.00004Z" fill="#8F8F94" />
+											<path d="M9.16675 4.66671H8.50008V5.33337H9.16675V4.66671Z" fill="#8F8F94" />
+											<path
+												d="M11.1667 6.00004H11.8334V7.33337H11.1667V8.00004H9.83341V7.33337H9.16675V6.00004H9.83341V5.33337H11.1667V6.00004Z"
+												fill="#8F8F94" />
+											<path
+												d="M11.1667 10.6667H11.8334V14.6667H11.1667V15.3334H9.83341V14.6667H9.16675V10.6667H9.83341V10H11.1667V10.6667Z"
+												fill="#8F8F94" />
+											<path d="M12.5001 4.66671H11.8334V5.33337H12.5001V4.66671Z" fill="#8F8F94" />
+											<path d="M13.1667 4.00004H12.5001V4.66671H13.1667V4.00004Z" fill="#8F8F94" />
+											<path
+												d="M15.8334 2.00004V3.33337H15.1667V4.00004H13.8334V3.33337H13.1667V2.00004H13.8334V1.33337H15.1667V2.00004H15.8334Z"
+												fill="#8F8F94" />
+											<path
+												d="M15.1667 8.00004H15.8334V14.6667H15.1667V15.3334H13.8334V14.6667H13.1667V8.00004H13.8334V7.33337H15.1667V8.00004Z"
+												fill="#8F8F94" />
+											<path d="M4.50008 5.33337H3.83341V6.00004H4.50008V5.33337Z" fill="#8F8F94" />
+											<path
+												d="M3.16675 6.66671H3.83341V8.00004H3.16675V8.66671H1.83341V8.00004H1.16675V6.66671H1.83341V6.00004H3.16675V6.66671Z"
+												fill="#8F8F94" />
+											<path
+												d="M3.16675 11.3334H3.83341V14.6667H3.16675V15.3334H1.83341V14.6667H1.16675V11.3334H1.83341V10.6667H3.16675V11.3334Z"
+												fill="#8F8F94" />
+											<path d="M5.16675 4.66671H4.50008V5.33337H5.16675V4.66671Z" fill="#8F8F94" />
+											<path
+												d="M5.83341 3.33337H5.16675V2.00004H5.83341V1.33337H7.16675V2.00004H7.83341V3.33337H7.16675V4.00004H5.83341V3.33337Z"
+												fill="#8F8F94" />
+										</svg>
+										<span>The Sheetchain Pillars</span>
+									</div>
+									<h2 class="h2 black">Disciplined Delivery.
+										Generational Impact.</h2>
+								</div>
+							</div>
+						</div>
+						<div class="section__body">
+							<div class="roadmap__progress">
+								<span style="width: 21%;"></span>
+							</div>
+							<div class="section__container">
+								<div class="roadmap__row">
+									<div class="roadmap__item">
+										<div class="roadmap__item-header">
+											<div class="roadmap__item-icon">
+												<svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+													xmlns="http://www.w3.org/2000/svg">
+													<g clip-path="url(#clip0_17_3321)">
+														<path
+															d="M16.2426 17.6567L14.8284 19.071L14.1213 18.3639L13.4142 19.071L9.87862 15.5354L4.92887 20.4852L3.51466 19.071L8.46441 14.1212L4.92887 10.5857L5.63598 9.87857L4.92887 9.17147L6.34309 7.75725L7.05019 8.46436L7.7573 7.75725L8.46441 8.46436L9.17151 7.75725L9.87862 8.46436L14.8284 3.51461L13.4142 2.1004L14.8284 0.686186L15.5355 1.39329L16.2426 0.686186L23.3137 7.75725L22.6065 8.46436L23.3137 9.17147L21.8994 10.5857L20.4852 9.17147L15.5355 14.1212L16.2426 14.8283L15.5355 15.5354L16.2426 16.2425L15.5355 16.9496L16.2426 17.6567Z"
+															fill="black" />
+													</g>
+													<defs>
+														<clipPath id="clip0_17_3321">
+															<rect width="24" height="24" fill="white" />
+														</clipPath>
+													</defs>
+												</svg>
+											</div>
+											<div class="roadmap__item-title">Q4 2025</div>
+										</div>
+										<div class="roadmap__item-content">
+											<p>Mainnet Launch $SHEET genesis on Solana, public RPC gateway, airdrop claim portal,
+												and
+												the launch of our ecosystem grants program.</p>
+										</div>
+									</div>
+									<div class="roadmap__item">
+										<div class="roadmap__item-header">
+											<div class="roadmap__item-icon">
+												<svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+													xmlns="http://www.w3.org/2000/svg">
+													<g clip-path="url(#clip0_17_3327)">
+														<path
+															d="M16.2426 17.6567L14.8284 19.071L14.1213 18.3639L13.4142 19.071L9.87862 15.5354L4.92887 20.4852L3.51466 19.071L8.46441 14.1212L4.92887 10.5857L5.63598 9.87857L4.92887 9.17147L6.34309 7.75725L7.05019 8.46436L7.7573 7.75725L8.46441 8.46436L9.17151 7.75725L9.87862 8.46436L14.8284 3.51461L13.4142 2.1004L14.8284 0.686186L15.5355 1.39329L16.2426 0.686186L23.3137 7.75725L22.6065 8.46436L23.3137 9.17147L21.8994 10.5857L20.4852 9.17147L15.5355 14.1212L16.2426 14.8283L15.5355 15.5354L16.2426 16.2425L15.5355 16.9496L16.2426 17.6567Z"
+															fill="#8F8F94" />
+													</g>
+													<defs>
+														<clipPath id="clip0_17_3327">
+															<rect width="24" height="24" fill="white" />
+														</clipPath>
+													</defs>
+												</svg>
+											</div>
+											<div class="roadmap__item-title">Q1 2026</div>
+										</div>
+										<div class="roadmap__item-content">
+											<p>Sharding Protocol v2 Implementing cross-sheet interoperability with multi-tab
+												scaling,
+												enabling seamless communication between Sheetchain shards.</p>
+										</div>
+									</div>
+									<div class="roadmap__item">
+										<div class="roadmap__item-header">
+											<div class="roadmap__item-icon">
+												<svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+													xmlns="http://www.w3.org/2000/svg">
+													<g clip-path="url(#clip0_17_3327)">
+														<path
+															d="M16.2426 17.6567L14.8284 19.071L14.1213 18.3639L13.4142 19.071L9.87862 15.5354L4.92887 20.4852L3.51466 19.071L8.46441 14.1212L4.92887 10.5857L5.63598 9.87857L4.92887 9.17147L6.34309 7.75725L7.05019 8.46436L7.7573 7.75725L8.46441 8.46436L9.17151 7.75725L9.87862 8.46436L14.8284 3.51461L13.4142 2.1004L14.8284 0.686186L15.5355 1.39329L16.2426 0.686186L23.3137 7.75725L22.6065 8.46436L23.3137 9.17147L21.8994 10.5857L20.4852 9.17147L15.5355 14.1212L16.2426 14.8283L15.5355 15.5354L16.2426 16.2425L15.5355 16.9496L16.2426 17.6567Z"
+															fill="#8F8F94" />
+													</g>
+													<defs>
+														<clipPath id="clip0_17_3327">
+															<rect width="24" height="24" fill="white" />
+														</clipPath>
+													</defs>
+												</svg>
+											</div>
+											<div class="roadmap__item-title">Q2 2026</div>
+										</div>
+										<div class="roadmap__item-content">
+											<p>The Enterprise Bridge Deploying a native, trust-minimized bridge to Microsoft Excel
+												for
+												enterprise-grade liquidity and data interoperability.</p>
+										</div>
+									</div>
+									<div class="roadmap__item">
+										<div class="roadmap__item-header">
+											<div class="roadmap__item-icon">
+												<svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+													xmlns="http://www.w3.org/2000/svg">
+													<g clip-path="url(#clip0_17_3327)">
+														<path
+															d="M16.2426 17.6567L14.8284 19.071L14.1213 18.3639L13.4142 19.071L9.87862 15.5354L4.92887 20.4852L3.51466 19.071L8.46441 14.1212L4.92887 10.5857L5.63598 9.87857L4.92887 9.17147L6.34309 7.75725L7.05019 8.46436L7.7573 7.75725L8.46441 8.46436L9.17151 7.75725L9.87862 8.46436L14.8284 3.51461L13.4142 2.1004L14.8284 0.686186L15.5355 1.39329L16.2426 0.686186L23.3137 7.75725L22.6065 8.46436L23.3137 9.17147L21.8994 10.5857L20.4852 9.17147L15.5355 14.1212L16.2426 14.8283L15.5355 15.5354L16.2426 16.2425L15.5355 16.9496L16.2426 17.6567Z"
+															fill="#8F8F94" />
+													</g>
+													<defs>
+														<clipPath id="clip0_17_3327">
+															<rect width="24" height="24" fill="white" />
+														</clipPath>
+													</defs>
+												</svg>
+											</div>
+											<div class="roadmap__item-title">Beyond</div>
+										</div>
+										<div class="roadmap__item-content">
+											<p>The VLOOKUP Singularity Achieving a state of complete data awareness across the
+												entire
+												Sheetchain ecosystem.</p>
+										</div>
+									</div>
+								</div>
 
-  <footer role="contentinfo">
-    <div class="container foot-grid">
-      <div>
-        <div class="brand">
-          <span class="logo" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" aria-label="SheetChain Logo">
-              <rect x="3" y="3" width="18" height="18" rx="4" stroke="url(#g1b)" stroke-width="1.5"/>
-              <path d="M7 8h5M7 12h10M7 16h6" stroke="url(#g2b)" stroke-width="1.6" stroke-linecap="round"/>
-              <defs>
-                <linearGradient id="g1b" x1="0" y1="0" x2="24" y2="24">
-                  <stop stop-color="#7ee0ff"/><stop offset="1" stop-color="#2fe2a0"/>
-                </linearGradient>
-                <linearGradient id="g2b" x1="0" y1="0" x2="24" y2="24">
-                  <stop stop-color="#2fe2a0"/><stop offset="1" stop-color="#7ee0ff"/>
-                </linearGradient>
-              </defs>
-            </svg>
-          </span>
-          <span>SheetChain</span>
-        </div>
-        <p class="legal" style="margin:10px 0 0">
-          © <span id="year"></span> SheetChain. All rights reserved. Google Sheets is a trademark of Google LLC.
-          SheetChain is an independent project and is not affiliated with Google.
-        </p>
-      </div>
-      <nav class="links" aria-label="Footer navigation">
-        <a href="/whitepaper.pdf">Whitepaper</a>
-        <a href="#technology">Technology</a>
-        <a href="#ecosystem">Ecosystem</a>
-        <a href="#roadmap">Roadmap</a>
-        <a href="mailto:hello@sheetchain.com">Contact</a>
-      </nav>
-    </div>
-  </footer>
+							</div>
+						</div>
+						<div class="section__footer">
+							<div class="section__container">
 
-  <!-- JSON-LD Structured Data for better SEO -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "Organization",
-        "@id": "https://sheetchain.com/#organization",
-        "name": "SheetChain",
-        "url": "https://sheetchain.com",
-        "logo": {
-          "@type": "ImageObject",
-          "url": "https://sheetchain.com/logo.png",
-          "width": 200,
-          "height": 200
-        },
-        "description": "A revolutionary Layer-5 blockchain that settles directly on Google Sheets, offering gasless transactions, cell-based consensus, and universal access to decentralized finance.",
-        "foundingDate": "2025",
-        "sameAs": [
-          "https://x.com/sheetchain",
-          "https://t.me/sheetchain",
-          "https://discord.gg/sheetchain"
-        ],
-        "contactPoint": {
-          "@type": "ContactPoint",
-          "email": "hello@sheetchain.com",
-          "contactType": "customer service"
-        }
-      },
-      {
-        "@type": "WebSite",
-        "@id": "https://sheetchain.com/#website",
-        "url": "https://sheetchain.com",
-        "name": "SheetChain",
-        "description": "The first blockchain backed by Google Sheets - Layer-5 settlement with gasless transactions",
-        "publisher": {
-          "@id": "https://sheetchain.com/#organization"
-        },
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": "https://sheetchain.com/search?q={search_term_string}",
-          "query-input": "required name=search_term_string"
-        }
-      },
-      {
-        "@type": "WebPage",
-        "@id": "https://sheetchain.com/#webpage",
-        "url": "https://sheetchain.com",
-        "name": "SheetChain — The First Blockchain Backed by Google Sheets",
-        "isPartOf": {
-          "@id": "https://sheetchain.com/#website"
-        },
-        "about": {
-          "@id": "https://sheetchain.com/#organization"
-        },
-        "description": "SheetChain is a revolutionary Layer-5 blockchain that settles directly on Google Sheets. Experience gasless transactions, cell-based consensus, and universal access to decentralized finance.",
-        "breadcrumb": {
-          "@type": "BreadcrumbList",
-          "itemListElement": [
-            {
-              "@type": "ListItem",
-              "position": 1,
-              "name": "Home",
-              "item": "https://sheetchain.com"
-            }
-          ]
-        }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "name": "SheetChain",
-        "description": "A Layer-5 blockchain that settles directly on Google Sheets with gasless transactions and cell-based consensus",
-        "applicationCategory": "Blockchain",
-        "operatingSystem": "Web Browser",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD",
-          "description": "Free to use with gasless transactions"
-        },
-        "featureList": [
-          "Gasless Transactions",
-          "Cell-Based Consensus",
-          "Universal Access",
-          "Formula-Native Smart Contracts",
-          "Optimistic Row Rollups"
-        ]
-      }
-    ]
-  }
-  </script>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+		<section class="partner section">
+			<div class="container">
+				<div class="section__row">
+					<div class="section__label">
+						<span>Our partners</span>
+					</div>
+					<div class="section__content">
+						<div class="section__header">
+							<div class="section__container">
+								<div class="section__title text-center">
+									<div class="section__alert">
+										<svg width="17" height="16" viewBox="0 0 17 16" fill="none"
+											xmlns="http://www.w3.org/2000/svg">
+											<path
+												d="M7.16675 8.00016H7.83341V14.6668H7.16675V15.3335H5.83341V14.6668H5.16675V8.00016H5.83341V7.3335H7.16675V8.00016Z"
+												fill="#8F8F94" />
+											<path d="M8.50008 4.00016H7.83341V4.66683H8.50008V4.00016Z" fill="#8F8F94" />
+											<path d="M9.16675 4.66683H8.50008V5.3335H9.16675V4.66683Z" fill="#8F8F94" />
+											<path
+												d="M11.1667 6.00016H11.8334V7.3335H11.1667V8.00016H9.83341V7.3335H9.16675V6.00016H9.83341V5.3335H11.1667V6.00016Z"
+												fill="#8F8F94" />
+											<path
+												d="M11.1667 10.6668H11.8334V14.6668H11.1667V15.3335H9.83341V14.6668H9.16675V10.6668H9.83341V10.0002H11.1667V10.6668Z"
+												fill="#8F8F94" />
+											<path d="M12.5001 4.66683H11.8334V5.3335H12.5001V4.66683Z" fill="#8F8F94" />
+											<path d="M13.1667 4.00016H12.5001V4.66683H13.1667V4.00016Z" fill="#8F8F94" />
+											<path
+												d="M15.8334 2.00016V3.3335H15.1667V4.00016H13.8334V3.3335H13.1667V2.00016H13.8334V1.3335H15.1667V2.00016H15.8334Z"
+												fill="#8F8F94" />
+											<path
+												d="M15.1667 8.00016H15.8334V14.6668H15.1667V15.3335H13.8334V14.6668H13.1667V8.00016H13.8334V7.3335H15.1667V8.00016Z"
+												fill="#8F8F94" />
+											<path d="M4.50008 5.3335H3.83341V6.00016H4.50008V5.3335Z" fill="#8F8F94" />
+											<path
+												d="M3.16675 6.66683H3.83341V8.00016H3.16675V8.66683H1.83341V8.00016H1.16675V6.66683H1.83341V6.00016H3.16675V6.66683Z"
+												fill="#8F8F94" />
+											<path
+												d="M3.16675 11.3335H3.83341V14.6668H3.16675V15.3335H1.83341V14.6668H1.16675V11.3335H1.83341V10.6668H3.16675V11.3335Z"
+												fill="#8F8F94" />
+											<path d="M5.16675 4.66683H4.50008V5.3335H5.16675V4.66683Z" fill="#8F8F94" />
+											<path
+												d="M5.83341 3.3335H5.16675V2.00016H5.83341V1.3335H7.16675V2.00016H7.83341V3.3335H7.16675V4.00016H5.83341V3.3335Z"
+												fill="#8F8F94" />
+										</svg>
+										<span>Investors</span>
+									</div>
+									<h2 class="h2">Backed By <br>
+										The Industry's Sharpest Minds</h2>
+								</div>
+							</div>
+						</div>
+						<div class="section__body">
+							<div class="section__container">
+								<div class="partner__row">
+									<div class="partner__item">
+										<svg width="276" height="142" viewBox="0 0 276 142" fill="none"
+											xmlns="http://www.w3.org/2000/svg">
+											<path
+												d="M179.818 0V83.5294H96.1818V0H179.818ZM99.36 80.3553H176.64V3.17412H99.36V80.3553Z"
+												fill="#252525" />
+											<path d="M110.4 14.2H117.76V36.2518H110.4V14.2Z" fill="#252525" />
+											<path d="M126.5 14.2H132.94V65.6541H126.5V14.2Z" fill="#252525" />
+											<path d="M142.6 14.2H149.5V49.1153H142.6V14.2Z" fill="#252525" />
+											<path d="M158.7 14.2H165.14V36.2518H158.7V14.2Z" fill="#252525" />
+											<path
+												d="M23.2009 124.172C23.2009 125.342 22.9898 126.38 22.5675 127.287C22.1675 128.194 21.6119 128.957 20.9008 129.578C20.2119 130.175 19.4007 130.628 18.4674 130.938C17.5562 131.249 16.6006 131.404 15.6006 131.404H2.83344V142H0V116.941H15.6006C16.6006 116.941 17.5562 117.096 18.4674 117.407C19.4007 117.717 20.2119 118.182 20.9008 118.803C21.6119 119.399 22.1675 120.151 22.5675 121.058C22.9898 121.965 23.2009 123.003 23.2009 124.172ZM20.3675 124.172C20.3675 122.669 19.9008 121.511 18.9674 120.7C18.0563 119.865 16.9007 119.447 15.5006 119.447H2.83344V128.898H15.5006C16.9007 128.898 18.0563 128.492 18.9674 127.681C19.9008 126.845 20.3675 125.676 20.3675 124.172Z"
+												fill="#252525" />
+											<path
+												d="M59.1872 142L55.787 134.482H42.0199L38.6197 142H35.5196L47.1867 116.941H50.6202L62.2873 142H59.1872ZM48.9201 119.196L43.1532 132.012H54.6537L48.9201 119.196Z"
+												fill="#252525" />
+											<path
+												d="M100.364 142L83.1295 119.447V142H80.2961V116.941H84.5629L101.83 139.494V116.941H104.664V142H100.364Z"
+												fill="#252525" />
+											<path
+												d="M148.92 129.435C148.92 131.702 148.586 133.635 147.92 135.234C147.253 136.833 146.331 138.134 145.153 139.136C143.975 140.138 142.586 140.866 140.986 141.32C139.386 141.773 137.652 142 135.786 142H124.985V116.941H135.086C137.041 116.941 138.864 117.168 140.553 117.621C142.242 118.075 143.708 118.803 144.953 119.805C146.197 120.784 147.164 122.072 147.853 123.671C148.564 125.246 148.92 127.168 148.92 129.435ZM146.019 129.435C146.019 127.621 145.742 126.082 145.186 124.817C144.653 123.528 143.897 122.49 142.919 121.702C141.964 120.915 140.819 120.342 139.486 119.984C138.152 119.626 136.686 119.447 135.086 119.447H127.752V139.494H135.452C137.03 139.494 138.464 139.315 139.753 138.957C141.064 138.575 142.175 137.991 143.086 137.203C144.019 136.392 144.742 135.353 145.253 134.089C145.764 132.8 146.019 131.249 146.019 129.435Z"
+												fill="#252525" />
+											<path
+												d="M167.917 142V116.941H188.951V119.447H170.75V127.824H186.851V130.33H170.75V139.494H189.151V142H167.917Z"
+												fill="#252525" />
+											<path
+												d="M229.368 142L222.701 131.404H211.5V142H208.667V116.941H224.368C225.368 116.941 226.334 117.096 227.268 117.407C228.201 117.717 229.023 118.182 229.734 118.803C230.446 119.399 231.012 120.151 231.434 121.058C231.857 121.965 232.068 123.003 232.068 124.172C232.068 125.223 231.901 126.165 231.568 127.001C231.234 127.812 230.779 128.516 230.201 129.113C229.623 129.709 228.945 130.199 228.168 130.58C227.412 130.938 226.601 131.177 225.734 131.296L232.568 142H229.368ZM229.234 124.172C229.234 123.433 229.101 122.776 228.834 122.204C228.59 121.607 228.245 121.106 227.801 120.7C227.357 120.294 226.845 119.984 226.268 119.769C225.69 119.554 225.068 119.447 224.401 119.447H211.5V128.898H224.401C225.068 128.898 225.69 128.79 226.268 128.576C226.845 128.361 227.357 128.051 227.801 127.645C228.245 127.239 228.59 126.75 228.834 126.177C229.101 125.581 229.234 124.912 229.234 124.172Z"
+												fill="#252525" />
+											<path
+												d="M272.9 142L269.5 134.482H255.733L252.332 142H249.232L260.899 116.941H264.333L276 142H272.9ZM262.633 119.196L256.866 132.012H268.366L262.633 119.196Z"
+												fill="#252525" />
+										</svg>
+									</div>
+									<div class="partner__item">
+										<svg width="271" height="108" viewBox="0 0 271 108" fill="none"
+											xmlns="http://www.w3.org/2000/svg">
+											<path
+												d="M29.0722 108C23.5527 108 18.602 106.587 14.2201 103.76C9.83821 100.891 6.36218 96.7354 3.79203 91.293C1.26401 85.8505 0 79.2479 0 71.485C0 63.5956 1.28508 56.9508 3.85523 51.5505C6.46752 46.1503 9.98568 42.0579 14.4097 39.2734C18.8337 36.4889 23.7634 35.0966 29.1986 35.0966C33.3277 35.0966 36.7195 35.7928 39.3739 37.185C42.0283 38.5773 44.135 40.2649 45.694 42.2478C47.295 44.1885 48.5169 46.0026 49.3596 47.6902H50.118V35.9826H66.6765V106.734H50.3708V95.533H49.3596C48.5169 97.2628 47.274 99.098 45.6308 101.039C44.0297 102.937 41.8809 104.583 39.1843 105.975C36.5299 107.325 33.1592 108 29.0722 108ZM33.7491 94.3306C37.3304 94.3306 40.343 93.3814 42.7867 91.4828C45.2305 89.5421 47.1054 86.8631 48.4116 83.4457C49.7177 79.9862 50.3708 75.9782 50.3708 71.4218C50.3708 66.8231 49.7388 62.8362 48.4748 59.4611C47.2108 56.0437 45.3358 53.4069 42.8499 51.5505C40.364 49.6942 37.3304 48.766 33.7491 48.766C30.0413 48.766 26.9445 49.7364 24.4586 51.6771C21.9727 53.6178 20.0978 56.2968 18.8337 59.7142C17.6119 63.1315 17.0009 67.0341 17.0009 71.4218C17.0009 75.8095 17.6329 79.7331 18.8969 83.1926C20.161 86.6521 22.0359 89.3734 24.5218 91.3563C27.0498 93.3392 30.1256 94.3306 33.7491 94.3306Z"
+												fill="#252525" />
+											<path
+												d="M106.979 0V105.321H87.8612V19.0597H65.4274V0C69.0017 0 88.7783 0.000735136 88.7783 0.000735136L106.979 0Z"
+												fill="#252525" />
+											<path
+												d="M157.773 106.734C150.906 106.734 144.769 105.462 139.36 102.917C133.999 100.326 129.719 96.7677 126.521 92.2439C123.37 87.7201 121.7 82.5365 121.512 76.6932H139.995C140.277 80.9814 142.111 84.4921 145.498 87.2253C148.931 89.9584 153.023 91.325 157.773 91.325C161.535 91.325 164.851 90.4768 167.72 88.7803C170.589 87.0368 172.846 84.657 174.492 81.6412C176.185 78.5781 177.032 75.091 177.032 71.1798C177.032 67.1743 176.185 63.64 174.492 60.577C172.799 57.4669 170.471 55.04 167.508 53.2965C164.545 51.5058 161.136 50.6104 157.279 50.6104C154.081 50.6104 150.977 51.223 147.967 52.4483C144.957 53.6263 142.558 55.1814 140.771 57.1135L123.487 54.2861L128.99 0H190.013V15.9748H144.792L141.759 43.8954H142.323C144.298 41.5392 147.05 39.6307 150.577 38.1699C154.151 36.6619 158.079 35.908 162.358 35.908C168.755 35.908 174.422 37.4159 179.36 40.4318C184.345 43.4006 188.272 47.5003 191.141 52.731C194.01 57.9617 195.445 63.9699 195.445 70.7557C195.445 77.6828 193.846 83.8795 190.647 89.3458C187.449 94.765 183.028 99.0297 177.385 102.14C171.741 105.203 165.204 106.734 157.773 106.734Z"
+												fill="#252525" />
+											<path
+												d="M206.379 105.321V93.5162L246.944 42.411V41.7041H207.649V26.2948H269.66V39.0888L231.071 89.2044V89.9113H271V105.321H206.379Z"
+												fill="#252525" />
+										</svg>
+									</div>
+									<div class="partner__item">
+										<svg width="246" height="200" viewBox="0 0 246 200" fill="none"
+											xmlns="http://www.w3.org/2000/svg">
+											<path
+												d="M117.248 93.0728V153.846C113.394 152.85 109.746 150.84 106.728 147.807L52.4869 93.2817C49.9192 90.7006 48.0888 87.6599 46.9884 84.4242L117.248 93.0728Z"
+												fill="#252525" />
+											<path
+												d="M199.012 84.4242C197.911 87.6597 196.083 90.7008 193.515 93.2817L139.274 147.807C136.256 150.84 132.608 152.85 128.754 153.846V93.0728L199.012 84.4242Z"
+												fill="#252525" />
+											<path
+												d="M117.248 81.5062L46.125 72.7522C46.9351 68.2886 49.0536 64.0175 52.4869 60.5663L106.728 6.04119C109.746 3.00785 113.394 0.996343 117.248 0V81.5062Z"
+												fill="#252525" />
+											<path
+												d="M128.754 0C132.608 0.996358 136.256 3.00789 139.274 6.04119L193.515 60.5663C196.948 64.0174 199.065 68.2887 199.875 72.7522L128.754 81.5062V0Z"
+												fill="#252525" />
+											<path
+												d="M0 191.209H2.03031C2.19575 191.78 2.46645 192.291 2.84244 192.742C3.68464 193.748 4.91787 194.252 6.54212 194.252C7.8355 194.252 8.81306 193.996 9.47479 193.486C10.1516 192.975 10.4899 192.328 10.4899 191.547C10.4899 190.886 10.2192 190.36 9.67782 189.969C9.1364 189.578 8.3694 189.24 7.3768 188.955C7.19633 188.895 6.90306 188.812 6.497 188.707C6.10598 188.601 5.79767 188.519 5.57208 188.459C5.34649 188.399 5.0457 188.308 4.66972 188.188C4.29373 188.068 3.99295 187.963 3.76736 187.873C3.54177 187.767 3.27106 187.64 2.95523 187.489C2.63941 187.324 2.38374 187.166 2.18823 187.016C2.00775 186.866 1.80472 186.685 1.57913 186.475C1.36858 186.25 1.20315 186.017 1.08283 185.776C0.977558 185.536 0.879802 185.265 0.789566 184.965C0.714369 184.664 0.676771 184.341 0.676771 183.995C0.676771 182.763 1.19563 181.704 2.23334 180.817C3.27106 179.931 4.63212 179.487 6.31653 179.487C8.54235 179.487 10.2268 180.224 11.3697 181.696C11.851 182.342 12.1969 183.071 12.4075 183.883H10.3772C10.2418 183.462 10.0012 183.049 9.65526 182.643C8.8281 181.816 7.71519 181.403 6.31653 181.403C5.18858 181.403 4.30125 181.659 3.65456 182.17C3.02291 182.666 2.70708 183.274 2.70708 183.995C2.70708 184.341 2.80484 184.657 3.00035 184.942C3.19586 185.228 3.42897 185.468 3.69968 185.664C3.97039 185.844 4.34637 186.032 4.82763 186.227C5.32393 186.407 5.76007 186.55 6.13605 186.655C6.51204 186.761 7.00834 186.888 7.62495 187.039C8.31676 187.219 8.92585 187.422 9.45223 187.647C9.97861 187.873 10.4899 188.158 10.9862 188.504C11.4825 188.849 11.8585 189.278 12.1142 189.789C12.3849 190.3 12.5203 190.886 12.5203 191.547C12.5203 192.839 11.9864 193.936 10.9186 194.838C9.85077 195.725 8.39196 196.168 6.54212 196.168C4.12078 196.168 2.30854 195.341 1.10539 193.688C0.579015 192.982 0.210551 192.156 0 191.209Z"
+												fill="#252525" />
+											<path
+												d="M15.5578 200V184.446H17.3625V186.25H17.3851L17.6107 185.912C17.8663 185.521 18.325 185.145 18.9868 184.784C19.6485 184.409 20.4606 184.221 21.4231 184.221C22.9271 184.221 24.2054 184.784 25.2582 185.912C26.3109 187.024 26.8373 188.414 26.8373 190.082C26.8373 191.75 26.3109 193.147 25.2582 194.274C24.2054 195.387 22.9271 195.943 21.4231 195.943C20.4606 195.943 19.641 195.762 18.9642 195.402C18.3025 195.026 17.8513 194.635 17.6107 194.229L17.3851 193.914H17.3625V200H15.5578ZM18.4454 187.084C17.7235 187.865 17.3625 188.864 17.3625 190.082C17.3625 191.299 17.7235 192.298 18.4454 193.08C19.1823 193.861 20.0997 194.252 21.1976 194.252C22.2954 194.252 23.2053 193.861 23.9272 193.08C24.6641 192.298 25.0326 191.299 25.0326 190.082C25.0326 188.864 24.6641 187.865 23.9272 187.084C23.2053 186.302 22.2954 185.912 21.1976 185.912C20.0997 185.912 19.1823 186.302 18.4454 187.084Z"
+												fill="#252525" />
+											<path
+												d="M29.7779 195.717V184.446H31.5826V186.25H31.6052C31.8157 185.874 32.0714 185.558 32.3722 185.303C33.1091 184.657 34.0115 184.334 35.0793 184.334H36.4328V186.137H35.0793C34.0566 186.137 33.2144 186.468 32.5527 187.129C31.906 187.775 31.5826 188.609 31.5826 189.631V195.717H29.7779Z"
+												fill="#252525" />
+											<path
+												d="M39.7689 194.274C38.671 193.162 38.1221 191.765 38.1221 190.082C38.1221 188.399 38.671 187.001 39.7689 185.889C40.8668 184.777 42.2354 184.221 43.8747 184.221C45.5139 184.221 46.8825 184.769 47.9804 185.866C49.0783 186.963 49.6272 188.331 49.6272 189.969V190.645H39.9268C40.0471 191.697 40.4758 192.561 41.2127 193.238C41.9496 193.914 42.8369 194.252 43.8747 194.252C44.9876 194.252 45.9426 193.914 46.7397 193.238C47.1006 192.937 47.3863 192.599 47.5969 192.223H49.4016C49.1309 192.929 48.7474 193.553 48.2511 194.094C47.078 195.326 45.6192 195.943 43.8747 195.943C42.2354 195.943 40.8668 195.387 39.7689 194.274ZM39.972 189.067H47.7097C47.5743 188.181 47.1608 187.437 46.4689 186.836C45.7771 186.22 44.9124 185.912 43.8747 185.912C42.8369 185.912 41.9647 186.22 41.2578 186.836C40.551 187.437 40.1223 188.181 39.972 189.067Z"
+												fill="#252525" />
+											<path
+												d="M53.4587 194.274C52.406 193.147 51.8796 191.75 51.8796 190.082C51.8796 188.414 52.406 187.024 53.4587 185.912C54.5115 184.784 55.7898 184.221 57.2938 184.221C58.2412 184.221 59.0383 184.401 59.685 184.762C60.3467 185.123 60.828 185.513 61.1288 185.934L61.3318 186.272H61.3544V184.446H63.1591V195.717H61.3544V193.914H61.3318L61.1288 194.229C60.8581 194.635 60.3919 195.026 59.7301 195.402C59.0684 195.762 58.2563 195.943 57.2938 195.943C55.7898 195.943 54.5115 195.387 53.4587 194.274ZM54.7671 187.084C54.0453 187.865 53.6843 188.864 53.6843 190.082C53.6843 191.299 54.0453 192.298 54.7671 193.08C55.5041 193.861 56.4215 194.252 57.5193 194.252C58.6172 194.252 59.5271 193.861 60.249 193.08C60.9859 192.298 61.3544 191.299 61.3544 190.082C61.3544 188.864 60.9859 187.865 60.249 187.084C59.5271 186.302 58.6172 185.912 57.5193 185.912C56.4215 185.912 55.5041 186.302 54.7671 187.084Z"
+												fill="#252525" />
+											<path
+												d="M67.6788 194.274C66.6261 193.147 66.0997 191.75 66.0997 190.082C66.0997 188.414 66.6261 187.024 67.6788 185.912C68.7316 184.784 70.0099 184.221 71.5139 184.221C72.4613 184.221 73.266 184.401 73.9277 184.762C74.5894 185.123 75.0632 185.506 75.3489 185.912L75.5519 186.25H75.5745V179.938H77.3792V195.717H75.5745V193.914H75.5519L75.3489 194.229C75.0782 194.635 74.612 195.026 73.9502 195.402C73.2885 195.762 72.4764 195.943 71.5139 195.943C70.0099 195.943 68.7316 195.387 67.6788 194.274ZM68.9873 187.084C68.2654 187.865 67.9044 188.864 67.9044 190.082C67.9044 191.299 68.2654 192.298 68.9873 193.08C69.7242 193.861 70.6416 194.252 71.7395 194.252C72.8373 194.252 73.7472 193.861 74.4691 193.08C75.206 192.298 75.5745 191.299 75.5745 190.082C75.5745 188.864 75.206 187.865 74.4691 187.084C73.7472 186.302 72.8373 185.912 71.7395 185.912C70.6416 185.912 69.7242 186.302 68.9873 187.084Z"
+												fill="#252525" />
+											<path
+												d="M80.207 192.223H82.1245C82.29 192.629 82.508 192.967 82.7788 193.238C83.4555 193.914 84.3278 194.252 85.3956 194.252C86.3581 194.252 87.065 194.094 87.5162 193.779C87.9824 193.463 88.2155 193.057 88.2155 192.561C88.2155 192.291 88.1177 192.058 87.9222 191.862C87.7417 191.667 87.441 191.494 87.0199 191.344C86.5988 191.194 86.2228 191.081 85.8919 191.006C85.5761 190.916 85.1099 190.811 84.4932 190.69C82.0117 190.179 80.771 189.075 80.771 187.377C80.771 186.49 81.147 185.746 81.8989 185.145C82.6509 184.529 83.7037 184.221 85.0572 184.221C86.7416 184.221 88.0726 184.784 89.0502 185.912C89.4412 186.422 89.7269 186.986 89.9074 187.602H87.9899C87.8545 187.302 87.659 187.024 87.4034 186.768C86.8319 186.197 86.0498 185.912 85.0572 185.912C84.2601 185.912 83.6435 186.062 83.2074 186.362C82.7863 186.663 82.5757 187.001 82.5757 187.377C82.5757 187.647 82.666 187.88 82.8464 188.076C83.0419 188.271 83.3502 188.444 83.7713 188.594C84.1924 188.744 84.5609 188.864 84.8767 188.955C85.2076 189.03 85.6814 189.127 86.298 189.248C88.7795 189.759 90.0202 190.863 90.0202 192.561C90.0202 193.523 89.6141 194.327 88.802 194.973C87.9899 195.619 86.8544 195.943 85.3956 195.943C83.5608 195.943 82.1471 195.326 81.1545 194.094C80.7334 193.553 80.4176 192.929 80.207 192.223Z"
+												fill="#252525" />
+											<path
+												d="M92.9476 195.717V179.938H94.7523V186.137H94.7749C95.0005 185.776 95.2937 185.461 95.6547 185.19C96.4818 184.544 97.4594 184.221 98.5873 184.221C99.9559 184.221 101.046 184.657 101.858 185.528C102.686 186.385 103.099 187.565 103.099 189.067V195.717H101.294V189.18C101.294 188.098 101.024 187.287 100.482 186.746C99.9409 186.19 99.1964 185.912 98.249 185.912C97.2112 185.912 96.369 186.257 95.7223 186.948C95.0757 187.625 94.7523 188.519 94.7523 189.631V195.717H92.9476Z"
+												fill="#252525" />
+											<path
+												d="M107.455 194.274C106.357 193.162 105.808 191.765 105.808 190.082C105.808 188.399 106.357 187.001 107.455 185.889C108.553 184.777 109.921 184.221 111.561 184.221C113.2 184.221 114.568 184.769 115.666 185.866C116.764 186.963 117.313 188.331 117.313 189.969V190.645H107.613C107.733 191.697 108.162 192.561 108.899 193.238C109.636 193.914 110.523 194.252 111.561 194.252C112.673 194.252 113.628 193.914 114.426 193.238C114.786 192.937 115.072 192.599 115.283 192.223H117.088C116.817 192.929 116.433 193.553 115.937 194.094C114.764 195.326 113.305 195.943 111.561 195.943C109.921 195.943 108.553 195.387 107.455 194.274ZM107.658 189.067H115.396C115.26 188.181 114.847 187.437 114.155 186.836C113.463 186.22 112.598 185.912 111.561 185.912C110.523 185.912 109.651 186.22 108.944 186.836C108.237 187.437 107.808 188.181 107.658 189.067Z"
+												fill="#252525" />
+											<path
+												d="M121.212 194.274C120.114 193.162 119.565 191.765 119.565 190.082C119.565 188.399 120.114 187.001 121.212 185.889C122.31 184.777 123.679 184.221 125.318 184.221C126.957 184.221 128.326 184.769 129.424 185.866C130.522 186.963 131.071 188.331 131.071 189.969V190.645H121.37C121.491 191.697 121.919 192.561 122.656 193.238C123.393 193.914 124.28 194.252 125.318 194.252C126.431 194.252 127.386 193.914 128.183 193.238C128.544 192.937 128.83 192.599 129.04 192.223H130.845C130.574 192.929 130.191 193.553 129.694 194.094C128.521 195.326 127.063 195.943 125.318 195.943C123.679 195.943 122.31 195.387 121.212 194.274ZM121.415 189.067H129.153C129.018 188.181 128.604 187.437 127.912 186.836C127.22 186.22 126.356 185.912 125.318 185.912C124.28 185.912 123.408 186.22 122.701 186.836C121.994 187.437 121.566 188.181 121.415 189.067Z"
+												fill="#252525" />
+											<path
+												d="M132.985 186.137V184.446H134.451V181.967H136.256V184.446H139.865V186.137H136.256V194.026H139.978V195.717H134.451V186.137H132.985Z"
+												fill="#252525" />
+											<path
+												d="M148.336 179.938H150.479L154.089 193.801H156.796L160.405 179.938H162.548L158.375 195.717H152.51L148.336 179.938Z"
+												fill="#252525" />
+											<path
+												d="M165.315 194.274C164.217 193.162 163.668 191.765 163.668 190.082C163.668 188.399 164.217 187.001 165.315 185.889C166.413 184.777 167.782 184.221 169.421 184.221C171.06 184.221 172.429 184.769 173.527 185.866C174.625 186.963 175.173 188.331 175.173 189.969V190.645H165.473C165.593 191.697 166.022 192.561 166.759 193.238C167.496 193.914 168.383 194.252 169.421 194.252C170.534 194.252 171.489 193.914 172.286 193.238C172.647 192.937 172.933 192.599 173.143 192.223H174.948C174.677 192.929 174.294 193.553 173.797 194.094C172.624 195.326 171.165 195.943 169.421 195.943C167.782 195.943 166.413 195.387 165.315 194.274ZM165.518 189.067H173.256C173.121 188.181 172.707 187.437 172.015 186.836C171.323 186.22 170.459 185.912 169.421 185.912C168.383 185.912 167.511 186.22 166.804 186.836C166.097 187.437 165.669 188.181 165.518 189.067Z"
+												fill="#252525" />
+											<path
+												d="M178.103 195.717V184.446H179.907V186.137H179.93C180.155 185.776 180.449 185.461 180.81 185.19C181.637 184.544 182.614 184.221 183.742 184.221C185.111 184.221 186.201 184.657 187.013 185.528C187.841 186.385 188.254 187.565 188.254 189.067V195.717H186.449V189.18C186.449 188.098 186.179 187.287 185.637 186.746C185.096 186.19 184.351 185.912 183.404 185.912C182.366 185.912 181.524 186.257 180.877 186.948C180.231 187.625 179.907 188.519 179.907 189.631V195.717H178.103Z"
+												fill="#252525" />
+											<path
+												d="M190.735 186.137V184.446H192.201V181.967H194.006V184.446H197.615V186.137H194.006V194.026H197.728V195.717H192.201V186.137H190.735Z"
+												fill="#252525" />
+											<path
+												d="M200.44 191.096V184.446H202.245V190.983C202.245 192.065 202.516 192.884 203.057 193.44C203.599 193.981 204.343 194.252 205.291 194.252C206.328 194.252 207.171 193.914 207.817 193.238C208.464 192.546 208.787 191.645 208.787 190.533V184.446H210.592V195.717H208.787V194.026H208.765C208.524 194.402 208.223 194.725 207.862 194.996C207.05 195.627 206.08 195.943 204.952 195.943C203.584 195.943 202.486 195.514 201.659 194.658C200.847 193.786 200.44 192.599 200.44 191.096Z"
+												fill="#252525" />
+											<path
+												d="M214.198 195.717V184.446H216.003V186.25H216.025C216.236 185.874 216.491 185.558 216.792 185.303C217.529 184.657 218.432 184.334 219.499 184.334H220.853V186.137H219.499C218.477 186.137 217.634 186.468 216.973 187.129C216.326 187.775 216.003 188.609 216.003 189.631V195.717H214.198Z"
+												fill="#252525" />
+											<path
+												d="M224.189 194.274C223.091 193.162 222.542 191.765 222.542 190.082C222.542 188.399 223.091 187.001 224.189 185.889C225.287 184.777 226.655 184.221 228.295 184.221C229.934 184.221 231.303 184.769 232.4 185.866C233.498 186.963 234.047 188.331 234.047 189.969V190.645H224.347C224.467 191.697 224.896 192.561 225.633 193.238C226.37 193.914 227.257 194.252 228.295 194.252C229.408 194.252 230.363 193.914 231.16 193.238C231.521 192.937 231.806 192.599 232.017 192.223H233.822C233.551 192.929 233.167 193.553 232.671 194.094C231.498 195.326 230.039 195.943 228.295 195.943C226.655 195.943 225.287 195.387 224.189 194.274ZM224.392 189.067H232.13C231.994 188.181 231.581 187.437 230.889 186.836C230.197 186.22 229.332 185.912 228.295 185.912C227.257 185.912 226.385 186.22 225.678 186.836C224.971 187.437 224.542 188.181 224.392 189.067Z"
+												fill="#252525" />
+											<path
+												d="M236.187 192.223H238.104C238.27 192.629 238.488 192.967 238.759 193.238C239.435 193.914 240.308 194.252 241.375 194.252C242.338 194.252 243.045 194.094 243.496 193.779C243.962 193.463 244.195 193.057 244.195 192.561C244.195 192.291 244.098 192.058 243.902 191.862C243.722 191.667 243.421 191.494 243 191.344C242.579 191.194 242.203 191.081 241.872 191.006C241.556 190.916 241.09 190.811 240.473 190.69C237.992 190.179 236.751 189.075 236.751 187.377C236.751 186.49 237.127 185.746 237.879 185.145C238.631 184.529 239.683 184.221 241.037 184.221C242.721 184.221 244.052 184.784 245.03 185.912C245.421 186.422 245.707 186.986 245.887 187.602H243.97C243.834 187.302 243.639 187.024 243.383 186.768C242.812 186.197 242.03 185.912 241.037 185.912C240.24 185.912 239.623 186.062 239.187 186.362C238.766 186.663 238.556 187.001 238.556 187.377C238.556 187.647 238.646 187.88 238.826 188.076C239.022 188.271 239.33 188.444 239.751 188.594C240.172 188.744 240.541 188.864 240.857 188.955C241.187 189.03 241.661 189.127 242.278 189.248C244.759 189.759 246 190.863 246 192.561C246 193.523 245.594 194.327 244.782 194.973C243.97 195.619 242.834 195.943 241.375 195.943C239.541 195.943 238.127 195.326 237.134 194.094C236.713 193.553 236.397 192.929 236.187 192.223Z"
+												fill="#252525" />
+										</svg>
+									</div>
+									<div class="partner__item">
+										<svg width="427" height="144" viewBox="0 0 427 144" fill="none"
+											xmlns="http://www.w3.org/2000/svg">
+											<path
+												d="M29.3578 52.3971L10.2241 10.3541V43.738C10.2241 46.8086 10.5528 48.7247 11.21 49.4862C12.1107 50.5179 13.5348 51.0338 15.4822 51.0338H17.2349V52.3971H0V51.0338H1.75271C3.84622 51.0338 5.33115 50.3951 6.2075 49.1177C6.74305 48.3316 7.01083 46.5384 7.01083 43.738V11.0911C7.01083 8.88025 6.76739 7.28352 6.28053 6.30092C5.93973 5.58854 5.30681 4.99898 4.38177 4.53224C3.48107 4.04094 2.02048 3.79529 0 3.79529V2.43193H14.0217L31.9869 41.5271L49.66 2.43193H63.6817V3.79529H61.9655C59.8476 3.79529 58.3505 4.43398 57.4742 5.71136C56.9386 6.49744 56.6708 8.29069 56.6708 11.0911V43.738C56.6708 46.8086 57.0117 48.7247 57.6933 49.4862C58.594 50.5179 60.018 51.0338 61.9655 51.0338H63.6817V52.3971H42.6492V51.0338H44.4019C46.5198 51.0338 48.0047 50.3951 48.8567 49.1177C49.3922 48.3316 49.66 46.5384 49.66 43.738V10.3541L30.5628 52.3971H29.3578Z"
+												fill="#252525" />
+											<path
+												d="M100.686 18.6448V39.0952C100.686 43.001 100.771 45.3961 100.941 46.2804C101.136 47.1402 101.428 47.7421 101.818 48.086C102.231 48.4299 102.706 48.6018 103.242 48.6018C103.996 48.6018 104.848 48.393 105.798 47.9754L106.309 49.2651L96.3039 53.4289H94.6608V46.2804C91.7883 49.4248 89.5974 51.4023 88.0881 52.2129C86.5788 53.0235 84.9844 53.4289 83.3047 53.4289C81.4303 53.4289 79.7993 52.8884 78.4117 51.8076C77.0485 50.7021 76.0991 49.2897 75.5636 47.5701C75.028 45.8506 74.7602 43.4186 74.7602 40.2743V25.2037C74.7602 23.607 74.5898 22.5015 74.249 21.8874C73.9082 21.2733 73.397 20.8066 72.7154 20.4872C72.0581 20.1433 70.8532 19.9836 69.1005 20.0082V18.6448H80.8217V41.2323C80.8217 44.3767 81.3572 46.4401 82.4283 47.4227C83.5238 48.4053 84.8383 48.8966 86.3719 48.8966C87.4187 48.8966 88.5993 48.565 89.9138 47.9017C91.2527 47.2385 92.835 45.9734 94.6608 44.1064V24.9826C94.6608 23.0665 94.3078 21.7769 93.6018 21.1136C92.9202 20.4258 91.484 20.0573 89.2931 20.0082V18.6448H100.686Z"
+												fill="#252525" />
+											<path
+												d="M123.997 0V44.7697C123.997 46.8823 124.143 48.2825 124.435 48.9703C124.751 49.6581 125.226 50.1863 125.859 50.5548C126.492 50.8987 127.673 51.0706 129.401 51.0706V52.3971H113.006V51.0706C114.539 51.0706 115.586 50.9109 116.146 50.5916C116.706 50.2723 117.144 49.7441 117.461 49.0072C117.777 48.2702 117.935 46.8577 117.935 44.7697V14.1126C117.935 10.305 117.85 7.97134 117.68 7.11157C117.509 6.22723 117.229 5.62538 116.84 5.30604C116.475 4.98669 116 4.82702 115.416 4.82702C114.783 4.82702 113.979 5.02354 113.006 5.41658L112.385 4.12692L122.354 0H123.997Z"
+												fill="#252525" />
+											<path
+												d="M146.76 7.55374V18.6448H154.574V21.2242H146.76V43.1116C146.76 45.2979 147.064 46.7718 147.673 47.5333C148.306 48.2948 149.109 48.6755 150.083 48.6755C150.886 48.6755 151.665 48.4299 152.42 47.9386C153.174 47.4227 153.759 46.6735 154.172 45.6909H155.597C154.745 48.0983 153.54 49.9161 151.982 51.1443C150.424 52.348 148.817 52.9498 147.162 52.9498C146.042 52.9498 144.946 52.6428 143.875 52.0287C142.804 51.39 142.013 50.4933 141.502 49.3388C140.991 48.1597 140.735 46.3541 140.735 43.9222V21.2242H135.44V20.0082C136.779 19.4678 138.142 18.5589 139.53 17.2815C140.942 15.9795 142.196 14.4442 143.291 12.6755C143.851 11.7421 144.63 10.0348 145.628 7.55374H146.76Z"
+												fill="#252525" />
+											<path
+												d="M170.107 0C171.13 0 171.994 0.368475 172.7 1.10542C173.43 1.81781 173.795 2.68987 173.795 3.7216C173.795 4.75333 173.43 5.63767 172.7 6.37462C171.994 7.11157 171.13 7.48004 170.107 7.48004C169.085 7.48004 168.209 7.11157 167.478 6.37462C166.748 5.63767 166.383 4.75333 166.383 3.7216C166.383 2.68987 166.736 1.81781 167.442 1.10542C168.172 0.368475 169.061 0 170.107 0ZM173.138 17.6499V44.7697C173.138 46.8823 173.284 48.2948 173.576 49.0072C173.893 49.695 174.343 50.2108 174.927 50.5548C175.536 50.8987 176.631 51.0706 178.214 51.0706V52.3971H161.965V51.0706C163.596 51.0706 164.691 50.9109 165.251 50.5916C165.811 50.2723 166.249 49.7441 166.566 49.0072C166.906 48.2702 167.077 46.8577 167.077 44.7697V31.7625C167.077 28.1024 166.967 25.7318 166.748 24.651C166.578 23.8649 166.31 23.3245 165.945 23.0297C165.58 22.7103 165.081 22.5507 164.448 22.5507C163.766 22.5507 162.938 22.7349 161.965 23.1034L161.453 21.7769L171.532 17.6499H173.138Z"
+												fill="#252525" />
+											<path
+												d="M207.769 17.6499V29.1464H206.564C205.639 25.5353 204.446 23.0788 202.985 21.7769C201.549 20.4749 199.711 19.8239 197.472 19.8239C195.768 19.8239 194.392 20.2784 193.345 21.1873C192.299 22.0962 191.775 23.1034 191.775 24.2088C191.775 25.5844 192.165 26.7636 192.944 27.7462C193.698 28.7533 195.232 29.8219 197.545 30.9519L202.876 33.5681C207.817 36 210.288 39.2057 210.288 43.1853C210.288 46.2559 209.132 48.7369 206.819 50.6285C204.531 52.4954 201.963 53.4289 199.115 53.4289C197.07 53.4289 194.733 53.0604 192.104 52.3234C191.301 52.0778 190.643 51.955 190.132 51.955C189.572 51.955 189.134 52.2743 188.818 52.913H187.613V40.8639H188.818C189.499 44.303 190.802 46.8946 192.725 48.6387C194.648 50.3828 196.802 51.2549 199.188 51.2549C200.867 51.2549 202.231 50.7636 203.277 49.781C204.349 48.7738 204.884 47.5701 204.884 46.1699C204.884 44.4749 204.288 43.0502 203.095 41.8956C201.926 40.741 199.577 39.2794 196.048 37.5107C192.518 35.7421 190.205 34.1453 189.11 32.7206C188.014 31.3204 187.467 29.5517 187.467 27.4145C187.467 24.6387 188.404 22.3173 190.278 20.4504C192.177 18.5834 194.623 17.6499 197.618 17.6499C198.932 17.6499 200.527 17.9324 202.401 18.4974C203.643 18.8659 204.47 19.0502 204.884 19.0502C205.274 19.0502 205.578 18.9642 205.797 18.7922C206.016 18.6203 206.272 18.2395 206.564 17.6499H207.769Z"
+												fill="#252525" />
+											<path
+												d="M228.852 0V24.6878C231.554 21.6909 233.697 19.7748 235.279 18.9396C236.861 18.0798 238.444 17.6499 240.026 17.6499C241.925 17.6499 243.556 18.1781 244.919 19.2344C246.282 20.2907 247.292 21.9488 247.95 24.2088C248.412 25.781 248.643 28.6551 248.643 32.8311V44.7697C248.643 46.9069 248.814 48.3685 249.155 49.1546C249.398 49.7441 249.812 50.2108 250.396 50.5548C250.98 50.8987 252.051 51.0706 253.609 51.0706V52.3971H237.178V51.0706H237.945C239.502 51.0706 240.586 50.8373 241.194 50.3705C241.803 49.8792 242.229 49.1668 242.472 48.2334C242.545 47.8403 242.582 46.6858 242.582 44.7697V32.8311C242.582 29.1464 242.387 26.7267 241.998 25.5722C241.633 24.4176 241.036 23.5578 240.208 22.9928C239.381 22.4033 238.383 22.1085 237.214 22.1085C236.021 22.1085 234.78 22.4278 233.49 23.0665C232.2 23.7052 230.654 24.9949 228.852 26.9355V44.7697C228.852 47.0788 228.974 48.5159 229.217 49.0809C229.485 49.6459 229.96 50.1249 230.642 50.5179C231.348 50.8864 232.553 51.0706 234.257 51.0706V52.3971H217.679V51.0706C219.164 51.0706 220.332 50.8373 221.184 50.3705C221.671 50.1249 222.061 49.6581 222.353 48.9703C222.645 48.2825 222.791 46.8823 222.791 44.7697V14.2231C222.791 10.3664 222.694 7.99591 222.499 7.11157C222.328 6.22723 222.048 5.62538 221.659 5.30604C221.294 4.98669 220.795 4.82702 220.162 4.82702C219.651 4.82702 218.823 5.02354 217.679 5.41658L217.168 4.12692L227.173 0H228.852Z"
+												fill="#252525" />
+											<path
+												d="M265.783 31.3572C265.759 36.3685 266.964 40.2989 269.398 43.1484C271.833 45.998 274.693 47.4227 277.979 47.4227C280.17 47.4227 282.069 46.8209 283.676 45.6172C285.307 44.3889 286.67 42.3009 287.765 39.3531L288.897 40.0901C288.386 43.4555 286.901 46.5261 284.442 49.3019C281.984 52.0532 278.904 53.4289 275.204 53.4289C271.188 53.4289 267.743 51.8567 264.87 48.7124C262.022 45.5435 260.598 41.2938 260.598 35.9632C260.598 30.1904 262.059 25.695 264.98 22.477C267.926 19.2344 271.614 17.6131 276.044 17.6131C279.793 17.6131 282.872 18.8659 285.282 21.3715C287.692 23.8526 288.897 27.1812 288.897 31.3572H265.783ZM265.783 29.2201H281.266C281.144 27.0583 280.888 25.5353 280.499 24.651C279.89 23.2753 278.977 22.1945 277.76 21.4084C276.567 20.6223 275.314 20.2293 273.999 20.2293C271.979 20.2293 270.165 21.0276 268.558 22.6244C266.976 24.1965 266.051 26.3951 265.783 29.2201Z"
+												fill="#252525" />
+											<path
+												d="M302.751 31.3572C302.727 36.3685 303.931 40.2989 306.366 43.1484C308.8 45.998 311.66 47.4227 314.947 47.4227C317.138 47.4227 319.036 46.8209 320.643 45.6172C322.274 44.3889 323.637 42.3009 324.733 39.3531L325.865 40.0901C325.353 43.4555 323.868 46.5261 321.41 49.3019C318.951 52.0532 315.872 53.4289 312.172 53.4289C308.155 53.4289 304.71 51.8567 301.838 48.7124C298.99 45.5435 297.566 41.2938 297.566 35.9632C297.566 30.1904 299.026 25.695 301.948 22.477C304.893 19.2344 308.581 17.6131 313.011 17.6131C316.76 17.6131 319.84 18.8659 322.25 21.3715C324.66 23.8526 325.865 27.1812 325.865 31.3572H302.751ZM302.751 29.2201H318.233C318.111 27.0583 317.856 25.5353 317.466 24.651C316.858 23.2753 315.945 22.1945 314.728 21.4084C313.535 20.6223 312.281 20.2293 310.967 20.2293C308.946 20.2293 307.133 21.0276 305.526 22.6244C303.944 24.1965 303.019 26.3951 302.751 29.2201Z"
+												fill="#252525" />
+											<path
+												d="M343.808 7.55374V18.6448H351.622V21.2242H343.808V43.1116C343.808 45.2979 344.112 46.7718 344.721 47.5333C345.354 48.2948 346.157 48.6755 347.131 48.6755C347.934 48.6755 348.713 48.4299 349.468 47.9386C350.222 47.4227 350.807 46.6735 351.22 45.6909H352.645C351.793 48.0983 350.588 49.9161 349.03 51.1443C347.472 52.348 345.865 52.9498 344.21 52.9498C343.09 52.9498 341.994 52.6428 340.923 52.0287C339.852 51.39 339.061 50.4933 338.55 49.3388C338.039 48.1597 337.783 46.3541 337.783 43.9222V21.2242H332.488V20.0082C333.827 19.4678 335.191 18.5589 336.578 17.2815C337.99 15.9795 339.244 14.4442 340.339 12.6755C340.899 11.7421 341.678 10.0348 342.676 7.55374H343.808Z"
+												fill="#252525" />
+											<path d="M163.941 75.4637L146.012 128.893H143.091L161.019 75.4637H163.941Z"
+												fill="#252525" />
+											<path
+												d="M234.991 76.7533L236.123 93.74H234.991C233.482 88.6551 231.327 84.9949 228.528 82.7595C225.728 80.5241 222.369 79.4063 218.45 79.4063C215.164 79.4063 212.194 80.2538 209.54 81.9488C206.887 83.6192 204.793 86.2968 203.26 89.9816C201.75 93.6663 200.996 98.2477 200.996 103.726C200.996 108.246 201.714 112.164 203.15 115.48C204.586 118.796 206.741 121.339 209.613 123.107C212.51 124.876 215.809 125.76 219.509 125.76C222.722 125.76 225.558 125.073 228.017 123.697C230.475 122.297 233.177 119.533 236.123 115.406L237.255 116.143C234.772 120.59 231.875 123.844 228.564 125.908C225.254 127.971 221.322 129.003 216.77 129.003C208.567 129.003 202.213 125.932 197.709 119.791C194.35 115.222 192.67 109.842 192.67 103.652C192.67 98.6653 193.778 94.0839 195.993 89.9079C198.209 85.7318 201.251 82.5015 205.122 80.217C209.017 77.9079 213.265 76.7533 217.866 76.7533C221.444 76.7533 224.974 77.6377 228.455 79.4063C229.477 79.9468 230.208 80.217 230.646 80.217C231.303 80.217 231.875 79.9836 232.362 79.5169C232.995 78.8536 233.445 77.9324 233.713 76.7533H234.991Z"
+												fill="#252525" />
+											<path
+												d="M264.875 122.997C261.442 125.675 259.288 127.222 258.412 127.64C257.097 128.254 255.697 128.561 254.212 128.561C251.9 128.561 249.989 127.763 248.48 126.166C246.995 124.569 246.252 122.469 246.252 119.865C246.252 118.219 246.617 116.794 247.348 115.591C248.346 113.92 250.074 112.348 252.533 110.874C255.016 109.4 259.13 107.607 264.875 105.494V104.168C264.875 100.802 264.339 98.4933 263.268 97.2405C262.221 95.9877 260.688 95.3613 258.667 95.3613C257.134 95.3613 255.916 95.7789 255.016 96.6141C254.091 97.4493 253.628 98.4074 253.628 99.4882L253.701 101.625C253.701 102.755 253.409 103.627 252.825 104.242C252.265 104.856 251.522 105.163 250.597 105.163C249.697 105.163 248.954 104.843 248.37 104.205C247.81 103.566 247.53 102.694 247.53 101.589C247.53 99.4759 248.601 97.5353 250.743 95.7666C252.886 93.9979 255.892 93.1136 259.763 93.1136C262.732 93.1136 265.167 93.6172 267.066 94.6244C268.502 95.3859 269.561 96.5773 270.242 98.1986C270.68 99.2549 270.9 101.417 270.9 104.684V116.143C270.9 119.361 270.96 121.339 271.082 122.076C271.204 122.788 271.399 123.267 271.666 123.513C271.958 123.758 272.287 123.881 272.652 123.881C273.042 123.881 273.383 123.795 273.675 123.623C274.186 123.304 275.172 122.407 276.632 120.933V122.997C273.906 126.682 271.301 128.524 268.818 128.524C267.625 128.524 266.676 128.106 265.97 127.271C265.264 126.436 264.899 125.011 264.875 122.997ZM264.875 120.602V107.742C261.199 109.216 258.825 110.26 257.754 110.874C255.831 111.955 254.456 113.085 253.628 114.264C252.8 115.443 252.387 116.733 252.387 118.133C252.387 119.902 252.91 121.376 253.957 122.555C255.003 123.709 256.208 124.287 257.572 124.287C259.422 124.287 261.856 123.058 264.875 120.602Z"
+												fill="#252525" />
+											<path
+												d="M280.481 97.4616L290.778 93.261H292.166V101.146C293.894 98.174 295.622 96.0983 297.351 94.9191C299.104 93.7155 300.941 93.1136 302.865 93.1136C306.224 93.1136 309.023 94.4401 311.263 97.0931C314.014 100.336 315.389 104.561 315.389 109.769C315.389 115.591 313.734 120.405 310.423 124.213C307.697 127.333 304.264 128.893 300.126 128.893C298.325 128.893 296.767 128.635 295.452 128.119C294.478 127.75 293.383 127.013 292.166 125.908V136.188C292.166 138.497 292.3 139.959 292.567 140.573C292.86 141.212 293.346 141.715 294.028 142.084C294.734 142.452 296 142.637 297.826 142.637V144H280.298V142.637H281.211C282.55 142.661 283.694 142.403 284.644 141.863C285.106 141.593 285.459 141.15 285.703 140.536C285.97 139.947 286.104 138.424 286.104 135.967V104.057C286.104 101.871 286.007 100.483 285.812 99.8935C285.617 99.304 285.301 98.8618 284.863 98.567C284.449 98.2723 283.877 98.1249 283.147 98.1249C282.562 98.1249 281.82 98.2968 280.919 98.6407L280.481 97.4616ZM292.166 103.32V115.922C292.166 118.649 292.275 120.442 292.494 121.302C292.835 122.727 293.663 123.98 294.977 125.06C296.316 126.141 297.996 126.682 300.016 126.682C302.451 126.682 304.423 125.724 305.932 123.808C307.904 121.302 308.889 117.777 308.889 113.232C308.889 108.074 307.77 104.106 305.53 101.331C303.972 99.4145 302.122 98.4565 299.98 98.4565C298.811 98.4565 297.655 98.7513 296.511 99.3408C295.635 99.783 294.186 101.11 292.166 103.32Z"
+												fill="#252525" />
+											<path
+												d="M332.529 75.4637C333.552 75.4637 334.416 75.8321 335.122 76.5691C335.852 77.2815 336.217 78.1535 336.217 79.1853C336.217 80.217 335.852 81.1013 335.122 81.8383C334.416 82.5752 333.552 82.9437 332.529 82.9437C331.507 82.9437 330.63 82.5752 329.9 81.8383C329.17 81.1013 328.805 80.217 328.805 79.1853C328.805 78.1535 329.158 77.2815 329.864 76.5691C330.594 75.8321 331.482 75.4637 332.529 75.4637ZM335.56 93.1136V120.233C335.56 122.346 335.706 123.758 335.998 124.471C336.314 125.159 336.765 125.675 337.349 126.018C337.958 126.362 339.053 126.534 340.635 126.534V127.861H324.386V126.534C326.017 126.534 327.113 126.375 327.673 126.055C328.233 125.736 328.671 125.208 328.987 124.471C329.328 123.734 329.498 122.321 329.498 120.233V107.226C329.498 103.566 329.389 101.195 329.17 100.115C328.999 99.3286 328.732 98.7881 328.366 98.4933C328.001 98.174 327.502 98.0143 326.869 98.0143C326.188 98.0143 325.36 98.1986 324.386 98.567L323.875 97.2405L333.953 93.1136H335.56Z"
+												fill="#252525" />
+											<path
+												d="M358.287 83.0174V94.1085H366.101V96.6878H358.287V118.575C358.287 120.762 358.591 122.235 359.199 122.997C359.832 123.758 360.636 124.139 361.609 124.139C362.413 124.139 363.192 123.894 363.946 123.402C364.701 122.886 365.285 122.137 365.699 121.155H367.123C366.271 123.562 365.066 125.38 363.508 126.608C361.95 127.812 360.344 128.414 358.688 128.414C357.568 128.414 356.473 128.106 355.402 127.492C354.331 126.854 353.54 125.957 353.028 124.802C352.517 123.623 352.262 121.818 352.262 119.386V96.6878H346.967V95.4718C348.306 94.9314 349.669 94.0225 351.057 92.7451C352.469 91.4432 353.722 89.9079 354.818 88.1392C355.378 87.2057 356.157 85.4985 357.155 83.0174H358.287Z"
+												fill="#252525" />
+											<path
+												d="M392.077 122.997C388.645 125.675 386.491 127.222 385.614 127.64C384.3 128.254 382.9 128.561 381.415 128.561C379.102 128.561 377.191 127.763 375.682 126.166C374.197 124.569 373.455 122.469 373.455 119.865C373.455 118.219 373.82 116.794 374.55 115.591C375.548 113.92 377.277 112.348 379.735 110.874C382.218 109.4 386.332 107.607 392.077 105.494V104.168C392.077 100.802 391.542 98.4933 390.471 97.2405C389.424 95.9877 387.89 95.3613 385.87 95.3613C384.336 95.3613 383.119 95.7789 382.218 96.6141C381.293 97.4493 380.831 98.4074 380.831 99.4882L380.904 101.625C380.904 102.755 380.612 103.627 380.027 104.242C379.468 104.856 378.725 105.163 377.8 105.163C376.899 105.163 376.157 104.843 375.573 104.205C375.013 103.566 374.733 102.694 374.733 101.589C374.733 99.4759 375.804 97.5353 377.946 95.7666C380.088 93.9979 383.095 93.1136 386.965 93.1136C389.935 93.1136 392.369 93.6172 394.268 94.6244C395.704 95.3859 396.763 96.5773 397.445 98.1986C397.883 99.2549 398.102 101.417 398.102 104.684V116.143C398.102 119.361 398.163 121.339 398.285 122.076C398.407 122.788 398.601 123.267 398.869 123.513C399.161 123.758 399.49 123.881 399.855 123.881C400.244 123.881 400.585 123.795 400.877 123.623C401.389 123.304 402.374 122.407 403.835 120.933V122.997C401.109 126.682 398.504 128.524 396.021 128.524C394.828 128.524 393.879 128.106 393.173 127.271C392.467 126.436 392.102 125.011 392.077 122.997ZM392.077 120.602V107.742C388.402 109.216 386.028 110.26 384.957 110.874C383.034 111.955 381.658 113.085 380.831 114.264C380.003 115.443 379.589 116.733 379.589 118.133C379.589 119.902 380.113 121.376 381.159 122.555C382.206 123.709 383.411 124.287 384.774 124.287C386.624 124.287 389.059 123.058 392.077 120.602Z"
+												fill="#252525" />
+											<path
+												d="M421.596 75.4637V120.233C421.596 122.346 421.742 123.746 422.034 124.434C422.35 125.122 422.825 125.65 423.458 126.018C424.091 126.362 425.272 126.534 427 126.534V127.861H410.605V126.534C412.138 126.534 413.185 126.375 413.745 126.055C414.305 125.736 414.743 125.208 415.06 124.471C415.376 123.734 415.534 122.321 415.534 120.233V89.5763C415.534 85.7687 415.449 83.435 415.279 82.5752C415.108 81.6909 414.828 81.0891 414.439 80.7697C414.074 80.4504 413.599 80.2907 413.015 80.2907C412.382 80.2907 411.579 80.4872 410.605 80.8802L409.984 79.5906L419.953 75.4637H421.596Z"
+												fill="#252525" />
+										</svg>
+									</div>
+									<div class="partner__item">
+										<svg width="460" height="106" viewBox="0 0 460 106" fill="none"
+											xmlns="http://www.w3.org/2000/svg">
+											<path
+												d="M14.9408 39.9825L11.7135 55.0146H1.95312L13.6814 0.774853H35.6423C48.6299 0.774853 54.8483 6.81871 54.8483 16.5044C54.8483 31.1491 46.0324 39.9825 27.1413 39.9825H14.9408ZM44.3794 17.7442C44.3794 12.0102 40.6799 8.9883 33.8319 8.9883H21.6314L16.7512 31.769H28.9517C38.7908 31.769 44.3794 26.5 44.3794 17.7442Z"
+												fill="#252525" />
+											<path
+												d="M91.8778 0.774853L102.504 55.0146H92.5862L90.5397 44.2441H62.4391L55.6698 55.0146H45.1223L79.205 0.774853H91.8778ZM88.8867 35.8757L84.0065 10.0731H83.6129L67.7129 35.8757H88.8867Z"
+												fill="#252525" />
+											<path
+												d="M122.045 35.3333L117.795 55.0146H108.034L119.762 0.774853H142.117C154.79 0.774853 160.851 5.34649 160.851 14.8772C160.851 30.2193 146.525 33.4737 146.525 33.4737L155.656 55.0146H144.951L136.607 35.3333H122.045ZM150.303 16.0395C150.303 11.2354 146.761 8.9883 140.307 8.9883H127.712L123.856 27.1199H136.45C145.423 27.1199 150.303 23.3231 150.303 16.0395Z"
+												fill="#252525" />
+											<path
+												d="M204.416 0.774853L215.042 55.0146H205.124L203.078 44.2441H174.977L168.208 55.0146H157.66L191.743 0.774853H204.416ZM201.425 35.8757L196.545 10.0731H196.151L180.251 35.8757H201.425Z"
+												fill="#252525" />
+											<path
+												d="M220.572 55.0146L232.301 0.774853H253.632C267.643 0.774853 276.616 9.76316 276.616 22.2383C276.616 42.617 262.684 55.0146 241.904 55.0146H220.572ZM232.301 46.6462H243.714C257.489 46.6462 266.147 36.1857 266.147 23.633C266.147 15.1871 261.346 9.14328 251.821 9.14328H240.251L232.301 46.6462Z"
+												fill="#252525" />
+											<path
+												d="M326.348 0.774853L324.537 8.9883H310.448L302.34 46.8012H316.43L314.62 55.0146H276.68L278.49 46.8012H292.58L300.687 8.9883H286.598L288.408 0.774853H326.348Z"
+												fill="#252525" />
+											<path
+												d="M353.349 35.1784L355.002 27.2749H382.63L376.648 55.0146H367.675L369.642 46.0263H369.249C369.249 46.0263 362.716 55.7895 349.334 55.7895C335.324 55.7895 326.35 45.4839 326.35 33.0863C326.35 13.7924 340.912 0 360.433 0C375.939 0 383.653 9.91813 383.653 19.6813C383.653 20.1462 383.653 20.5336 383.653 20.9211H373.578C373.106 15.4971 369.957 8.67836 359.016 8.67836C345.556 8.67836 336.819 19.6813 336.819 32.2339C336.819 40.5248 342.093 47.1111 351.381 47.1111C362.558 47.1111 369.091 38.7427 369.879 35.1784H353.349Z"
+												fill="#252525" />
+											<path
+												d="M415.269 0.774853L422.353 32.0789H422.668L443.291 0.774853H459.427L447.699 55.0146H437.938L447.462 11.0029H447.069L426.761 41.2222H414.954L407.712 11.0029H407.319L397.795 55.0146H388.034L399.762 0.774853H415.269Z"
+												fill="#252525" />
+											<path
+												d="M0.000244141 94.6486C0.000244141 85.0017 7.36007 78.1055 17.2262 78.1055C25.7397 78.1055 28.9622 83.7619 28.9622 87.6749C28.9622 88.2173 28.9224 88.7597 28.803 89.2246H23.8302C23.8699 89.0309 23.9097 88.7985 23.9097 88.5273C23.9097 86.5126 22.4378 82.4446 16.4703 82.4446C9.78682 82.4446 5.29136 87.9074 5.29136 94.1837C5.29136 98.4454 7.95681 101.661 12.691 101.661C19.4541 101.661 22.1991 95.8109 22.398 94.8811H27.7687C26.9332 98.6391 21.8808 106 11.9351 106C4.9731 106 0.000244141 101.196 0.000244141 94.6486Z"
+												fill="#252525" />
+											<path
+												d="M31.8104 82.7546L32.7254 78.4929H57.152L56.237 82.7546H46.4902L41.5174 105.613H36.5843L41.5571 82.7546H31.8104Z"
+												fill="#252525" />
+											<path
+												d="M61.5104 95.7721L59.3621 105.613H54.4291L60.3567 78.4929H71.655C78.0601 78.4929 81.1234 80.7787 81.1234 85.5441C81.1234 93.2151 73.8829 94.8423 73.8829 94.8423L78.4977 105.613H73.0872L68.8702 95.7721H61.5104ZM75.7925 86.1252C75.7925 83.7232 74.0022 82.5996 70.74 82.5996H64.3748L62.4254 91.6654H68.7907C73.3259 91.6654 75.7925 89.767 75.7925 86.1252Z"
+												fill="#252525" />
+											<path
+												d="M105.211 101.351L104.296 105.613H82.6935L88.6212 78.4929H93.5543L88.5416 101.351H105.211Z"
+												fill="#252525" />
+											<path
+												d="M108.092 97.3606L108.848 93.8737H115.333L116.725 87.5199H120.385L118.993 93.8737H125.477L124.722 97.3606H118.237L116.845 103.714H113.185L114.577 97.3606H108.092Z"
+												fill="#252525" />
+											<path
+												d="M153.587 86.9001H148.495C148.734 85.854 148.773 85.5441 148.773 85.2729C148.773 83.1808 146.784 82.2122 143.363 82.2122C139.305 82.2122 136.361 83.9556 136.361 86.3577C136.361 91.5879 152.394 87.8686 152.394 96.8957C152.394 102.63 146.824 106 138.907 106C132.502 106 127.808 103.792 127.808 99.4527C127.808 98.9103 127.887 98.3679 128.285 96.4695H133.377C133.019 98.0967 133.019 98.4066 133.019 98.6778C133.019 101.157 135.685 101.893 139.226 101.893C143.641 101.893 147.182 100.344 147.182 97.3993C147.182 92.4403 131.15 96.1596 131.15 86.9388C131.15 81.7085 136.003 78.1055 143.761 78.1055C149.808 78.1055 153.945 80.3138 153.945 84.4205C153.945 84.9629 153.866 85.5441 153.587 86.9001Z"
+												fill="#252525" />
+											<path
+												d="M175.179 105.613L177.805 93.6413H162.847L160.221 105.613H155.288L161.216 78.4929H166.149L163.762 89.3796H178.72L181.107 78.4929H186.04L180.112 105.613H175.179Z"
+												fill="#252525" />
+											<path
+												d="M210.186 78.4929L209.271 82.5996H202.15L198.052 101.506H205.173L204.258 105.613H185.083L185.998 101.506H193.119L197.217 82.5996H190.096L191.011 78.4929H210.186Z"
+												fill="#252525" />
+											<path
+												d="M209.214 105.613L215.141 78.4929H236.624L235.709 82.5996H219.16L217.29 91.1618H231.055L230.179 95.191H216.415L214.147 105.613H209.214Z"
+												fill="#252525" />
+											<path
+												d="M236.869 82.7546L237.784 78.4929H262.211L261.296 82.7546H251.549L246.576 105.613H241.643L246.616 82.7546H236.869Z"
+												fill="#252525" />
+										</svg>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+		<section class="join section">
+			<div class="container">
+				<div class="section__row">
+					<div class="section__label">
+						<span>Community</span>
+					</div>
+					<div class="section__content">
+						<div class="section__header">
+							<div class="section__container">
 
-  <script>
-    // Smooth in-view animations
-    const io = ('IntersectionObserver' in window) ? new IntersectionObserver((entries)=>{
-      entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
-    }, {threshold: 0.12}) : null;
-    document.querySelectorAll('[data-animate]').forEach(el=> io && io.observe(el));
+							</div>
+						</div>
+						<div class="section__body">
+							<div class="section__container">
+								<div class="join__content">
+									<div class="grid-container hero__bg"></div>
+									<div class="section__texture"></div>
+									<h2 class="h2 h2--64">Join the <br>
+										Financial Revolution</h2>
+									<p>Be the first to build, transact, and define the standard
+										for spreadsheet-native settlement.</p>
+									<div class="join__nav">
+										<a href="#" class="btn btn-green">
+											<span>Follow on X</span>
+											<svg width="15" height="16" viewBox="0 0 15 16" fill="none"
+												xmlns="http://www.w3.org/2000/svg">
+												<path
+													d="M14.375 1.125V6.125H13.125V5.5H12.5V4.875H11.875V5.5H11.25V6.125H10.625V6.75H10V7.375H9.375V8H8.75V8.625H8.125V9.25H7.5V9.875H6.875V10.5H6.25V11.125H5.625V11.75H5V11.125H4.375V10.5H3.75V9.875H4.375V9.25H5V8.625H5.625V8H6.25V7.375H6.875V6.75H7.5V6.125H8.125V5.5H8.75V4.875H9.375V4.25H10V3.625H10.625V3H10V2.375H9.375V1.125H14.375Z"
+													fill="white" />
+												<path
+													d="M12.5 9.875V14.25H11.875V14.875H1.25V14.25H0.625V3.625H1.25V3H6.875V4.875H2.5V13H10.625V9.875H12.5Z"
+													fill="white" />
+											</svg>
+										</a>
+										<a href="#" class="btn btn-gray btn-transparent">
+											<span>Join telegram</span>
+										</a>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="section__footer">
+							<div class="section__container">
+								<footer class="footer" role="contentinfo">
+									<div class="container">
+										<div class="footer__row">
+											<div class="footer__item">
+												<ul class="footer__list">
+													<li><a href="#">Technology</a></li>
+													<li><a href="#">Ecosystem</a></li>
+													<li><a href="#">Whitepaper</a></li>
+												</ul>
+												<div class="copyright">© 2025 Sheetchain. All rights reserved.</div>
+											</div>
+											<div class="footer__item">
+												<div class="footer__text">Sheetchain is an independent project and is not affiliated
+													with, nor endorsed by, Google LLC. Google Sheets is a trademark of Google LLC.
+												</div>
+											</div>
+										</div>
+									</div>
+								</footer>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+	</main>
 
-    // Current year
-    document.getElementById('year').textContent = new Date().getFullYear();
+	<!-- MAIN CONTENT  END -->
 
-    // Basic smooth scroll for anchor links
-    document.querySelectorAll('a[href^="#"]').forEach(a=>{
-      a.addEventListener('click', (e)=>{
-        const id = a.getAttribute('href');
-        const el = document.querySelector(id);
-        if(el){ e.preventDefault(); el.scrollIntoView({behavior:'smooth', block:'start'}); }
-      });
-    });
+	<script src="js/common.js"></script>
 
-    // Google Analytics Enhanced Tracking
-    function trackEvent(eventName, parameters = {}) {
-      if (typeof gtag !== 'undefined') {
-        gtag('event', eventName, parameters);
-      }
-    }
 
-    // Track section views
-    const sectionObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const sectionName = entry.target.id || entry.target.className;
-          trackEvent('section_view', {
-            section_name: sectionName,
-            page_title: document.title
-          });
-        }
-      });
-    }, { threshold: 0.5 });
-
-    // Observe all sections
-    document.querySelectorAll('section[id]').forEach(section => {
-      sectionObserver.observe(section);
-    });
-
-    // Track CTA clicks
-    document.querySelectorAll('.cta').forEach(cta => {
-      cta.addEventListener('click', (e) => {
-        const ctaText = cta.textContent.trim();
-        const ctaHref = cta.getAttribute('href');
-        
-        trackEvent('cta_click', {
-          cta_text: ctaText,
-          cta_url: ctaHref,
-          cta_type: cta.classList.contains('primary') ? 'primary' : 'secondary'
-        });
-      });
-    });
-
-    // Track external link clicks
-    document.querySelectorAll('a[href^="http"]').forEach(link => {
-      link.addEventListener('click', (e) => {
-        const linkText = link.textContent.trim();
-        const linkUrl = link.getAttribute('href');
-        
-        trackEvent('external_link_click', {
-          link_text: linkText,
-          link_url: linkUrl,
-          link_domain: new URL(linkUrl).hostname
-        });
-      });
-    });
-
-    // Track scroll depth
-    let maxScroll = 0;
-    window.addEventListener('scroll', () => {
-      const scrollPercent = Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100);
-      if (scrollPercent > maxScroll && scrollPercent % 25 === 0) {
-        maxScroll = scrollPercent;
-        trackEvent('scroll_depth', {
-          scroll_percent: scrollPercent
-        });
-      }
-    });
-
-    // Track time on page
-    let startTime = Date.now();
-    window.addEventListener('beforeunload', () => {
-      const timeOnPage = Math.round((Date.now() - startTime) / 1000);
-      trackEvent('time_on_page', {
-        time_seconds: timeOnPage
-      });
-    });
-  </script>
 </body>
+
 </html>
