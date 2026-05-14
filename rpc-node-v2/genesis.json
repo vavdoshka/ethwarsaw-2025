@@ -1,0 +1,16 @@
+{
+  "chainId": 12345,
+  "latestBlockNumber": 0,
+  "accounts": [
+    {
+      "address": "0x0000000000000000000000000000000000000002",
+      "balance": "1000000000000000000000",
+      "nonce": 0
+    },
+    {
+      "address": "0x337d7730a281efe851dbedf5f4ed0d2610e59639",
+      "balance": "10000000000000000000",
+      "nonce": 0
+    }
+  ]
+}

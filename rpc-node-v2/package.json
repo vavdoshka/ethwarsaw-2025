@@ -1,0 +1,18 @@
+{
+  "name": "rpc-node-v2",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SheetChain RPC Node V2",
+  "main": "src/rpc/server.js",
+  "scripts": {
+    "start": "node src/rpc/server.js",
+    "test": "node --test",
+    "test:integration:live-sheets": "RUN_LIVE_SHEETS_BENCHMARK=1 node test/integration/live-sheets-benchmark.js",
+    "test:integration:live-sheets-sweep": "RUN_LIVE_SHEETS_SWEEP=1 node test/integration/live-sheets-sweep.js"
+  },
+  "dependencies": {
+    "ethers": "^6.13.4",
+    "express": "^4.19.2",
+    "googleapis": "^144.0.0"
+  }
+}
