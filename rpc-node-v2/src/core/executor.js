@@ -3,15 +3,19 @@ const { normalizeAddress } = require("../utils/addresses");
 const { ValidationError } = require("./errors");
 
 class Executor {
-  constructor({ stateStore, ledger, policy, journal, finalizer }) {
+  constructor({ stateStore, ledger, policy, journal, finalizer, sqliteStore = null, metrics = null, logger = console }) {
     this.state = stateStore;
     this.ledger = ledger;
     this.policy = policy;
     this.journal = journal;
     this.finalizer = finalizer;
+    this.sqliteStore = sqliteStore;
+    this.metrics = metrics;
+    this.logger = logger;
   }
 
   executeValueTx(tx) {
+    const startedAt = Date.now();
     const from = normalizeAddress(tx.from);
     const to = normalizeAddress(tx.to);
     const value = BigInt(tx.value || 0);
@@ -29,7 +33,7 @@ class Executor {
     }
 
     const snapshotBefore = this.state.exportSnapshot();
-    const blockNumber = this.state.nextBlockNumber();
+    let blockNumber = this.sqliteStore ? this.state.latestBlockNumber : this.state.nextBlockNumber();
 
     try {
       this.ledger.transfer({ from, to, amount: value });
@@ -53,6 +57,37 @@ class Executor {
         sync: { googleSheets: { status: "pending", syncedAt: null } }
       };
 
+      let txIndex = 0;
+      if (this.sqliteStore) {
+        const sqliteStartedAt = Date.now();
+        const allocation = this.sqliteStore.persistAcceptedTx({
+          txHash,
+          timestamp: event.timestamp,
+          tx: {
+            from,
+            to,
+            value: value.toString(),
+            nonce
+          },
+          fromAccount: {
+            address: from,
+            balance: this.state.getBalance(from).toString(),
+            nonce: this.state.getNonce(from)
+          },
+          toAccount: {
+            address: to,
+            balance: this.state.getBalance(to).toString(),
+            nonce: this.state.getNonce(to)
+          },
+        });
+        blockNumber = allocation.blockNumber;
+        txIndex = allocation.txIndex;
+        this.state.setLatestBlockNumber(Math.max(this.state.latestBlockNumber, blockNumber));
+        if (this.metrics) this.metrics.observeSqliteWrite(Date.now() - sqliteStartedAt);
+      }
+
+      event.blockNumber = blockNumber;
+      event.tx.txIndex = txIndex;
       this.journal.append(event);
       this.state.setTransaction(txHash, {
         hash: txHash,
@@ -61,9 +96,18 @@ class Executor {
         value: value.toString(),
         nonce,
         blockNumber,
+        txIndex,
+        blockHash: this.sqliteStore ? this.sqliteStore.getBlockByNumber(blockNumber, { includeTransactions: false })?.hash || null : null,
+        gas: Number.parseInt(String(tx.gas || tx.gasLimit || 21000), 10),
+        gasPrice: BigInt(tx.gasPrice || 1).toString(),
+        input: tx.data || tx.input || "0x",
+        type: tx.type || "0x0",
+        acceptedAt: event.timestamp,
         status: "0x1"
       });
       this.finalizer.markPending(txHash);
+      if (this.metrics) this.metrics.observeTxExecution(Date.now() - startedAt);
+      this.logger.info(JSON.stringify({ event: "tx.accepted", txHash, blockNumber, txIndex }));
 
       return {
         transactionHash: txHash,
@@ -76,6 +120,7 @@ class Executor {
   }
 
   async executeSystemTx(tx, executeHandler) {
+    const startedAt = Date.now();
     const from = normalizeAddress(tx.from);
     const nonce = this._normalizeNonce(tx.nonce);
     const actualNonce = this.ledger.getNonce(from);
@@ -87,7 +132,7 @@ class Executor {
     }
 
     const snapshotBefore = this.state.exportSnapshot();
-    const blockNumber = this.state.nextBlockNumber();
+    let blockNumber = this.sqliteStore ? this.state.latestBlockNumber : this.state.nextBlockNumber();
     try {
       const contractResult = await executeHandler();
       this.ledger.setNonce(from, nonce + 1);
@@ -108,6 +153,37 @@ class Executor {
         sync: { googleSheets: { status: "pending", syncedAt: null } }
       };
 
+      let txIndex = 0;
+      if (this.sqliteStore) {
+        const sqliteStartedAt = Date.now();
+        const allocation = this.sqliteStore.persistAcceptedTx({
+          txHash,
+          timestamp: event.timestamp,
+          tx: {
+            from,
+            to: normalizeAddress(tx.to),
+            value: "0",
+            nonce
+          },
+          fromAccount: {
+            address: from,
+            balance: this.state.getBalance(from).toString(),
+            nonce: this.state.getNonce(from)
+          },
+          toAccount: {
+            address: normalizeAddress(tx.to),
+            balance: this.state.getBalance(normalizeAddress(tx.to)).toString(),
+            nonce: this.state.getNonce(normalizeAddress(tx.to))
+          },
+        });
+        blockNumber = allocation.blockNumber;
+        txIndex = allocation.txIndex;
+        this.state.setLatestBlockNumber(Math.max(this.state.latestBlockNumber, blockNumber));
+        if (this.metrics) this.metrics.observeSqliteWrite(Date.now() - sqliteStartedAt);
+      }
+
+      event.blockNumber = blockNumber;
+      event.tx.txIndex = txIndex;
       this.journal.append(event);
       this.state.setTransaction(txHash, {
         hash: txHash,
@@ -116,9 +192,18 @@ class Executor {
         value: "0",
         nonce,
         blockNumber,
+        txIndex,
+        blockHash: this.sqliteStore ? this.sqliteStore.getBlockByNumber(blockNumber, { includeTransactions: false })?.hash || null : null,
+        gas: Number.parseInt(String(tx.gas || tx.gasLimit || 21000), 10),
+        gasPrice: BigInt(tx.gasPrice || 1).toString(),
+        input: tx.data || tx.input || "0x",
+        type: tx.type || "0x0",
+        acceptedAt: event.timestamp,
         status: "0x1"
       });
       this.finalizer.markPending(txHash);
+      if (this.metrics) this.metrics.observeTxExecution(Date.now() - startedAt);
+      this.logger.info(JSON.stringify({ event: "tx.accepted", txHash, blockNumber, txIndex, system: true }));
       return { transactionHash: txHash, blockNumber, contractResult };
     } catch (error) {
       this.state.importSnapshot(snapshotBefore);
@@ -178,6 +263,10 @@ class Executor {
         })
       )
     );
+  }
+
+  _blockHash(blockNumber) {
+    return ethers.keccak256(ethers.toUtf8Bytes(`block:${blockNumber}`));
   }
 }
 

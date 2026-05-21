@@ -1,6 +1,7 @@
 class Finalizer {
-  constructor(stateStore) {
+  constructor(stateStore, { onSynced = null } = {}) {
     this.state = stateStore;
+    this.onSynced = onSynced;
   }
 
   markPending(txHash) {
@@ -9,6 +10,7 @@ class Finalizer {
 
   markSynced(txHash, syncedAt = new Date().toISOString()) {
     this.state.setSyncStatus(txHash, { status: "synced", syncedAt });
+    if (this.onSynced) this.onSynced(txHash);
   }
 
   getPendingTxHashes() {

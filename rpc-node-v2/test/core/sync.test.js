@@ -122,3 +122,34 @@ test('sync worker recovers in-flight checkpoint using batched dedupe', async () 
   assert.equal(reads, 1);
   assert.equal(state.getSyncStatus('0xaaa').status, 'synced');
 });
+
+test('sync worker exports balances, claims, and bridge records when client supports it', async () => {
+  const state = new StateStore();
+  const finalizer = new Finalizer(state);
+  state.setTransaction('0xabc', { hash: '0xabc', from: '0x1', to: '0x2', value: '1', nonce: 0, blockNumber: 1 });
+  finalizer.markPending('0xabc');
+  state.setAccount('0x337d7730a281efE851dbEDf5F4eD0D2610E59639', { balance: 10n, nonce: 1 });
+  state.addClaim('airdrop:0xabc', { claimedAt: new Date().toISOString() });
+  state.addBridgeRecord({ action: 'transfer', amount: '1' });
+
+  let balancesRows = null;
+  let claimsRows = null;
+  let bridgeRows = null;
+  const syncClient = {
+    async hasTransaction() { return false; },
+    async writeTransaction() {},
+    async writeBalances(rows) { balancesRows = rows; },
+    async writeClaims(rows) { claimsRows = rows; },
+    async writeBridgeRecords(rows) { bridgeRows = rows; }
+  };
+
+  const worker = new GoogleSheetsSyncWorker({ state, finalizer, syncClient });
+  const result = await worker.flushOnce();
+  assert.equal(result.flushed, 1);
+  assert.equal(Array.isArray(balancesRows), true);
+  assert.equal(Array.isArray(claimsRows), true);
+  assert.equal(Array.isArray(bridgeRows), true);
+  assert.equal(balancesRows.length, 1);
+  assert.equal(claimsRows.length, 1);
+  assert.equal(bridgeRows.length, 1);
+});

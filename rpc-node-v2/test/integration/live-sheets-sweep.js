@@ -21,6 +21,7 @@ async function runSingle({ txCount, spreadsheetId, credentialFilePath, blindAppe
   const sheetName = `test_limit_${suffix}`;
   const journalPath = path.join(runtimeDir, `journal-${suffix}.jsonl`);
   const genesisPath = path.join(runtimeDir, `genesis-${suffix}.json`);
+  const sqliteDbPath = path.join(runtimeDir, `state-${suffix}.sqlite3`);
 
   const sender = ethers.Wallet.createRandom();
   const recipient = ethers.Wallet.createRandom();
@@ -41,7 +42,7 @@ async function runSingle({ txCount, spreadsheetId, credentialFilePath, blindAppe
     journalPath,
     genesisPath,
     syncClient,
-    env: { CHAIN_ID: '12345', PORT: '8545' }
+    env: { CHAIN_ID: '12345', PORT: '8545', SQLITE_ENABLED: '1', SQLITE_DB_PATH: sqliteDbPath }
   });
 
   const httpServer = await new Promise((resolve) => {

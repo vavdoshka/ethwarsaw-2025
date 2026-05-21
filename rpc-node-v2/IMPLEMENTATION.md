@@ -252,6 +252,119 @@ Tests:
 - Existing frontend read calls work against V2.
 - README-supported RPC methods have coverage.
 
+## 15. Testnet SQLite Store
+
+Deliverables:
+
+- Add SQLite as the canonical testnet persistence layer.
+- Create migrations for `accounts`, `transactions`, `blocks`, `receipts`, `journal_events`, `system_contract_state`, `sync_jobs`, and `sync_checkpoints`.
+- Replace in-memory-only canonical state with a SQLite-backed state store.
+- Keep in-memory state as an optional read-through cache, not the source of truth.
+- Run all account, nonce, transaction, and block mutations inside SQLite transactions.
+- Enforce unique constraints for tx hash, block number, and `(block_number, tx_index)`.
+
+Tests:
+
+- Migrations create all required tables and indexes.
+- SQLite store loads genesis exactly once.
+- Account balances and nonces survive process restart.
+- Duplicate tx hash is rejected by a database constraint.
+- Failed transaction rolls back all account, tx, block, and sync job writes.
+- Multiple sequential transactions produce deterministic persisted state.
+
+## 16. Block Production
+
+Deliverables:
+
+- Group accepted transactions into deterministic blocks.
+- Assign `block_number`, `tx_index`, `block_hash`, `parent_hash`, and timestamp.
+- Store block headers and receipts in SQLite.
+- Generate block hash from parent hash and ordered tx hashes.
+- Make RPC block and receipt methods read from persisted block data.
+
+Tests:
+
+- First transaction creates or enters the expected first block.
+- Block hash is deterministic for the same parent and tx order.
+- Receipts reference persisted block number and tx index.
+- `eth_blockNumber` reads latest persisted block.
+- `eth_getBlockByNumber` returns persisted block data.
+- Restart preserves latest block and receipts.
+
+## 17. SQLite Outbox Sync
+
+Deliverables:
+
+- Replace file checkpoint-based Sheets reliability with a SQLite outbox.
+- Insert `sync_jobs` in the same SQLite transaction that commits tx/block state.
+- Sync worker claims pending jobs in block order.
+- Worker marks jobs as `in_flight`, `synced`, `failed`, or `dead_letter`.
+- Persist retry count, last error, next retry time, and synced timestamp.
+- Keep Google Sheets as an eventually consistent export target, not the canonical source.
+
+Tests:
+
+- Accepted tx creates a pending sync job atomically.
+- Failed tx creates no sync job.
+- Worker claims jobs without losing them on crash.
+- Successful Sheets write marks jobs synced.
+- Failed Sheets write increments retry count and preserves pending data.
+- Jobs move to dead letter after max retries.
+- Restart resumes pending and in-flight jobs.
+
+## 18. Block-Batched Sheets Export
+
+Deliverables:
+
+- Export by block ranges instead of individual tx retries.
+- Write rows with `block_number`, `tx_index`, `tx_hash`, `export_batch_id`, `from`, `to`, `value`, `status`, and timestamp.
+- Maintain `last_exported_block` in SQLite.
+- On recovery, recheck only incomplete block ranges.
+- Keep blind append available only for benchmark/test tabs.
+- Use batched dedupe for production-like tabs when recovering incomplete exports.
+
+Tests:
+
+- Worker writes all transactions for a block in one batch.
+- Rows include block number and tx index.
+- `last_exported_block` advances only after Sheets confirms the full block batch.
+- Crash before confirmation retries the incomplete block.
+- Crash after confirmation and before checkpoint performs bounded dedupe and does not duplicate completed block rows.
+- Blind append mode is disabled by default for production-like exports.
+
+## 19. Testnet Status And Metrics
+
+Deliverables:
+
+- Add `/status` endpoint.
+- Report latest block, accepted tx count, pending sync jobs, in-flight sync jobs, dead-letter jobs, last synced block, and sync lag.
+- Track basic timing metrics for tx execution, SQLite writes, Sheets sync latency, and quota errors.
+- Add structured logs for accepted tx, block creation, sync batch start, sync batch success, sync retry, and sync failure.
+
+Tests:
+
+- `/status` returns latest persisted block.
+- `/status` reports pending sync jobs before flush.
+- `/status` reports last synced block after flush.
+- Sync lag increases when jobs are pending and returns to zero after successful export.
+- Quota-style errors are logged and represented in sync job state.
+
+## 20. Testnet Load And Soak Tests
+
+Deliverables:
+
+- Add a repeatable load test for signed transactions through HTTP RPC.
+- Add a Sheets export benchmark for block batch sizes.
+- Add a soak test that runs for a configurable duration and reports accepted tx/sec, exported tx/sec, sync lag, and failures.
+- Keep live Sheets tests gated behind explicit environment variables.
+
+Tests:
+
+- Load test accepts a configured number of signed txs without nonce gaps.
+- Soak test can run with Sheets disabled and verify SQLite-only throughput.
+- Live Sheets soak test reports first quota failure without breaking regular test runs.
+- Restart during soak recovers SQLite state and resumes sync jobs.
+
 ## Build Order
 
 Recommended order:
@@ -270,3 +383,9 @@ Recommended order:
 12. Google Sheets sync.
 13. Shutdown.
 14. Compatibility pass.
+15. SQLite store.
+16. Block production.
+17. SQLite outbox sync.
+18. Block-batched Sheets export.
+19. Testnet status and metrics.
+20. Testnet load and soak tests.

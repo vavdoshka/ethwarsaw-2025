@@ -46,3 +46,32 @@ test('loadGenesisFile returns null when file missing', () => {
   const missing = path.join(dir, 'missing.json');
   assert.equal(loadGenesisFile(missing), null);
 });
+
+test('createApp exports genesis rows to sync client when supported', async () => {
+  const dir = makeTempDir();
+  const genesisPath = path.join(dir, 'genesis.json');
+  const journalPath = path.join(dir, 'journal.jsonl');
+  fs.writeFileSync(genesisPath, JSON.stringify({
+    accounts: [
+      { address: '0x337d7730a281efE851dbEDf5F4eD0D2610E59639', balance: '20', nonce: 2 },
+      { address: '0x0000000000000000000000000000000000000001', balance: '5', nonce: 0 }
+    ]
+  }));
+
+  let rows = null;
+  const syncClient = {
+    async writeGenesis(nextRows) { rows = nextRows; }
+  };
+  createApp({
+    journalPath,
+    genesisPath,
+    syncClient,
+    env: { CHAIN_ID: '12345', PORT: '8545', SQLITE_ENABLED: '0' }
+  });
+
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(Array.isArray(rows), true);
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].balance, '20');
+  assert.equal(rows[0].nonce, 2);
+});

@@ -7,12 +7,22 @@
   "scripts": {
     "start": "node src/rpc/server.js",
     "test": "node --test",
+    "db:migrate": "knex migrate:latest --knexfile knexfile.js --env sqlite",
+    "db:rollback": "knex migrate:rollback --knexfile knexfile.js --env sqlite",
+    "db:migrate:pg": "knex migrate:latest --knexfile knexfile.js --env postgres",
     "test:integration:live-sheets": "RUN_LIVE_SHEETS_BENCHMARK=1 node test/integration/live-sheets-benchmark.js",
-    "test:integration:live-sheets-sweep": "RUN_LIVE_SHEETS_SWEEP=1 node test/integration/live-sheets-sweep.js"
+    "test:integration:live-sheets-sweep": "RUN_LIVE_SHEETS_SWEEP=1 node test/integration/live-sheets-sweep.js",
+    "test:integration:live-sheets-soak": "RUN_LIVE_SHEETS_SOAK=1 node test/integration/live-sheets-soak.js",
+    "test:integration:soak": "RUN_SOAK_TEST=1 node --test test/integration/soak.integration.test.js"
   },
   "dependencies": {
+    "better-sqlite3": "^11.8.1",
     "ethers": "^6.13.4",
     "express": "^4.19.2",
     "googleapis": "^144.0.0"
+  },
+  "devDependencies": {
+    "knex": "^3.1.0",
+    "pg": "^8.13.1"
   }
 }
