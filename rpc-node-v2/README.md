@@ -1,336 +1,126 @@
-# SheetChain RPC Node V2
+# rpc-node-v2
 
-This folder is the design starting point for a cleaner RPC node implementation. The current `rpc-node` remains the behavioral reference, but V2 should be built around explicit execution, state, system contract, and sync boundaries.
+Minimal Ethereum-like RPC node for SheetChain with:
+- local durable state in SQLite
+- optional Google Sheets export
+- MetaMask-compatible JSON-RPC surface for basic transfers
 
-## Goals
+## Requirements
 
-- Keep RPC request handling separate from business logic.
-- Make local state fast and durable enough to avoid Google Sheets throttling.
-- Treat Google Sheets as a synced external view, not the execution hot path.
-- Support trusted system contracts loaded from local modules.
-- Prevent system contracts from bypassing core ledger invariants.
-- Leave a migration path toward multiple RPC nodes after the POC.
+- Node.js `22.x`
+- npm
+- (optional) Google service account JSON for Sheets sync
 
-## Non-Goals
+## Install
 
-- No user-deployed smart contracts.
-- No EVM execution engine.
-- No consensus protocol in the POC.
-- No direct reliance on Google Sheets for transaction execution.
+From `rpc-node-v2`:
 
-## Proposed Structure
-
-```text
-rpc-node-v2/
-  src/
-    rpc/
-      server.js
-      router.js
-      methods.js
-
-    core/
-      executor.js
-      ledger.js
-      state-store.js
-      journal.js
-      policy.js
-      finalizer.js
-      errors.js
-
-    system-contracts/
-      registry.js
-      bridge.js
-      airdrop.js
-
-    sync/
-      google-sheets-sync.js
-      serializers.js
-
-    config/
-      index.js
-
-    utils/
-      addresses.js
-      hex.js
-      logger.js
+```bash
+npm install
 ```
 
-## Layer Responsibilities
+## Run (local only, no Sheets)
 
-### RPC Layer
-
-The RPC layer should only:
-
-- Parse JSON-RPC requests.
-- Validate basic JSON-RPC shape.
-- Decode signed transactions where needed.
-- Call the core executor or read APIs.
-- Format Ethereum-compatible responses.
-
-It should not:
-
-- Move balances.
-- Increment nonces.
-- Write Google Sheets.
-- Contain bridge or airdrop business logic.
-- Know system contract internals.
-
-### Core Layer
-
-The core layer is the authority for execution.
-
-- `executor.js` accepts transactions, validates them, routes system contract calls, commits state, and records journal events.
-- `ledger.js` is the only module allowed to move funds, mint, burn, or increment nonces.
-- `state-store.js` owns in-memory state and local snapshots.
-- `journal.js` owns the durable append-only transaction/event log.
-- `policy.js` owns authorization and protocol rules, such as bridge operator checks and reserved addresses.
-- `finalizer.js` tracks external sync status such as Google Sheets confirmation.
-
-Core invariant:
-
-> Only the core ledger/executor can mutate balances, nonces, transaction history, claims, or bridge records.
-
-### System Contracts
-
-System contracts are trusted native modules exposed through Ethereum-like addresses and ABI selectors. They are not user-deployed contracts.
-
-Each contract module should export metadata and handlers:
-
-```js
-module.exports = {
-  name: 'Bridge',
-  address: '0x0000000000000000000000000000000000000003',
-  abi: [
-    'function bridgeBalance() view returns (uint256)',
-    'function bridgeAccount() view returns (address)',
-    'function bridgeTransfer(address recipient, uint256 amount)'
-  ],
-
-  calls: {
-    'bridgeBalance()': async (ctx) => {
-      return ctx.ledger.getBalance(ctx.config.bridgeAccountAddress);
-    }
-  },
-
-  transactions: {
-    'bridgeTransfer(address,uint256)': async (ctx) => {
-      ctx.policy.requireSender(ctx.tx.from, ctx.config.bridgeOperatorAddress);
-
-      return ctx.ledger.transfer({
-        from: ctx.config.bridgeAccountAddress,
-        to: ctx.args.recipient,
-        amount: ctx.args.amount,
-        reason: 'bridgeTransfer',
-        txHash: ctx.tx.hash
-      });
-    }
-  }
-};
+```bash
+SQLITE_ENABLED=1 \
+SQLITE_DB_PATH=./rpc-node-v2-data/state.sqlite3 \
+CHAIN_ID=123456 \
+PORT=8545 \
+GENESIS_FILE_PATH=./genesis.json \
+SYNC_INTERVAL_MS=5000 \
+node src/rpc/server.js
 ```
 
-System contracts should receive a restricted context:
+Health check:
 
-```js
-{
-  tx,
-  args,
-  selector,
-  ledger,
-  policy,
-  config,
-  logger
-}
+```bash
+curl -s http://127.0.0.1:8545/health
 ```
 
-They should not receive direct access to raw state maps, journal writers, or Google Sheets clients.
+## Run with Google Sheets sync
 
-### System Contract Registry
-
-The registry should load local system contract modules at startup and validate:
-
-- Every contract address is a valid Ethereum address.
-- No two contracts use the same address.
-- No duplicate function selector exists for the same address.
-- ABI entries are valid.
-- Non-view functions have transaction handlers.
-- View/pure functions have call handlers.
-- Reserved addresses are explicit and intentional.
-
-RPC routing should be simple:
-
-- `eth_call` to a system contract address goes through `registry.call(...)`.
-- Transactions to a system contract address go through `registry.transact(...)`.
-- Other transactions go through normal value transfer execution.
-
-## State Model
-
-V2 should make the local journal the canonical execution history for the single-node POC.
-
-State should include:
-
-- Accounts: address, balance, nonce.
-- Transactions: hash, from, to, value, nonce, status, block number, gas used.
-- Claims.
-- Bridge records.
-- Sync metadata.
-
-In-memory state is derived from the local journal and optional compacted snapshots.
-
-## Transaction Lifecycle
-
-Suggested lifecycle:
-
-```text
-received -> validated -> accepted -> included -> sheetSynced
+```bash
+GOOGLE_SHEET_ID='YOUR_SPREADSHEET_ID' \
+GOOGLE_APPLICATION_CREDENTIALS='./cred/your-service-account.json' \
+GOOGLE_SHEET_NAME='sheet-dev' \
+SQLITE_ENABLED=1 \
+SQLITE_DB_PATH=./rpc-node-v2-data/state.sqlite3 \
+CHAIN_ID=123456 \
+PORT=8545 \
+GENESIS_FILE_PATH=./genesis.json \
+SYNC_INTERVAL_MS=5000 \
+node src/rpc/server.js
 ```
 
-Definitions:
+Where `GOOGLE_SHEET_ID` is the ID from:
+`https://docs.google.com/spreadsheets/d/<THIS_PART>/edit`
 
-- `received`: RPC has received the transaction.
-- `validated`: signature, nonce, balance, and policy checks passed.
-- `accepted`: transaction was committed to the local durable journal.
-- `included`: transaction was applied to local state and assigned a block number.
-- `sheetSynced`: the transaction and derived state were confirmed in Google Sheets.
+Share the spreadsheet with the service account email from your JSON credentials.
 
-Avoid using `finalized` for Google Sheets sync. In a future multi-node version, finality should mean chain or consensus finality, not spreadsheet export completion.
+## Reset sheet tabs on startup
 
-## Local Journal
+If you want a clean sheet layout on startup:
 
-The journal should be append-only and durable. Every accepted transaction should be written locally before the RPC node returns success.
-
-Example event:
-
-```json
-{
-  "type": "tx.accepted",
-  "txHash": "0x...",
-  "blockNumber": 42,
-  "timestamp": "2026-05-14T12:00:00.000Z",
-  "tx": {
-    "from": "0x...",
-    "to": "0x...",
-    "value": "1000000000000000000",
-    "nonce": 1,
-    "data": "0x"
-  },
-  "effects": [
-    {
-      "type": "transfer",
-      "from": "0x...",
-      "to": "0x...",
-      "amount": "1000000000000000000"
-    }
-  ],
-  "sync": {
-    "googleSheets": {
-      "status": "pending",
-      "syncedAt": null
-    }
-  }
-}
+```bash
+GOOGLE_SHEET_RESET=1
 ```
 
-On restart:
+With reset enabled, node recreates managed tabs and then backfills from local DB.
+Managed tabs:
+- `<GOOGLE_SHEET_NAME>_tx`
+- `<GOOGLE_SHEET_NAME>_genesis`
+- `<GOOGLE_SHEET_NAME>_state`
+- `<GOOGLE_SHEET_NAME>_claims`
+- `<GOOGLE_SHEET_NAME>_bridge`
 
-1. Load the latest snapshot if present.
-2. Replay journal events after the snapshot.
-3. Rebuild in-memory state.
-4. Find unsynced events.
-5. Retry Google Sheets sync.
+After first run, unset `GOOGLE_SHEET_RESET` to avoid clearing tabs on every restart.
 
-Do not revert accepted local transactions just because Sheets was behind when the process stopped.
+## Fully fresh start (DB + Sheet)
 
-## Google Sheets Sync
+Stop node, then:
 
-Google Sheets should be an async external view. It should not be used for hot-path reads or writes.
-
-Recommended behavior:
-
-- Batch sync every 5 seconds by default.
-- Flush dirty balances, transactions, claims, and bridge records together.
-- Use `txHash` as the idempotency key for transaction rows.
-- If a row already exists for a tx hash, treat it as synced.
-- Retry quota/throttle failures with exponential backoff.
-- Keep serving RPC from local state while Sheets is stale.
-- Attempt a final flush during graceful shutdown, but do not depend on it for correctness.
-
-This avoids Google Sheets throttling while preserving the spreadsheet as a public visualization and audit target.
-
-## Core Ledger Rules
-
-The ledger should enforce:
-
-- Address normalization.
-- No negative balances.
-- No overdrafts.
-- Nonce sequencing.
-- Duplicate transaction hash handling.
-- Reserved/system address rules.
-- Atomic mutation per accepted transaction.
-- Journal write before RPC success.
-- Deterministic effects for replay.
-
-System contracts must express intent through ledger methods such as:
-
-```js
-ledger.transfer({ from, to, amount, reason, txHash });
-ledger.mint({ to, amount, reason, txHash });
-ledger.burn({ from, amount, reason, txHash });
+```bash
+rm -f ./rpc-node-v2-data/state.sqlite3 ./rpc-node-v2-data/state.sqlite3-shm ./rpc-node-v2-data/state.sqlite3-wal
 ```
 
-They must not update balances or nonces directly.
+Start node with `GOOGLE_SHEET_RESET=1`.
 
-## Multiple RPC Nodes Later
+## MetaMask setup
 
-The single-node POC should be designed so the local journal can later be replaced by a shared ordering layer.
+Add custom network:
+- RPC URL: `http://127.0.0.1:8545`
+- Chain ID: `123456` (or your `CHAIN_ID`)
+- Currency symbol: `SHEET` (optional)
 
-Migration path:
+Import an account present in `genesis.json` to see funded balance immediately.
 
-1. Single node with local journal.
-2. Multiple RPC nodes submit transactions to one sequencer.
-3. Sequencer assigns canonical order and block numbers.
-4. Nodes replay the shared ordered log.
-5. Google Sheets sync remains an external view.
+## Useful logs
 
-Possible future shared logs:
+At startup:
+- `startup.genesis`
+- `startup.sqlite`
+- `startup.sheets.init.start`
+- `startup.sheets.init.done`
+- `startup.sheets.backfill`
 
-- Postgres.
-- Redis Streams.
-- Kafka.
-- NATS JetStream.
-- A dedicated sequencer service.
+During runtime:
+- `rpc.call`
+- `sync.interval.tick`
 
-The important design rule is that transaction execution consumes ordered events. If that boundary exists, replacing the local journal later is manageable.
+## Scripts
 
-## Initial Test Plan
+```bash
+npm test
+npm run test:integration:soak
+npm run test:integration:live-sheets
+npm run test:integration:live-sheets-sweep
+npm run test:integration:live-sheets-soak
+```
 
-V2 should start with tests for:
+## Notes
 
-- Value transfer updates balances and nonce.
-- Insufficient balance rejects without state mutation.
-- Invalid nonce rejects without state mutation.
-- Duplicate transaction hash is handled consistently.
-- Accepted transactions are written to the journal before success.
-- Restart rebuilds state from the journal.
-- Unsynced transactions retry Google Sheets sync.
-- Google Sheets sync is idempotent by tx hash.
-- System contract address collisions fail startup.
-- System contract selector collisions fail startup.
-- System contracts cannot directly mutate state.
-- Bridge operator policy rejects unauthorized bridge transfers.
-
-## Implementation Plan
-
-See [IMPLEMENTATION.md](./IMPLEMENTATION.md) for the milestone-by-milestone build plan and required tests for each task.
-
-## Reference Implementation
-
-Use `../rpc-node` as the behavior reference, especially for:
-
-- Supported JSON-RPC methods.
-- Bridge behavior.
-- Airdrop behavior.
-- Google Sheets schema.
-- MetaMask compatibility quirks.
-
-Do not copy the existing coupling between RPC handling, Sheets operations, and business logic.
+- Source of truth: **SQLite DB**
+- Sheets are an async external view/export
+- Credentials are ignored by git via:
+  - root `.gitignore`: `rpc-node-v2/cred/`
+  - local `.gitignore`: `cred/`
